@@ -24,6 +24,8 @@
 #define CELP_REALLOC realloc
 #endif //CELP_REALLOC
 
+
+#define CELP_DA_INIT_SIZE 256
 /*
  * celp_da_append - dynamic array append
  * assumes some struct S with fields:
@@ -31,15 +33,28 @@
  *  S.count
  *  S.capacity
  */
-#define celp_da_append(xs, x) \
+
+#define celp_da_reserve(da, expected_capacity) \
     do {\
-        if (xs.count >= xs.capacity) {\
-            if (xs.capacity == 0) xs.capacity = 256;\
-                else xs.capacity *= 2;\
-                xs.items = CELP_REALLOC(xs.items, xs.capacity * sizeof(xs.items));\
+        if ((expected_capacity) > (da)->capacity) {\
+            if ((da)->capacity == 0) {\
+                (da)->capacity = CELP_DA_INIT_SIZE;\
+            }\
+            while ((da)->capacity < expected_capacity) {\
+                (da)->capacity *= 2;\
+            }\
+            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof(*(da->items)));\
+            CELP_ASSERT((da)->items != NULL);\
         }\
-        xs.items[xs.count++] = x;\
     } while(0)
+
+#define celp_da_append(da, item) \
+    do {\
+        celp_da_reserve(da, (da)->count + 1);\
+        (da)->items[(da)->count++] = (item);\
+    } while(0)
+
+//TODO_DA: remove, bulk append
 
 
 #ifdef CELP_IMPLEMENTATION
