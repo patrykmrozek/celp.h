@@ -3,7 +3,7 @@
 
 #ifndef CELP_DEF
 #define CELP_DEF
-#endif
+#endif //CELP_DEF
 
 #ifndef CELP_DEF_SI
 #define CELP_DEF_SI static inline
@@ -19,14 +19,26 @@
 #define CELP_FREE free
 #endif //CELP_FREE
 
+#ifndef CELP_REALLOC
+#include <stdlib.h>
+#define CELP_REALLOC realloc
+#endif //CELP_REALLOC
+
+/*
+ * celp_da_append - dynamic array append
+ * assumes some struct S with fields:
+ *  S.items
+ *  S.count
+ *  S.capacity
+ */
 #define celp_da_append(xs, x) \
-    do {
+    do {\
         if (xs.count >= xs.capacity) {\
             if (xs.capacity == 0) xs.capacity = 256;\
                 else xs.capacity *= 2;\
-                xs.items = realloc(xs.items, xs.capacity * sizeof(xs.items));\
+                xs.items = CELP_REALLOC(xs.items, xs.capacity * sizeof(xs.items));\
         }\
-        xs.items[xs.count++] = x;
+        xs.items[xs.count++] = x;\
     } while(0)
 
 
