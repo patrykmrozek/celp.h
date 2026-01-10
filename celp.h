@@ -190,9 +190,18 @@ do { \
     } \
 } while(0)
 
-#define celp_map_get(map, key) \
-    do { \
-    } while(0)
+//TODO: take in a defualt value in case not found, ditch void* -> keeps type safety
+#define celp_map_get(map, k) ({ \
+        void* __result = NULL; \
+        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+            if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
+                __result = &(map)->items[__i].value; \
+                break; \
+            } \
+        } \
+        __result; \
+    })
+
 
 #define celp_map_free(map) \
     do { \
