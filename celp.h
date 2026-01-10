@@ -246,6 +246,7 @@ do { \
 #endif //CELP_IMPLEMENTATION
 
 //shamelessly ripped from mr tsoding
+//if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //CELP_LOG
     #define log celp_log
