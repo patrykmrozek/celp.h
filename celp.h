@@ -1,3 +1,13 @@
+//TODO:
+// - file reader
+// - string builder/view
+// - hashmap
+// - memory alloc macros
+// - DSs
+// - Math (linear algebra)
+// - Debug/Log
+// - strip perfix macro
+
 #ifndef CELP_H
 #define CELP_H
 
@@ -28,7 +38,7 @@
 #define CELP_DA_INIT_SIZE 256
 
 /*
- * Generates a DA struct for a given type
+ * Generates an array struct for a given type
  */
 #define CELP_DA_ARRAY(name, dtype) \
 typedef struct { \
@@ -53,7 +63,7 @@ do { \
             while ((da)->capacity < expected_capacity) {\
                 (da)->capacity *= 2;\
             }\
-            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof(*(da)->items));\
+            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof((da)->items[0]));\
             CELP_ASSERT((da)->items != NULL);\
         }\
     } while(0)
@@ -70,7 +80,7 @@ do { \
         celp_da_init(da); \
     } while(0)
 
-//TODO_DA: remove, bulk append
+//TODO_DA: remove, insert, bulk append
 
 
 #ifdef CELP_IMPLEMENTATION
