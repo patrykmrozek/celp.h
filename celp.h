@@ -26,13 +26,23 @@
 
 
 #define CELP_DA_INIT_SIZE 256
+
 /*
- * celp_da_append - dynamic array append
- * assumes some struct S with fields:
- *  S.items
- *  S.count
- *  S.capacity
+ * Generates a DA struct for a given type
  */
+#define CELP_DA_ARRAY(name, dtype) \
+typedef struct { \
+    dtype* items; \
+    size_t count; \
+    size_t capacity; \
+} name##Array##_t;
+
+#define celp_da_init(da) \
+do { \
+    (da)->items = NULL;\
+    (da)->count = 0;\
+    (da)->capacity = 0;\
+} while(0)
 
 #define celp_da_reserve(da, expected_capacity) \
     do {\
@@ -43,7 +53,7 @@
             while ((da)->capacity < expected_capacity) {\
                 (da)->capacity *= 2;\
             }\
-            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof(*(da->items)));\
+            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof(*(da)->items));\
             CELP_ASSERT((da)->items != NULL);\
         }\
     } while(0)
@@ -52,6 +62,12 @@
     do {\
         celp_da_reserve(da, (da)->count + 1);\
         (da)->items[(da)->count++] = (item);\
+    } while(0)
+
+#define celp_da_free(da) \
+    do { \
+        CELP_FREE((da)->items); \
+        celp_da_init(da); \
     } while(0)
 
 //TODO_DA: remove, bulk append
