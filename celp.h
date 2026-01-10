@@ -33,6 +33,19 @@
 #define CELP_REALLOC realloc
 #endif //CELP_REALLOC
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdarg.h>
+
+typedef enum {
+   LOG_INFO,
+   LOG_ERROR,
+} Celp_Log_Type;
+
+CELP_DEF void celp_log(Celp_Log_Type log_type, const char* msg, ...);
+
 /* Dynamic Array */
 #define CELP_DA_INIT_SIZE 256
 
@@ -79,6 +92,11 @@ do { \
         celp_da_init(da); \
     } while(0)
 
+#define celp_da_info(da) \
+    do{ \
+        celp_log(LOG_INFO, "Capacity: %lu, Count: %lu\n", (da)->capacity, (da)->count); \
+    } while(0)
+
 //TODO_DA: remove, insert, bulk append
 
 
@@ -106,7 +124,30 @@ typedef struct { \
 
 #ifdef CELP_IMPLEMENTATION
 //implementation
+    void celp_log(Celp_Log_Type log_type, const char* fmt_string, ...) {
+        va_list args;
+        va_start(args, fmt_string); //last named param -> knows where to start with vargs
 
+        FILE* out = NULL;
+        const char* tag = NULL;
+
+        switch(log_type) {
+            case LOG_INFO:
+                out = stdout;
+                tag = "[INFO] ";
+                break;
+            case LOG_ERROR:
+                out = stderr;
+                tag = "[ERROR] ";
+                break;
+        }
+
+        fputs(tag, out);
+        vfprintf(out, fmt_string, args); //takes format string + va_list
+        fputc('\n', out);
+
+        va_end(args);
+    }
 
 #endif //CELP_IMPLEMENTATION
 

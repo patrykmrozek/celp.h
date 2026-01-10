@@ -1,3 +1,4 @@
+#define CELP_IMPLEMENTATION
 #include "../celp.h"
 
 #include <stddef.h>
@@ -13,23 +14,20 @@ int main(void) {
     for (uint32_t i = 0; i < 10; i++) {
         celp_da_append(&n, i);
     }
-
     for (size_t i = 0; i < n.count; i++) {
         printf("%i\n", n.items[i]);
     }
-
-    printf("Capacity (before realloc): %lu", n.capacity);
+    celp_da_info(&n);
 
 
     for (uint32_t i = 0; i < 300; i++) {
         celp_da_append(&n, i);
     }
-
     for (size_t i = 0; i < n.count; i++) {
         printf("%i\n", n.items[i]);
     }
+    celp_da_info(&n);
 
-    printf("Capacity (after realloc): %lu", n.capacity);
 
     celp_da_free(&n);
     return 0;
