@@ -6,7 +6,6 @@
 // - DSs
 // - Math (linear algebra)
 // - Debug/Log
-// - strip perfix macro
 
 #ifndef CELP_H
 #define CELP_H
@@ -34,7 +33,7 @@
 #define CELP_REALLOC realloc
 #endif //CELP_REALLOC
 
-
+/* Dynamic Array */
 #define CELP_DA_INIT_SIZE 256
 
 /*
@@ -83,12 +82,35 @@ do { \
 //TODO_DA: remove, insert, bulk append
 
 
+/* HashMap */
+#define CELP_KV(name, key_dtype, value_dtype) \
+typedef struct { \
+    key_dtype* key; \
+    value_dtype value; \
+} name##KV##_t;
+
+#define CELP_MAP(kv, name) \
+typedef struct { \
+    kv* items; \
+    size_t count; \
+    size_t capacity; \
+} name##Map##_t;
+
+#define celp_map_init(map) \
+    do {\
+        (map)->items = NULL; \
+        (map)->count = 0; \
+        (map)->capacity = 0; \
+    } while(0)
+
+
 #ifdef CELP_IMPLEMENTATION
 //implementation
 
 
-#endif
+#endif //CELP_IMPLEMENTATION
 
+//shamelessly ripped from mr tsoding
 #ifdef CELP_STRIP_PREFIX
     //dynamic array
     #define DA_ARRAY CELP_DA_ARRAY
