@@ -26,7 +26,14 @@ int main() {
         printf("Set key: %i, value: %i\n", i, i*10);
     }
     celp_map_info(&test);
-    celp_map_free(&test);
 
+    printf("[1 before]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
+    for (size_t i = 0; i < 100; i++) {
+        celp_map_add(&test, 1);
+        printf("Adding to key (1): Current value: %lu\n", test.items[1].value);
+    }
+    printf("[1 after]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
+
+    celp_map_free(&test);
     return 0;
 }
