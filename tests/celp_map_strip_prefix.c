@@ -35,6 +35,9 @@ int main() {
     }
     printf("[1 after]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
 
+    uint32_t hash_result = celp_hash("hello", sizeof("hello"));
+    printf("'Hello' hashed: %i\n", hash_result);
+
     map_free(&test);
     return 0;
 }

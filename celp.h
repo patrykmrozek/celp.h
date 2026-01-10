@@ -126,6 +126,15 @@ typedef struct { \
     size_t capacity; \
 } name##Map##_t;
 
+//djb2 hash alg
+#define celp_hash(buffer, buffer_size) ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
+
 #define celp_map_clear(map) \
     do {\
         (map)->items = NULL; \
@@ -193,7 +202,7 @@ do { \
 //TODO: take in a defualt value in case not found, ditch void* -> keeps type safety
 #define celp_map_get(map, k) ({ \
         void* __result = NULL; \
-        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+        for (size_t __i = 0; __i < (map)->count; __i++) { \
             if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
                 __result = &(map)->items[__i].value; \
                 break; \
