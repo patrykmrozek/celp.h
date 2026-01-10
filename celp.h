@@ -103,7 +103,7 @@ do { \
 
 #define celp_da_info(da) \
     do{ \
-        celp_log(CELP_LOG_LEVEL_INFO, "Capacity: %lu, Count: %lu\n", (da)->capacity, (da)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Dynamic Array at: %p, Capacity: %lu, Count: %lu\n", (da), (da)->capacity, (da)->count); \
     } while(0)
 
 //TODO_DA: remove, insert, bulk append
@@ -202,7 +202,6 @@ do { \
         __result; \
     })
 
-
 #define celp_map_free(map) \
     do { \
         CELP_FREE((map)->items); \
@@ -211,7 +210,7 @@ do { \
 
 #define celp_map_info(map) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, "Capacity: %lu, Count: %lu", (map)->capacity, (map)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %lu, Count: %lu", (map), (map)->capacity, (map)->count); \
     } while(0)
 
 
@@ -258,6 +257,11 @@ do { \
     #define KV CELP_KV
     #define MAP CELP_MAP
     #define map_init celp_map_init
+    #define map_clear celp_map_clear
+    #define map_set celp_map_set
+    #define map_add celp_map_add
+    #define map_get celp_map_get
+    #define map_free celp_map_free
     #define map_info celp_map_info
 
 #endif //CELP_STRIP_PREFIX
