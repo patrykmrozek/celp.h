@@ -1,3 +1,4 @@
+#define CELP_IMPLEMENTATION
 #include "../celp.h"
 #include <stdio.h>
 
@@ -9,9 +10,7 @@ int main() {
     TestMap_t test = {};
 
     celp_map_init(&test);
-
-    printf("capacity: %lu, count: %lu\n", test.capacity, test.count);
-
+    celp_map_info(&test);
 
 
     return 0;

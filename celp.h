@@ -121,9 +121,14 @@ typedef struct { \
         (map)->capacity = 0; \
     } while(0)
 
+#define celp_map_info(map) \
+    do { \
+        celp_log(LOG_INFO, "Capacity: %lu, Count: %lu", (map)->capacity, (map)->count); \
+    } while(0)
+
 
 #ifdef CELP_IMPLEMENTATION
-//implementation
+
     void celp_log(Celp_Log_Type log_type, const char* fmt_string, ...) {
         va_list args;
         va_start(args, fmt_string); //last named param -> knows where to start with vargs
