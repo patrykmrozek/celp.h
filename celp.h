@@ -89,4 +89,13 @@ do { \
 
 #endif
 
+#ifdef CELP_STRIP_PREFIX
+    //dynamic array
+    #define DA_ARRAY CELP_DA_ARRAY
+    #define da_init celp_da_init
+    #define da_append celp_da_append
+    #define da_free celp_da_free
+
+#endif //CELP_STRIP_PREFIX
+
 #endif //CELP_H
