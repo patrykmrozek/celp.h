@@ -1,35 +1,37 @@
 #include "../celp.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
-int main() {
-    printf("Hello\n");
+int main(void) {
 
-    typedef struct Numbers {
-        uint32_t* items;
-        size_t count;
-        size_t capacity;
-    } Numbers;
+    CELP_DA_ARRAY(Nums, int)
+    NumsArray_t n = {};
+    celp_da_init(&n);
 
-    Numbers xs = {0};
     for (uint32_t i = 0; i < 10; i++) {
-        celp_da_append(xs, i);
+        celp_da_append(&n, i);
     }
 
-    for (uint32_t j = 0; j < xs.count; j++) {
-        printf("%i\n", xs.items[j]);
+    for (size_t i = 0; i < n.count; i++) {
+        printf("%i\n", n.items[i]);
     }
-    printf("CAPACITY: %lu\n", xs.capacity);
+
+    printf("Capacity (before realloc): %lu", n.capacity);
+
 
     for (uint32_t i = 0; i < 300; i++) {
-        celp_da_append(xs, i);
+        celp_da_append(&n, i);
     }
 
-    for (uint32_t j = 0; j < xs.count; j++) {
-        printf("%i\n", xs.items[j]);
+    for (size_t i = 0; i < n.count; i++) {
+        printf("%i\n", n.items[i]);
     }
-    printf("CAPACITY (after realloc): %lu\n", xs.capacity);
 
+    printf("Capacity (after realloc): %lu", n.capacity);
+
+    celp_da_free(&n);
     return 0;
+
 }
