@@ -2,7 +2,7 @@
 // - file reader
 // - string builder/view
 // - hashmap
-// - memory alloc macros
+// - memory alloc/arena macros
 // - DSs
 // - Math (linear algebra)
 
@@ -201,6 +201,8 @@ do { \
         } \
         __result; \
     })
+//      ^  last experssion becomes return val ({..}) expression -> when returning val
+// could just use passed by * param
 
 #define celp_map_free(map) \
     do { \
@@ -245,15 +247,15 @@ do { \
 
 //shamelessly ripped from mr tsoding
 #ifdef CELP_STRIP_PREFIX
-    //log
+    //CELP_LOG
     #define log celp_log
-    //dynamic array
+    //CELP_DA
     #define DA_ARRAY CELP_DA_ARRAY
     #define da_init celp_da_init
     #define da_append celp_da_append
     #define da_free celp_da_free
     #define da_info celp_da_info
-    //map
+    //CELP_MAP
     #define KV CELP_KV
     #define MAP CELP_MAP
     #define map_init celp_map_init
