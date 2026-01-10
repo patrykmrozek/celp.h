@@ -40,11 +40,11 @@
 #include <stdarg.h>
 
 typedef enum {
-   LOG_INFO,
-   LOG_ERROR,
-} Celp_Log_Type;
+   CELP_LOG_LEVEL_INFO,
+   CELP_LOG_LEVEL_ERROR,
+} Celp_Log_Level_t;
 
-CELP_DEF void celp_log(Celp_Log_Type log_type, const char* msg, ...);
+CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 /* Dynamic Array */
 #define CELP_DA_INIT_SIZE 256
@@ -94,7 +94,7 @@ do { \
 
 #define celp_da_info(da) \
     do{ \
-        celp_log(LOG_INFO, "Capacity: %lu, Count: %lu\n", (da)->capacity, (da)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Capacity: %lu, Count: %lu\n", (da)->capacity, (da)->count); \
     } while(0)
 
 //TODO_DA: remove, insert, bulk append
@@ -123,13 +123,13 @@ typedef struct { \
 
 #define celp_map_info(map) \
     do { \
-        celp_log(LOG_INFO, "Capacity: %lu, Count: %lu", (map)->capacity, (map)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Capacity: %lu, Count: %lu", (map)->capacity, (map)->count); \
     } while(0)
 
 
 #ifdef CELP_IMPLEMENTATION
 
-    void celp_log(Celp_Log_Type log_type, const char* fmt_string, ...) {
+    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...) {
         va_list args;
         va_start(args, fmt_string); //last named param -> knows where to start with vargs
 
@@ -137,11 +137,11 @@ typedef struct { \
         const char* tag = NULL;
 
         switch(log_type) {
-            case LOG_INFO:
+            case CELP_LOG_LEVEL_INFO:
                 out = stdout;
                 tag = "[INFO] ";
                 break;
-            case LOG_ERROR:
+            case CELP_LOG_LEVEL_ERROR:
                 out = stderr;
                 tag = "[ERROR] ";
                 break;
@@ -158,11 +158,19 @@ typedef struct { \
 
 //shamelessly ripped from mr tsoding
 #ifdef CELP_STRIP_PREFIX
+    //log
+    #define log celp_log
     //dynamic array
     #define DA_ARRAY CELP_DA_ARRAY
     #define da_init celp_da_init
     #define da_append celp_da_append
     #define da_free celp_da_free
+    #define da_info celp_da_info
+    //map
+    #define KV CELP_KV
+    #define MAP CELP_MAP
+    #define map_init celp_map_init
+    #define map_info celp_map_info
 
 #endif //CELP_STRIP_PREFIX
 
