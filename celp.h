@@ -126,15 +126,6 @@ typedef struct { \
     size_t capacity; \
 } name##Map##_t;
 
-//djb2 hash alg
-#define celp_hash(buffer, buffer_size) ({ \
-        uint32_t __hash = 5381; \
-        for (size_t __i; __i < buffer_size; __i++) { \
-            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-        } \
-        __hash; \
-    })
-
 #define celp_map_clear(map) \
     do {\
         (map)->items = NULL; \
@@ -164,45 +155,69 @@ typedef struct { \
         }\
     } while(0)
 
-//naive impl - linear search
+//djb2 hash alg
+#define celp_hash(buffer, buffer_size) ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i = 0; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
+
 #define celp_map_set(map, k, v) \
     do { \
         celp_map_reserve((map), (map)->count + 1); \
-        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
-            if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
-                (map)->items[__i].value = (v); \
-                break; \
-            } else if (!(map)->items[__i].is_occupied) { \
-                (map)->items[__i].key = (k); \
-                (map)->items[__i].value = (v); \
-                (map)->items[__i].is_occupied = true; \
-                (map)->count++; \
-                break; \
-            } \
+        typeof(k) __k = (k); \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        size_t __i = 0; \
+        for (; __i < (map)->capacity && \
+                     (map)->items[h].is_occupied && \
+                     (map)->items[h].key != (__k); \
+                     __i++) { \
+            h = (h + 1) % ((map)->capacity); \
+        } \
+        if (__i >= (map)->capacity) { \
+            celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
+        } else if ((map)->items[h].is_occupied && (map)->items[h].key == (__k)) { \
+            (map)->items[h].value = (v); \
+        } else { \
+            (map)->items[h].is_occupied = true; \
+            (map)->items[h].key = (__k); \
+            (map)->items[h].value = (v); \
+            (map)->count++; \
         } \
     } while(0)
 
 #define celp_map_add(map, k) \
 do { \
     celp_map_reserve((map), (map)->count + 1); \
-    for (size_t __i = 0; __i < (map)->capacity; __i++) { \
-        if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
-            (map)->items[__i].value++; \
-            break; \
-        } else if (!(map)->items[__i].is_occupied) { \
-            (map)->items[__i].key = (k); \
-            (map)->items[__i].value = 1; \
-            (map)->items[__i].is_occupied = true; \
-            (map)->count++; \
-            break; \
-        } \
+    typeof(k) __k = (k); \
+    const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+    uint32_t h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+    size_t __i = 0; \
+    for (; __i < (map)->capacity && \
+                 (map)->items[h].is_occupied && \
+                 (map)->items[h].key != (__k); \
+                 __i++) { \
+        h = (h + 1) % ((map)->capacity); \
+    } \
+    if (__i >= (map)->capacity) { \
+        celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
+    } else if ((map)->items[h].is_occupied && (map)->items[h].key == (__k)) { \
+        (map)->items[h].value++; \
+    } else { \
+        (map)->items[h].is_occupied = true; \
+        (map)->items[h].key = (__k); \
+        (map)->items[h].value = 1; \
+        (map)->count++; \
     } \
 } while(0)
 
 //TODO: take in a defualt value in case not found, ditch void* -> keeps type safety
 #define celp_map_get(map, k) ({ \
         void* __result = NULL; \
-        for (size_t __i = 0; __i < (map)->count; __i++) { \
+        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
             if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
                 __result = &(map)->items[__i].value; \
                 break; \
