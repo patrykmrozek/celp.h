@@ -5,7 +5,6 @@
 // - memory alloc macros
 // - DSs
 // - Math (linear algebra)
-// - Debug/Log
 
 #ifndef CELP_H
 #define CELP_H
@@ -33,6 +32,16 @@
 #define CELP_REALLOC realloc
 #endif //CELP_REALLOC
 
+#ifndef CELP_MALLOC
+#include <stdlib.h>
+#define CELP_MALLOC malloc
+#endif //CELP_MALLOC
+
+#ifndef CELP_CALLOC
+#include <stdlib.h>
+#define CELP_CALLOC calloc
+#endif //CELP_CALLOC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -47,7 +56,7 @@ typedef enum {
 CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 /* Dynamic Array */
-#define CELP_DA_INIT_SIZE 256
+#define CELP_DA_INITIAL_CAPACITY 256
 
 /*
  * Generates an array struct for a given type
@@ -70,7 +79,7 @@ do { \
     do {\
         if ((expected_capacity) > (da)->capacity) {\
             if ((da)->capacity == 0) {\
-                (da)->capacity = CELP_DA_INIT_SIZE;\
+                (da)->capacity = CELP_DA_INITIAL_CAPACITY;\
             }\
             while ((da)->capacity < expected_capacity) {\
                 (da)->capacity *= 2;\
@@ -101,10 +110,13 @@ do { \
 
 
 /* HashMap */
+#define CELP_MAP_INITIAL_CAPACITY 64
+
 #define CELP_KV(name, key_dtype, value_dtype) \
 typedef struct { \
-    key_dtype* key; \
+    key_dtype key; \
     value_dtype value; \
+    bool is_occupied; \
 } name##KV##_t;
 
 #define CELP_MAP(kv, name) \
@@ -114,11 +126,78 @@ typedef struct { \
     size_t capacity; \
 } name##Map##_t;
 
-#define celp_map_init(map) \
+#define celp_map_clear(map) \
     do {\
         (map)->items = NULL; \
         (map)->count = 0; \
         (map)->capacity = 0; \
+    } while(0)
+
+#define celp_map_init(map) \
+    do{ \
+        celp_map_clear((map)); \
+        (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
+        (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
+    } while(0)
+
+//TODO: manual realloc when hashing implemented
+#define celp_map_reserve(map, expected_capacity) \
+    do {\
+        if ((expected_capacity) > (map)->capacity) {\
+            if ((map)->capacity == 0) {\
+                (map)->capacity = CELP_MAP_INITIAL_CAPACITY;\
+            }\
+            while ((map)->capacity < expected_capacity) {\
+                (map)->capacity *= 2;\
+            }\
+            (map)->items = CELP_REALLOC((map)->items, (map)->capacity * sizeof((map)->items[0]));\
+            CELP_ASSERT((map)->items != NULL && "Overflow");\
+        }\
+    } while(0)
+
+//naive impl - linear search
+#define celp_map_set(map, k, v) \
+    do { \
+        celp_map_reserve((map), (map)->count + 1); \
+        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+            if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
+                (map)->items[__i].value = (v); \
+                break; \
+            } else if (!(map)->items[__i].is_occupied) { \
+                (map)->items[__i].key = (k); \
+                (map)->items[__i].value = (v); \
+                (map)->items[__i].is_occupied = true; \
+                (map)->count++; \
+                break; \
+            } \
+        } \
+    } while(0)
+
+#define celp_map_add(map, k) \
+do { \
+    celp_map_reserve((map), (map)->count + 1); \
+    for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+        if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
+            (map)->items[__i].value++; \
+            break; \
+        } else if (!(map)->items[__i].is_occupied) { \
+            (map)->items[__i].key = (k); \
+            (map)->items[__i].value = 1; \
+            (map)->items[__i].is_occupied = true; \
+            (map)->count++; \
+            break; \
+        } \
+    } \
+} while(0)
+
+#define celp_map_get(map, key) \
+    do { \
+    } while(0)
+
+#define celp_map_free(map) \
+    do { \
+        CELP_FREE((map)->items); \
+        celp_map_clear(map); \
     } while(0)
 
 #define celp_map_info(map) \
