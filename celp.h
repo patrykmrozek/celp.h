@@ -95,6 +95,11 @@ do { \
         (da)->items[(da)->count++] = (item);\
     } while(0)
 
+#define celp_da_last(da) ({ \
+    CELP_ASSERT((da)->count > 0); \
+    (da)->items[(da)->count-1]; \
+})
+
 #define celp_da_pop(da) ({ \
     CELP_ASSERT((da)->count > 0); \
     (da)->items[--(da)->count]; \

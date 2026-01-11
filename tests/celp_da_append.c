@@ -28,9 +28,10 @@ int main(void) {
     }
     celp_da_info(&n);
 
+    printf("last item in da: %i\n", celp_da_last(&n));
     int popped_val = celp_da_pop(&n);
     printf("popped value: %i\n", popped_val);
-    printf("last item in da: %i\n", n.items[n.count-1]);
+    printf("last item in da: %i\n", celp_da_last(&n));
 
 
     celp_da_free(&n);
