@@ -194,37 +194,40 @@ do { \
     celp_map_reserve((map), (map)->count + 1); \
     typeof(k) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-    uint32_t h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+    uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
     size_t __i = 0; \
     for (; __i < (map)->capacity && \
-                 (map)->items[h].is_occupied && \
-                 (map)->items[h].key != (__k); \
+                 (map)->items[__h].is_occupied && \
+                 (map)->items[__h].key != (__k); \
                  __i++) { \
-        h = (h + 1) % ((map)->capacity); \
+        __h = (__h + 1) % ((map)->capacity); \
     } \
     if (__i >= (map)->capacity) { \
         celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
-    } else if ((map)->items[h].is_occupied && (map)->items[h].key == (__k)) { \
-        (map)->items[h].value++; \
+    } else if ((map)->items[__h].is_occupied && (map)->items[__h].key == (__k)) { \
+        (map)->items[__h].value++; \
     } else { \
-        (map)->items[h].is_occupied = true; \
-        (map)->items[h].key = (__k); \
-        (map)->items[h].value = 1; \
+        (map)->items[__h].is_occupied = true; \
+        (map)->items[__h].key = (__k); \
+        (map)->items[__h].value = 1; \
         (map)->count++; \
     } \
 } while(0)
 
-//TODO: take in a defualt value in case not found, ditch void* -> keeps type safety
-#define celp_map_get(map, k) ({ \
-        void* __result = NULL; \
-        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
-            if ((map)->items[__i].is_occupied && (map)->items[__i].key == (k)) { \
-                __result = &(map)->items[__i].value; \
-                break; \
-            } \
+#define celp_map_get(map, k, default_value) ({ \
+    typeof((map)->items[0].value) __result = (default_value); \
+    typeof(k) __k = (k); \
+    const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+    uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+    for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].is_occupied; __i++) { \
+        if ((map)->items[__h].key == __k) { \
+            __result = (map)->items[__h].value; \
+           break; \
         } \
-        __result; \
-    })
+        __h = (__h + 1) % (map)->capacity; \
+    } \
+    __result; \
+})
 //      ^  last experssion becomes return val ({..}) expression -> when returning val
 // could just use passed by * param
 

@@ -19,8 +19,8 @@ int main() {
     map_info(&test);
 
     map_add(&test, 5);
-    int* result = (int *)map_get(&test, 5);
-    printf("Result: %i\n", *result);
+    int result = map_get(&test, 5, 0);
+    printf("Result: %i\n", result);
 
     for (int i = 50; i < 200; i++) {
         map_set(&test, i, i);
