@@ -22,5 +22,8 @@ int main() {
         log(CELP_LOG_LEVEL_INFO, "[%zu] %i", i, curr.data);
         curr = *curr.next;
     }
+
+    ll_free(&n);
+    ll_info(&n);
     return 0;
 }

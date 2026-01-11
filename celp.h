@@ -171,17 +171,32 @@ typedef struct { \
         (ll)->count++; \
     } while(0)
 
-#define celp_ll_add_last(ll, x) \
-    do { \
-        celp_ll_add_after((ll), (x), (ll)->tail->prev); \
-    } while(0)
-
 #define celp_ll_add_first(ll, x) \
     do { \
         celp_ll_add_after((ll), (x), (ll)->head); \
     } while(0)
 
+#define celp_ll_add_last(ll, x) \
+    do { \
+        celp_ll_add_after((ll), (x), (ll)->tail->prev); \
+    } while(0)
+
 #define celp_ll_add celp_ll_add_last
+
+#define celp_ll_free(ll) \
+    do { \
+        typeof((ll)->head) __curr = (ll)->head->next; \
+        while (__curr != (ll)->tail) { \
+            typeof((ll)->head) __next = __curr->next; \
+            CELP_FREE(__curr); \
+            __curr = __next; \
+        } \
+        CELP_FREE((ll)->head); \
+        CELP_FREE((ll)->tail); \
+        (ll)->head = NULL; \
+        (ll)->tail = NULL; \
+        (ll)->count = 0; \
+    } while(0)
 
 #define celp_ll_info(ll) \
     do { \
@@ -425,8 +440,9 @@ do { \
     #define ll_add celp_ll_add
     #define ll_add_first celp_ll_add_first
     #define ll_add_last celp_ll_add_last
-    #define ll_info celp_ll_info
     #define ll_add celp_ll_add
+    #define ll_info celp_ll_info
+    #define ll_free celp_ll_free
     //CELP_MAP
     #define KV CELP_KV
     #define MAP CELP_MAP
