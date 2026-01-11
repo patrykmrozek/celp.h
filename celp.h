@@ -117,11 +117,17 @@ do { \
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
 
+typedef enum {
+    CELP_KV_EMPTY,
+    CELP_KV_OCCUPIED,
+    CELP_KV_TOMBSTONE
+} Celp_KV_State_t;
+
 #define CELP_KV(name, key_dtype, value_dtype) \
 typedef struct { \
     key_dtype key; \
     value_dtype value; \
-    bool is_occupied; \
+    Celp_KV_State_t state; \
 } name##KV##_t;
 
 #define CELP_MAP(kv, name) \
@@ -159,22 +165,29 @@ typedef struct { \
         typeof((map)->items[0].key) __k = (k); \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
         uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        size_t __first_tombstone = (map)->capacity; \
+        bool __found = false; \
         size_t __i = 0; \
-        for (; __i < (map)->capacity && \
-                        (map)->items[__h].is_occupied && \
-                        (map)->items[__h].key != (__k); \
-                        __i++) { \
+        for (; __i < (map)->capacity && (map)->items[__h].state != CELP_KV_EMPTY; __i++) { \
+            if ((map)->items[__h].state == CELP_KV_TOMBSTONE && __first_tombstone == (map)->capacity) { \
+                __first_tombstone = __h; \
+            } else if ((map)->items[__h].state == CELP_KV_OCCUPIED && (map)->items[__h].key == (__k)) { \
+                (map)->items[__h].value = (v); \
+                __found = true; \
+                break; \
+            } \
             __h = (__h + 1) % ((map)->capacity); \
         } \
-        if (__i >= (map)->capacity) { \
-            celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
-        } else if ((map)->items[__h].is_occupied && (map)->items[__h].key == (__k)) { \
-            (map)->items[__h].value = (v); \
-        } else { \
-            (map)->items[__h].is_occupied = true; \
-            (map)->items[__h].key = (__k); \
-            (map)->items[__h].value = (v); \
-            (map)->count++; \
+        if (!__found) { \
+            if (__i >= (map)->capacity) { \
+                celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
+            } else { \
+                size_t __insert_pos = (__first_tombstone < (map)->capacity) ? __first_tombstone : __h; \
+                (map)->items[__insert_pos].state = CELP_KV_OCCUPIED; \
+                (map)->items[__insert_pos].key = (__k); \
+                (map)->items[__insert_pos].value = (v); \
+                (map)->count++; \
+            } \
         } \
     } while(0)
 
@@ -193,7 +206,7 @@ typedef struct { \
             (map)->count = 0; \
             \
             for (size_t __i = 0; __i < __old_capacity; __i++) { \
-                if(__old_items[__i].is_occupied) { \
+                if(__old_items[__i].state == CELP_KV_OCCUPIED) { \
                     __celp_map_set_no_resize((map), __old_items[__i].key, __old_items[__i].value); \
                 } \
             } \
@@ -213,22 +226,29 @@ do { \
     typeof((map)->items[0].key) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
     uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+    size_t __first_tombstone = (map)->capacity; \
+    bool __found = false; \
     size_t __i = 0; \
-    for (; __i < (map)->capacity && \
-                 (map)->items[__h].is_occupied && \
-                 (map)->items[__h].key != (__k); \
-                 __i++) { \
+    for (; __i < (map)->capacity && (map)->items[__h].state != CELP_KV_EMPTY; __i++) { \
+        if ((map)->items[__h].state == CELP_KV_TOMBSTONE && __first_tombstone == (map)->capacity) { \
+            __first_tombstone = __h; \
+        } else if ((map)->items[__h].state == CELP_KV_OCCUPIED && (map)->items[__h].key == (__k)) { \
+            (map)->items[__h].value++; \
+            __found = true; \
+            break; \
+        } \
         __h = (__h + 1) % ((map)->capacity); \
     } \
-    if (__i >= (map)->capacity) { \
-        celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
-    } else if ((map)->items[__h].is_occupied && (map)->items[__h].key == (__k)) { \
-        (map)->items[__h].value++; \
-    } else { \
-        (map)->items[__h].is_occupied = true; \
-        (map)->items[__h].key = (__k); \
-        (map)->items[__h].value = 1; \
-        (map)->count++; \
+    if (!__found) { \
+        if (__i >= (map)->capacity) { \
+            celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
+        } else { \
+            size_t __insert_pos = (__first_tombstone < (map)->capacity) ? __first_tombstone : __h; \
+            (map)->items[__insert_pos].state = CELP_KV_OCCUPIED; \
+            (map)->items[__insert_pos].key = (__k); \
+            (map)->items[__insert_pos].value = 1; \
+            (map)->count++; \
+        } \
     } \
 } while(0)
 
@@ -237,8 +257,8 @@ do { \
     typeof((map)->items[0].key) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
     uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-    for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].is_occupied; __i++) { \
-        if ((map)->items[__h].key == __k) { \
+    for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].state != CELP_KV_EMPTY; __i++) { \
+        if ((map)->items[__h].state == CELP_KV_OCCUPIED && (map)->items[__h].key == __k) { \
             __result = (map)->items[__h].value; \
            break; \
         } \
