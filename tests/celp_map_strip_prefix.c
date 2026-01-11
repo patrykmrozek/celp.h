@@ -38,6 +38,19 @@ int main() {
     uint32_t hash_result = celp_hash("hello", sizeof("hello"));
     printf("'Hello' hashed: %i\n", hash_result);
 
+    for (size_t i = test.capacity - 5; i < test.capacity; i++) {
+        printf("[%zu] key: %i, value: %zu, state: %i\n", i, test.items[i].key, test.items[i].value, test.items[i].state);
+    }
+
+    int key_to_remove = test.items[test.capacity-1].key;
+    printf("Removing key: %i (at index %zu)\n\n", key_to_remove, test.capacity-1);
+    map_remove(&test, key_to_remove);
+
+    for (size_t i = test.capacity - 5; i < test.capacity; i++) {
+        printf("[%zu] key: %i, value: %zu, state: %i\n", i, test.items[i].key, test.items[i].value, test.items[i].state);
+    }
+
+
     map_free(&test);
     return 0;
 }

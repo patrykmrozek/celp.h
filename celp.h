@@ -269,20 +269,25 @@ do { \
 //      ^  last experssion becomes return val ({..}) expression -> when returning val
 // could just use passed by * param
 
-/*
 #define celp_map_remove(map, k) \
     do { \
         typeof((map)->items[0].key) __k = (k); \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
         uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].is_occupied; __i++) { \
-            if ((map)->items[h].key == __k) { \
-                (map)->items[__h].is_occupied = false; \
+        bool __found = false; \
+        for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].state != CELP_KV_EMPTY; __i++) { \
+            if ((map)->items[__h].state == CELP_KV_OCCUPIED && (map)->items[__h].key == (__k)) { \
+                (map)->items[__h].state = CELP_KV_TOMBSTONE; \
                 (map)->count--; \
-                } \
+                __found = true; \
+                break; \
+            } \
+            __h = (__h + 1) % (map)->capacity; \
+        } \
+        if (!__found) { \
+            celp_log(CELP_LOG_LEVEL_ERROR, "Attempted to remove non-existent key"); \
         } \
     } while(0)
-*/
 
 #define celp_map_free(map) \
     do { \
