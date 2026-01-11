@@ -7,7 +7,7 @@
 
 int main(void) {
 
-    CELP_DA_ARRAY(Nums, int);
+    CELP_DA(Nums, int);
     NumsArray_t n = {};
     celp_da_init(&n);
 

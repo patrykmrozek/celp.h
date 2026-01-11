@@ -7,7 +7,7 @@
 
 int main(void) {
 
-    DA_ARRAY(Nums, int);
+    DA(Nums, int);
     NumsArray_t n = {};
     da_init(&n);
 

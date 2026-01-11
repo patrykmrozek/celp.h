@@ -62,7 +62,7 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 /*
  * Generates an array struct for a given type
  */
-#define CELP_DA_ARRAY(name, dtype) \
+#define CELP_DA(name, dtype) \
 typedef struct { \
     dtype* items; \
     size_t count; \
@@ -364,7 +364,7 @@ do { \
     //CELP_LOG
     #define log celp_log
     //CELP_DA
-    #define DA_ARRAY CELP_DA_ARRAY
+    #define DA CELP_DA
     #define da_init celp_da_init
     #define da_reserve celp_da_reserve
     #define da_append celp_da_append
