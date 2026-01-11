@@ -10,8 +10,16 @@ int main() {
     LL_int_t n;
     celp_ll_init(&n);
     celp_ll_add(&n, 5);
+    celp_ll_add(&n, 6);
+    celp_ll_add(&n, 7);
+    celp_ll_add_first(&n, 9);
+    celp_ll_add_last(&n, 11);
     celp_ll_info(&n);
 
-
+    LLN_int_t curr = *n.head->next;
+    for (size_t i = 0; i < n.count; i++) {
+        celp_log(CELP_LOG_LEVEL_INFO, "[%zu] %i", i, curr.data);
+        curr = *curr.next;
+    }
     return 0;
 }

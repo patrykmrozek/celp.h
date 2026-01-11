@@ -162,12 +162,28 @@ typedef struct { \
         (ll)->count = 0; \
     } while(0)
 
-#define celp_ll_add(ll, x) \
+
+#define celp_ll_add_after(ll, x, n) \
     do { \
-        typeof((ll)->head) __node = __celp_create_node((ll), (x), (ll)->tail->prev, (ll)->tail); \
+        typeof((ll)->head) __node = __celp_create_node((ll), (x), (n), (n)->next); \
         __node->prev->next = __node; \
         __node->next->prev = __node; \
         (ll)->count++; \
+    } while(0)
+
+#define celp_ll_add_last(ll, x) \
+    do { \
+        celp_ll_add_after((ll), (x), (ll)->tail->prev); \
+    } while(0)
+
+#define celp_ll_add_first(ll, x) \
+    do { \
+        celp_ll_add_after((ll), (x), (ll)->head); \
+    } while(0)
+
+#define celp_ll_add(ll, x) \
+    do { \
+        celp_ll_add_last((ll), (x)); \
     } while(0)
 
 #define celp_ll_info(ll) \
@@ -198,7 +214,7 @@ typedef struct { \
     size_t capacity; \
 } name##Map##_t;
 
-#define celp_map_clear(map) \
+#define __celp_map_clear(map) \
     do {\
         (map)->items = NULL; \
         (map)->count = 0; \
@@ -207,7 +223,7 @@ typedef struct { \
 
 #define celp_map_init(map) \
     do{ \
-        celp_map_clear((map)); \
+        __celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
     } while(0)
@@ -353,7 +369,7 @@ do { \
 #define celp_map_free(map) \
     do { \
         CELP_FREE((map)->items); \
-        celp_map_clear(map); \
+        __celp_map_clear(map); \
     } while(0)
 
 #define celp_map_info(map) \
@@ -410,7 +426,6 @@ do { \
     #define KV CELP_KV
     #define MAP CELP_MAP
     #define map_init celp_map_init
-    #define map_clear celp_map_clear
     #define map_set celp_map_set
     #define map_add celp_map_add
     #define map_get celp_map_get
