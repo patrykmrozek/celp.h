@@ -62,12 +62,12 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 /*
  * Generates an array struct for a given type
  */
-#define CELP_DA(name, dtype) \
+#define CELP_DA(dtype) \
 typedef struct { \
     dtype* items; \
     size_t count; \
     size_t capacity; \
-} name##Array##_t;
+} DA_##dtype##_t;
 
 #define celp_da_init(da) \
 do { \
@@ -212,19 +212,18 @@ typedef enum {
     CELP_KV_TOMBSTONE
 } Celp_KV_State_t;
 
-#define CELP_KV(name, key_dtype, value_dtype) \
+#define CELP_MAP(key_dtype, value_dtype) \
 typedef struct { \
     key_dtype key; \
     value_dtype value; \
     Celp_KV_State_t state; \
-} name##KV##_t;
-
-#define CELP_MAP(kv, name) \
+} KV_##key_dtype##_t; \
+\
 typedef struct { \
-    kv* items; \
+    KV_##key_dtype##_t* items; \
     size_t count; \
     size_t capacity; \
-} name##Map##_t;
+} Map_##key_dtype##_t;
 
 #define __celp_map_clear(map) \
     do {\
