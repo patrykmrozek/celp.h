@@ -95,6 +95,11 @@ do { \
         (da)->items[(da)->count++] = (item);\
     } while(0)
 
+#define celp_da_pop(da) ({ \
+    CELP_ASSERT((da)->count > 0); \
+    (da)->items[--(da)->count]; \
+})
+
 #define celp_da_free(da) \
     do { \
         CELP_FREE((da)->items); \
@@ -139,6 +144,15 @@ typedef struct { \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
     } while(0)
+
+//djb2 hash alg
+#define celp_hash(buffer, buffer_size) ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i = 0; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
 
 #define __celp_map_set_no_resize(map, k, v) \
     do { \
@@ -193,15 +207,6 @@ typedef struct { \
         __celp_map_set_no_resize((map), (k), (v)); \
     } while(0)
 
-//djb2 hash alg
-#define celp_hash(buffer, buffer_size) ({ \
-        uint32_t __hash = 5381; \
-        for (size_t __i = 0; __i < buffer_size; __i++) { \
-            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-        } \
-        __hash; \
-    })
-
 #define celp_map_add(map, k) \
 do { \
     celp_map_reserve((map), (map)->count + 1); \
@@ -229,7 +234,7 @@ do { \
 
 #define celp_map_get(map, k, default_value) ({ \
     typeof((map)->items[0].value) __result = (default_value); \
-    typeof(k) __k = (k); \
+    typeof((map)->items[0].key) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
     uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
     for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].is_occupied; __i++) { \
@@ -243,6 +248,21 @@ do { \
 })
 //      ^  last experssion becomes return val ({..}) expression -> when returning val
 // could just use passed by * param
+
+/*
+#define celp_map_remove(map, k) \
+    do { \
+        typeof((map)->items[0].key) __k = (k); \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        for (size_t __i = 0; __i < (map)->capacity && (map)->items[__h].is_occupied; __i++) { \
+            if ((map)->items[h].key == __k) { \
+                (map)->items[__h].is_occupied = false; \
+                (map)->count--; \
+                } \
+        } \
+    } while(0)
+*/
 
 #define celp_map_free(map) \
     do { \
@@ -305,6 +325,7 @@ do { \
     #define map_set celp_map_set
     #define map_add celp_map_add
     #define map_get celp_map_get
+    #define map_remove celp_map_remove
     #define map_free celp_map_free
     #define map_info celp_map_info
 
