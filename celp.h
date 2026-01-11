@@ -181,10 +181,7 @@ typedef struct { \
         celp_ll_add_after((ll), (x), (ll)->head); \
     } while(0)
 
-#define celp_ll_add(ll, x) \
-    do { \
-        celp_ll_add_last((ll), (x)); \
-    } while(0)
+#define celp_ll_add celp_ll_add_last
 
 #define celp_ll_info(ll) \
     do { \
@@ -422,6 +419,14 @@ do { \
     #define da_remove celp_da_remove
     #define da_free celp_da_free
     #define da_info celp_da_info
+    //CELP_LL
+    #define LL CELP_LL
+    #define ll_init celp_ll_init
+    #define ll_add celp_ll_add
+    #define ll_add_first celp_ll_add_first
+    #define ll_add_last celp_ll_add_last
+    #define ll_info celp_ll_info
+    #define ll_add celp_ll_add
     //CELP_MAP
     #define KV CELP_KV
     #define MAP CELP_MAP
