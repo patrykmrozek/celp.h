@@ -7,8 +7,8 @@
 
 int main(void) {
 
-    CELP_DA(Nums, int);
-    NumsArray_t n = {};
+    CELP_DA(int);
+    DA_int_t n = {};
     celp_da_init(&n);
 
     for (uint32_t i = 0; i < 10; i++) {

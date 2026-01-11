@@ -7,8 +7,8 @@
 
 int main(void) {
 
-    DA(Nums, int);
-    NumsArray_t n = {};
+    DA(int);
+    DA_int_t n = {};
     da_init(&n);
 
     for (uint32_t i = 0; i < 10; i++) {
