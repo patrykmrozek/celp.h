@@ -140,47 +140,16 @@ typedef struct { \
         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
     } while(0)
 
-#define celp_map_reserve(map, expected_capacity) \
-    do {\
-        if ((expected_capacity) > (map)->capacity) { \
-            size_t __old_capacity = (map)->capacity; \
-            typeof((map)->items) __old_items = (map)->items; \
-            (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
-            while ((map)->capacity < expected_capacity) { \
-                (map)->capacity *= 2; \
-            } \
-            (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
-            (map)->count = 0; \
-            \
-            for (size_t __i = 0; __i < __old_capacity; __i++) { \
-                if(__old_items[__i].is_occupied) { \
-                    celp_map_set((map), __old_items[__i].key, __old_items[__i].value); \
-                } \
-            } \
-            CELP_FREE(__old_items); \
-        } \
-    } while(0)
-
-//djb2 hash alg
-#define celp_hash(buffer, buffer_size) ({ \
-        uint32_t __hash = 5381; \
-        for (size_t __i = 0; __i < buffer_size; __i++) { \
-            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-        } \
-        __hash; \
-    })
-
-#define celp_map_set(map, k, v) \
+#define __celp_map_set_no_resize(map, k, v) \
     do { \
-        celp_map_reserve((map), (map)->count + 1); \
-        typeof(k) __k = (k); \
+        typeof((map)->items[0].key) __k = (k); \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
         uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
         size_t __i = 0; \
         for (; __i < (map)->capacity && \
-                     (map)->items[__h].is_occupied && \
-                     (map)->items[__h].key != (__k); \
-                     __i++) { \
+                        (map)->items[__h].is_occupied && \
+                        (map)->items[__h].key != (__k); \
+                        __i++) { \
             __h = (__h + 1) % ((map)->capacity); \
         } \
         if (__i >= (map)->capacity) { \
@@ -195,10 +164,48 @@ typedef struct { \
         } \
     } while(0)
 
+#define celp_map_reserve(map, expected_capacity) \
+    do {\
+        if ((expected_capacity) > (map)->capacity) { \
+            size_t __old_capacity = (map)->capacity; \
+            typeof((map)->items) __old_items = (map)->items; \
+            \
+            size_t __new_capacity = (map)->capacity ? (map)->capacity : CELP_MAP_INITIAL_CAPACITY; \
+            while (__new_capacity < expected_capacity) { \
+                __new_capacity *= 2; \
+            } \
+            (map)->capacity = __new_capacity; \
+            (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
+            (map)->count = 0; \
+            \
+            for (size_t __i = 0; __i < __old_capacity; __i++) { \
+                if(__old_items[__i].is_occupied) { \
+                    __celp_map_set_no_resize((map), __old_items[__i].key, __old_items[__i].value); \
+                } \
+            } \
+            CELP_FREE(__old_items); \
+        } \
+    } while(0)
+
+#define celp_map_set(map, k, v) \
+    do { \
+        celp_map_reserve((map), (map)->count + 1); \
+        __celp_map_set_no_resize((map), (k), (v)); \
+    } while(0)
+
+//djb2 hash alg
+#define celp_hash(buffer, buffer_size) ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i = 0; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
+
 #define celp_map_add(map, k) \
 do { \
     celp_map_reserve((map), (map)->count + 1); \
-    typeof(k) __k = (k); \
+    typeof((map)->items[0].key) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
     uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
     size_t __i = 0; \
