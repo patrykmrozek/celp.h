@@ -368,6 +368,9 @@ do { \
     #define da_init celp_da_init
     #define da_reserve celp_da_reserve
     #define da_append celp_da_append
+    #define da_last celp_da_last
+    #define da_pop celp_da_pop
+    #define da_remove celp_da_remove
     #define da_free celp_da_free
     #define da_info celp_da_info
     //CELP_MAP
