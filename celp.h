@@ -48,6 +48,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+/* Logging */
 typedef enum {
    CELP_LOG_LEVEL_INFO,
    CELP_LOG_LEVEL_ERROR,
@@ -126,6 +127,20 @@ do { \
 
 //TODO_DA: remove, insert, bulk append
 
+
+/* Linked List */
+#define CELP_LL(dtype) \
+typedef struct LLN_##dtype##_t{ \
+    dtype data; \
+    struct LLN_##dtype##_t* prev; \
+    struct LLN_##dtype##_t* next; \
+}LLN_##dtype##_t; \
+\
+typedef struct { \
+    LLN_##dtype##_t* head; \
+    LLN_##dtype##_t* tail; \
+    size_t count; \
+} LL_##dtype##_t;
 
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
