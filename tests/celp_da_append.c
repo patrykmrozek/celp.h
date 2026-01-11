@@ -33,6 +33,16 @@ int main(void) {
     printf("popped value: %i\n", popped_val);
     printf("last item in da: %i\n", celp_da_last(&n));
 
+    printf("(before removing %i)\n", n.items[n.count-2]);
+    for (size_t i = n.count-5; i < n.count; i++) {
+        printf("%zu) %i\n", i, n.items[i]);
+    }
+    celp_da_remove(&n, n.count-2);
+    printf("(after removing)\n");
+    for (size_t i = n.count-5; i < n.count; i++) {
+        printf("%zu) %i\n", i, n.items[i]);
+    }
+
 
     celp_da_free(&n);
     return 0;

@@ -105,6 +105,13 @@ do { \
     (da)->items[--(da)->count]; \
 })
 
+#define celp_da_remove(da, idx) \
+    do { \
+        CELP_ASSERT(idx < (da)->count); \
+        (da)->items[(idx)] = celp_da_last((da)); \
+        celp_da_pop(da); \
+    } while(0)
+
 #define celp_da_free(da) \
     do { \
         CELP_FREE((da)->items); \
