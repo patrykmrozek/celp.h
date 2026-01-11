@@ -217,13 +217,13 @@ typedef struct { \
     key_dtype key; \
     value_dtype value; \
     Celp_KV_State_t state; \
-} KV_##key_dtype##_t; \
+} KV_##key_dtype##_##value_dtype##_t; \
 \
 typedef struct { \
-    KV_##key_dtype##_t* items; \
+    KV_##key_dtype##_##value_dtype##_t* items; \
     size_t count; \
     size_t capacity; \
-} Map_##key_dtype##_t;
+}  Map_##key_dtype##_##value_dtype##_t;
 
 #define __celp_map_clear(map) \
     do {\

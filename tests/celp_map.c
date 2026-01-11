@@ -2,11 +2,13 @@
 #include "../celp.h"
 #include <stdio.h>
 
-CELP_KV(Test, int, size_t);
-CELP_MAP(TestKV_t, Test);
+//typedef size_t sz;
+CELP_MAP(int, size_t);
+typedef Map_int_size_t_t Map_int_sz_t;
+
 
 int main() {
-    TestMap_t test = {};
+    Map_int_size_t_t test = {};
 
     celp_map_init(&test);
     celp_map_info(&test);
