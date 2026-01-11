@@ -37,8 +37,8 @@ int main(void) {
     for (size_t i = n.count-5; i < n.count; i++) {
         printf("%zu) %i\n", i, n.items[i]);
     }
-    celp_da_remove(&n, n.count-2);
-    printf("(after removing)\n");
+    int removed = celp_da_remove(&n, n.count-2);
+    printf("(after removing %i)\n", removed);
     for (size_t i = n.count-5; i < n.count; i++) {
         printf("%zu) %i\n", i, n.items[i]);
     }
