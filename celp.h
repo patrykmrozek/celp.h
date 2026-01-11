@@ -142,6 +142,39 @@ typedef struct { \
     size_t count; \
 } LL_##dtype##_t;
 
+#define __celp_create_node(ll, x, p, n) ({ \
+    typeof((ll)->head) __node = CELP_MALLOC(sizeof(*((ll)->head))); \
+    __node->data = (x); \
+    __node->prev = (p); \
+    __node->next = (n); \
+    \
+    __node; \
+})
+
+#define celp_ll_init(ll) \
+    do { \
+        \
+        typeof(((ll)->head)->data) __x_null = {0}; \
+        (ll)->head = __celp_create_node((ll), __x_null, NULL, NULL); \
+        (ll)->tail = __celp_create_node((ll), __x_null, NULL, NULL); \
+        (ll)->head->next = (ll)->tail; \
+        (ll)->tail->prev = (ll)->head; \
+        (ll)->count = 0; \
+    } while(0)
+
+#define celp_ll_add(ll, x) \
+    do { \
+        typeof((ll)->head) __node = __celp_create_node((ll), (x), (ll)->tail->prev, (ll)->tail); \
+        __node->prev->next = __node; \
+        __node->next->prev = __node; \
+        (ll)->count++; \
+    } while(0)
+
+#define celp_ll_info(ll) \
+    do { \
+        celp_log(CELP_LOG_LEVEL_INFO, "LL at: %p, Count: %zu", (ll), (ll)->count); \
+    } while(0)
+
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
 
