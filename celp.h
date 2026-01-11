@@ -103,7 +103,7 @@ do { \
 
 #define celp_da_info(da) \
     do{ \
-        celp_log(CELP_LOG_LEVEL_INFO, "Dynamic Array at: %p, Capacity: %lu, Count: %lu\n", (da), (da)->capacity, (da)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", (da), (da)->capacity, (da)->count); \
     } while(0)
 
 //TODO_DA: remove, insert, bulk append
@@ -140,19 +140,25 @@ typedef struct { \
         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
     } while(0)
 
-//TODO: manual realloc when hashing implemented
 #define celp_map_reserve(map, expected_capacity) \
     do {\
-        if ((expected_capacity) > (map)->capacity) {\
-            if ((map)->capacity == 0) {\
-                (map)->capacity = CELP_MAP_INITIAL_CAPACITY;\
-            }\
-            while ((map)->capacity < expected_capacity) {\
-                (map)->capacity *= 2;\
-            }\
-            (map)->items = CELP_REALLOC((map)->items, (map)->capacity * sizeof((map)->items[0]));\
-            CELP_ASSERT((map)->items != NULL && "Overflow");\
-        }\
+        if ((expected_capacity) > (map)->capacity) { \
+            size_t __old_capacity = (map)->capacity; \
+            typeof((map)->items) __old_items = (map)->items; \
+            (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
+            while ((map)->capacity < expected_capacity) { \
+                (map)->capacity *= 2; \
+            } \
+            (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
+            (map)->count = 0; \
+            \
+            for (size_t __i = 0; __i < __old_capacity; __i++) { \
+                if(__old_items[__i].is_occupied) { \
+                    celp_map_set((map), __old_items[__i].key, __old_items[__i].value); \
+                } \
+            } \
+            CELP_FREE(__old_items); \
+        } \
     } while(0)
 
 //djb2 hash alg
@@ -169,22 +175,22 @@ typedef struct { \
         celp_map_reserve((map), (map)->count + 1); \
         typeof(k) __k = (k); \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
         size_t __i = 0; \
         for (; __i < (map)->capacity && \
-                     (map)->items[h].is_occupied && \
-                     (map)->items[h].key != (__k); \
+                     (map)->items[__h].is_occupied && \
+                     (map)->items[__h].key != (__k); \
                      __i++) { \
-            h = (h + 1) % ((map)->capacity); \
+            __h = (__h + 1) % ((map)->capacity); \
         } \
         if (__i >= (map)->capacity) { \
             celp_log(CELP_LOG_LEVEL_ERROR, "Map Overflow"); \
-        } else if ((map)->items[h].is_occupied && (map)->items[h].key == (__k)) { \
-            (map)->items[h].value = (v); \
+        } else if ((map)->items[__h].is_occupied && (map)->items[__h].key == (__k)) { \
+            (map)->items[__h].value = (v); \
         } else { \
-            (map)->items[h].is_occupied = true; \
-            (map)->items[h].key = (__k); \
-            (map)->items[h].value = (v); \
+            (map)->items[__h].is_occupied = true; \
+            (map)->items[__h].key = (__k); \
+            (map)->items[__h].value = (v); \
             (map)->count++; \
         } \
     } while(0)
@@ -239,7 +245,7 @@ do { \
 
 #define celp_map_info(map) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %lu, Count: %lu", (map), (map)->capacity, (map)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %zu, Count: %zu", (map), (map)->capacity, (map)->count); \
     } while(0)
 
 
@@ -280,6 +286,7 @@ do { \
     //CELP_DA
     #define DA_ARRAY CELP_DA_ARRAY
     #define da_init celp_da_init
+    #define da_reserve celp_da_reserve
     #define da_append celp_da_append
     #define da_free celp_da_free
     #define da_info celp_da_info
