@@ -43,6 +43,12 @@ int main(void) {
         printf("%zu) %i\n", i, n.items[i]);
     }
 
+    celp_da_foreach(&n, x) {
+        //size_t idx = x - n.items;
+        //printf("%zu) %i\n", idx, *x);
+        celp_log(CELP_LOG_LEVEL_INFO, "%i", *x);
+    }
+
 
     celp_da_free(&n);
     return 0;

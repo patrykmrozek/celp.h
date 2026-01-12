@@ -1,3 +1,4 @@
+#define CELP_IMPLEMENTATION
 #define CELP_STRIP_PREFIX
 #include "../celp.h"
 
@@ -31,6 +32,10 @@ int main(void) {
     }
 
     printf("Capacity (after realloc): %lu", n.capacity);
+
+    da_foreach(&n, x) {
+        log(CELP_LOG_LEVEL_INFO, "%i", *x);
+    }
 
     da_free(&n);
     return 0;

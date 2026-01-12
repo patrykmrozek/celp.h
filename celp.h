@@ -114,6 +114,11 @@ do { \
         celp_da_pop(da); \
     })
 
+// user provides some label (i) -> macro initializes it as a pointer to (da)->itemsa
+// elements can be accessed by dereferencing (i)
+// to get index 0, suntract (i) from (da)->items
+#define celp_da_foreach(da, i) for (typeof(*(da)->items)* (i) = (da)->items; (i) < (da)->items + (da)->count; (i)++)
+
 #define celp_da_free(da) \
     do { \
         CELP_FREE((da)->items); \
@@ -161,7 +166,6 @@ typedef struct { \
         (ll)->tail->prev = (ll)->head; \
         (ll)->count = 0; \
     } while(0)
-
 
 #define celp_ll_add_after(ll, x, n) \
     do { \
@@ -431,6 +435,7 @@ do { \
     #define da_last celp_da_last
     #define da_pop celp_da_pop
     #define da_remove celp_da_remove
+    #define da_foreach celp_da_foreach
     #define da_free celp_da_free
     #define da_info celp_da_info
     //CELP_LL
