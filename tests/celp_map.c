@@ -2,40 +2,21 @@
 #include "../celp.h"
 #include <stdio.h>
 
-//typedef size_t sz;
-CELP_MAP(int, size_t);
-typedef Map_int_size_t_t Map_int_sz_t;
-
+typedef size_t sizet;
+CELP_MAP(int, sizet);
 
 int main() {
-    Map_int_size_t_t test = {};
-
+    Map_int_sizet_t test = {};
     celp_map_init(&test);
+    int k = 10;
+    const unsigned char* k_bytes = (const unsigned char*)&k;
+    uint32_t h = celp_hash(k_bytes, sizeof(k)) % test.capacity;
+    celp_log(CELP_LOG_LEVEL_DEBUG, "hash for key 10: %u, bucket count: %zu",h, test.buckets[h].count);
+    celp_map_insert(&test, 10, 100);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "after, bucket[%u].count = %zu, map.count = %zu", h, test.buckets[h].count, test.count);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "bucket %u first item key: %d", h, test.buckets[h].head->next->data.key);
     celp_map_info(&test);
-
-    for (int i = 0; i < 10; i++) {
-        celp_map_set(&test, i, (size_t)i*10);
-        //printf("Set key: %i, value: %lu\n", i, (size_t)i*10);
-    }
-    celp_map_info(&test);
-
-    celp_map_add(&test, 5);
-    int result = celp_map_get(&test, 5, 0);
-    printf("Result: %i\n", result);
-
-    for (int i = 50; i < 200; i++) {
-        celp_map_set(&test, i, (size_t)i);
-        //printf("Set key: %i, value: %lu\n", i, (size_t)i*10);
-    }
-    celp_map_info(&test);
-
-    printf("[1 before]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
-    for (size_t i = 0; i < 100; i++) {
-        celp_map_add(&test, 1);
-        //printf("Adding to key (1): Current value: %lu\n", test.items[1].value);
-    }
-    printf("[1 after]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
-
-    celp_map_free(&test);
+    size_t get = celp_map_get(&test, 10, 0);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Gotten: %zu", get);
     return 0;
 }

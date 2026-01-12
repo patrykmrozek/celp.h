@@ -47,14 +47,19 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <string.h>
 
 /* Logging */
 typedef enum {
    CELP_LOG_LEVEL_INFO,
+   CELP_LOG_LEVEL_DEBUG,
    CELP_LOG_LEVEL_ERROR,
 } Celp_Log_Level_t;
 
 CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
+
+#define celp_compare(a, b) \
+    memcmp(&(a), &(b), sizeof(a))
 
 /* Dynamic Array */
 #define CELP_DA_INITIAL_CAPACITY 256
@@ -251,21 +256,40 @@ typedef struct { \
 
 //djb2 hash alg
 #define celp_hash(buffer, buffer_size) ({ \
-        uint32_t __hash = 5381; \
-        for (size_t __i = 0; __i < buffer_size; __i++) { \
-            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-        } \
-        __hash; \
-    })
+    uint32_t __hash = 5381; \
+    for (size_t __i = 0; __i < buffer_size; __i++) { \
+        __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+    } \
+    __hash; \
+})
 
 #define celp_map_insert(map, k, v) \
     do { \
-        typeof((map)->buckets[0].head->data) __kv = {(k), (v)}; \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__kv.key); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__kv)) % (map)->capacity; \
+        typeof((map)->buckets[0].head->data.key) __k = (k); \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        typeof((map)->buckets[0].head->data) __kv = { .key = (__k), .value = (v) }; \
         celp_ll_add(&((map)->buckets[__h]), __kv); \
         (map)->count++; \
-    }while(0)
+    } while(0)
+
+#define celp_map_get(map, k, default_value) ({ \
+    typeof((map)->buckets[0].head->data.key) __k = (k); \
+    typeof((map)->buckets[0].head->data.value) __return_value = (default_value); \
+    if ((map)->buckets != NULL && (map)->capacity > 0) { \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        while(__curr != (map)->buckets[__h].tail) { \
+            if (celp_compare(__curr->data.key, __k) == 0) { \
+                __return_value = __curr->data.value; \
+                break; \
+            } \
+            __curr = __curr->next; \
+        } \
+    } \
+    __return_value; \
+})
 
 // #define __celp_map_set_no_resize(map, k, v) \
 //     do { \
@@ -425,6 +449,10 @@ typedef struct { \
             case CELP_LOG_LEVEL_ERROR:
                 out = stderr;
                 tag = "[ERROR] ";
+                break;
+            case CELP_LOG_LEVEL_DEBUG:
+                out = stdout;
+                tag = "[DEBUG] ";
                 break;
         }
 
