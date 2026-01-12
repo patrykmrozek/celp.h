@@ -291,6 +291,24 @@ typedef struct { \
     __return_value; \
 })
 
+#define celp_map_contains(map, k) ({ \
+    typeof((map)->buckets[0].head->data.key) __k = (k); \
+    bool __found = false; \
+    if ((map)->buckets != NULL && (map)->capacity > 0) { \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        while(__curr != (map)->buckets[__h].tail) { \
+            if (celp_compare(__curr->data.key, __k) == 0) { \
+                __found = true; \
+                break; \
+            } \
+            __curr = __curr->next; \
+        } \
+    } \
+    __found; \
+})
+
 #define celp_map_free(map) \
     do { \
         if ((map)->buckets != NULL) { \

@@ -18,6 +18,8 @@ int main() {
     celp_map_info(&test);
     size_t get = celp_map_get(&test, 10, 0);
     celp_log(CELP_LOG_LEVEL_DEBUG, "Gotten: %zu", get);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Found key: %s", (celp_map_contains(&test, 10) ? "yes" : "no"));
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Found key: %s", (celp_map_contains(&test, 5) ? "yes" : "no"));
     celp_map_free(&test);
     celp_map_info(&test);
     return 0;
