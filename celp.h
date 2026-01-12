@@ -210,26 +210,20 @@ typedef struct { \
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
 
-typedef enum {
-    CELP_KV_EMPTY,
-    CELP_KV_OCCUPIED,
-    CELP_KV_TOMBSTONE
-} Celp_KV_State_t;
-
 #define CELP_MAP(key_dtype, value_dtype) \
 typedef struct { \
     key_dtype key; \
     value_dtype value; \
-    Celp_KV_State_t state; \
-} KV_##key_dtype##_##value_dtype##_t; \
+} KV_##key_dtype##_##value_dtype; \
 \
-CELP_LL(KV_##key_dtype##_##value_dtype##_t) \
+CELP_LL(KV_##key_dtype##_##value_dtype) \
 \
 typedef struct { \
     LL_KV_##key_dtype##_##value_dtype##_t* buckets; \
     size_t count; \
     size_t capacity; \
 }  Map_##key_dtype##_##value_dtype##_t;
+
 
 #define __celp_map_clear(map) \
     do {\
@@ -245,7 +239,15 @@ typedef struct { \
 //         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
 //     } while(0)
 
-
+#define celp_map_init(map) \
+    do { \
+        __celp_map_clear((map)); \
+        (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
+        (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
+        for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+            celp_ll_init(&((map)->buckets[__i])); \
+        } \
+    } while(0)
 
 //djb2 hash alg
 #define celp_hash(buffer, buffer_size) ({ \
@@ -255,6 +257,15 @@ typedef struct { \
         } \
         __hash; \
     })
+
+#define celp_map_insert(map, k, v) \
+    do { \
+        typeof((map)->buckets[0].head->data) __kv = {(k), (v)}; \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__kv.key); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__kv)) % (map)->capacity; \
+        celp_ll_add(&((map)->buckets[__h]), __kv); \
+        (map)->count++; \
+    }while(0)
 
 // #define __celp_map_set_no_resize(map, k, v) \
 //     do { \
