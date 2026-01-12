@@ -18,5 +18,7 @@ int main() {
     celp_map_info(&test);
     size_t get = celp_map_get(&test, 10, 0);
     celp_log(CELP_LOG_LEVEL_DEBUG, "Gotten: %zu", get);
+    celp_map_free(&test);
+    celp_map_info(&test);
     return 0;
 }

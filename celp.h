@@ -291,6 +291,17 @@ typedef struct { \
     __return_value; \
 })
 
+#define celp_map_free(map) \
+    do { \
+        if ((map)->buckets != NULL) { \
+            for (size_t __i = 0; __i < (map)->capacity; __i++) { \
+                celp_ll_free(&((map)->buckets[__i])); \
+            } \
+            CELP_FREE((map)->buckets); \
+        } \
+        __celp_map_clear((map)); \
+    } while(0)
+
 // #define __celp_map_set_no_resize(map, k, v) \
 //     do { \
 //         typeof((map)->items[0].key) __k = (k); \
