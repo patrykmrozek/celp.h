@@ -1,4 +1,5 @@
 #include <complex.h>
+#include <stddef.h>
 #define CELP_STRIP_PREFIX
 #define CELP_IMPLEMENTATION
 #include "../celp.h"
@@ -23,18 +24,23 @@ int main() {
 
     ll_info(&n);
     log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);
-    ll_remove_first(&n);
+    int removed_first = ll_remove_first(&n);
+    log(CELP_LOG_LEVEL_DEBUG, "Removed first: %i", removed_first);
     log(CELP_LOG_LEVEL_DEBUG, "After removing first: %i", n.head->next->data);
     ll_info(&n);
 
     log(CELP_LOG_LEVEL_DEBUG, "Before removing last: %i", n.tail->prev->data);
-    ll_remove_last(&n);
+    int removed_last = ll_remove_last(&n);
+    log(CELP_LOG_LEVEL_DEBUG, "Removed last: %i", removed_last);
     log(CELP_LOG_LEVEL_DEBUG, "After removing last: %i", n.tail->prev->data);
     ll_info(&n);
 
     ll_print_int(&n);
 
-    ll_remove(&n, 1);
+    int remove_idx = 1;
+    log(CELP_LOG_LEVEL_DEBUG, "Removing idx[%zu]", remove_idx);
+    int removed = ll_remove(&n, remove_idx);
+    log(CELP_LOG_LEVEL_DEBUG, "Removed idx[%zu]: %i", remove_idx, removed);
     ll_info(&n);
 
     ll_free(&n);

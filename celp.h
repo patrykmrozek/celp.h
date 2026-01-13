@@ -194,37 +194,44 @@ typedef struct { \
 
 #define celp_ll_add celp_ll_add_last
 
-#define celp_ll_remove_first(ll) \
-    do { \
+#define celp_ll_remove_first(ll) ({ \
         typeof((ll)->head) __to_remove = (ll)->head->next; \
+        typeof((ll)->head->data) __return = __to_remove->data; \
         (ll)->head->next->next->prev = (ll)->head; \
         (ll)->head->next = (ll)->head->next->next; \
         CELP_FREE(__to_remove); \
         (ll)->count--; \
-    }while(0)
+        \
+        __return; \
+    })
 
-#define celp_ll_remove_last(ll) \
-    do { \
+#define celp_ll_remove_last(ll) ({ \
         typeof((ll)->tail) __to_remove = (ll)->tail->prev; \
+        typeof((ll)->head->data) __return = __to_remove->data; \
         (ll)->tail->prev->prev->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->tail->prev->prev; \
         CELP_FREE(__to_remove); \
         (ll)->count--; \
-    } while(0)
+        \
+        __return; \
+    })
 
-#define celp_ll_remove(ll, i) \
-    CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
-    do { \
+#define celp_ll_remove(ll, i) ({ \
+        CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
         typeof((ll)->head) __curr = (ll)->head; \
-        for (size_t __i = 0; __i < (ll)->count; __i++) { \
+        typeof((ll)->head->data) __return = {0}; \
+        for (size_t __i = 0; __i <= (i); __i++) { \
             __curr = __curr->next; \
-            /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */\
+            /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */ \
         } \
         __curr->next->prev = __curr->prev; \
         __curr->prev->next = __curr->next; \
+        __return = __curr->data; \
         CELP_FREE(__curr); \
         (ll)->count--; \
-    } while(0)
+        \
+        __return; \
+    })
 
 #define celp_ll_free(ll) \
     do { \
