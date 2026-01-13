@@ -48,6 +48,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdint.h>
 
 /* Logging */
 typedef enum {
@@ -82,6 +83,9 @@ do { \
     (da)->count = 0;\
     (da)->capacity = 0;\
 } while(0)
+
+#define celp_da_clear(da) ((da)->count = 0)
+#define celp_da_is_empty(da) ((da)->count == 0)
 
 #define celp_da_reserve(da, expected_capacity) \
     do {\
@@ -176,9 +180,15 @@ typedef struct { \
 
 #define celp_ll_is_empty(ll) ((ll)->count == 0)
 
-#define celp_ll_get_first(ll) ((ll)->head->next->data)
+#define celp_ll_get_first(ll) ({ \
+    CELP_ASSERT((ll)->count > 0); \
+    (ll)->head->next->data \
+    })
 
-#define celp_ll_get_last(ll) ((ll)->tail->prev->data)
+#define celp_ll_get_last(ll) ({ \
+    CELP_ASSERT((ll)->count > 0); \
+    (ll)->tail->prev->data \
+    })
 
 #define celp_ll_add_after(ll, x, n) \
     do { \
@@ -315,20 +325,12 @@ typedef struct { \
     size_t capacity; \
 }  Map_##key_dtype##_##value_dtype##_t;
 
-
 #define __celp_map_clear(map) \
     do {\
         (map)->buckets = NULL; \
         (map)->count = 0; \
         (map)->capacity = 0; \
     } while(0)
-
-// #define celp_map_init(map) \
-//     do{ \
-//         __celp_map_clear((map)); \
-//         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
-//         (map)->items = CELP_CALLOC((map)->capacity, sizeof((map)->items[0])); \
-//     } while(0)
 
 #define celp_map_init(map) \
     do { \
@@ -339,6 +341,8 @@ typedef struct { \
             celp_ll_init(&((map)->buckets[__i])); \
         } \
     } while(0)
+
+#define celp_map_is_empty(map) ((map)->count == 0)
 
 //djb2 hash alg
 #define celp_hash(buffer, buffer_size) ({ \
@@ -480,11 +484,16 @@ typedef struct { \
 //shamelessly ripped from mr tsoding
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
+    //CELP_MISC
+    #define hash celp_hash
+    #define compare celp_compare
     //CELP_LOG
     #define log celp_log
     //CELP_DA
     #define DA CELP_DA
     #define da_init celp_da_init
+    #define da_clear celp_da_clear
+    #define da_is_empty celp_da_is_empty
     #define da_reserve celp_da_reserve
     #define da_append celp_da_append
     #define da_last celp_da_last
@@ -496,8 +505,8 @@ typedef struct { \
     //CELP_LL
     #define LL CELP_LL
     #define ll_init celp_ll_init
-    #define ll_is_empty celp_ll_is_celp_ll_is_empty
-    #define ll_get_first celp_ll_celp_ll_get_first
+    #define ll_is_empty celp_ll_is_empty
+    #define ll_get_first celp_ll_get_first
     #define ll_get_last celp_ll_get_last
     #define ll_add celp_ll_add
     #define ll_add_first celp_ll_add_first
@@ -506,6 +515,7 @@ typedef struct { \
     #define ll_remove_first celp_ll_remove_first
     #define ll_remove_last celp_ll_remove_last
     #define ll_remove_at_index celp_ll_remove_at_index
+    #define ll_remove_node celp_ll_remove_node
     #define ll_print_int celp_ll_print_int
     #define ll_foreach celp_ll_foreach
     #define ll_free celp_ll_free
@@ -514,9 +524,10 @@ typedef struct { \
     #define KV CELP_KV
     #define MAP CELP_MAP
     #define map_init celp_map_init
-    #define map_set celp_map_set
-    #define map_add celp_map_add
+    #define map_is_empty celp_map_is_empty
+    #define map_insert celp_map_insert
     #define map_get celp_map_get
+    #define map_contains celp_map_contains
     #define map_remove celp_map_remove
     #define map_free celp_map_free
     #define map_info celp_map_info
