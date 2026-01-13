@@ -1,5 +1,6 @@
-#define CELP_IMPLEMENTATION
+#include <complex.h>
 #define CELP_STRIP_PREFIX
+#define CELP_IMPLEMENTATION
 #include "../celp.h"
 #include <stdio.h>
 
@@ -17,11 +18,24 @@ int main() {
     ll_add_last(&n, 11);
     ll_info(&n);
 
-    LLN_int_t curr = *n.head->next;
-    for (size_t i = 0; i < n.count; i++) {
-        log(CELP_LOG_LEVEL_INFO, "[%zu] %i", i, curr.data);
-        curr = *curr.next;
-    }
+    log(CELP_LOG_LEVEL_DEBUG, "ll print int: ");
+    ll_print_int(&n);
+
+    ll_info(&n);
+    log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);
+    ll_remove_first(&n);
+    log(CELP_LOG_LEVEL_DEBUG, "After removing first: %i", n.head->next->data);
+    ll_info(&n);
+
+    log(CELP_LOG_LEVEL_DEBUG, "Before removing last: %i", n.tail->prev->data);
+    ll_remove_last(&n);
+    log(CELP_LOG_LEVEL_DEBUG, "After removing last: %i", n.tail->prev->data);
+    ll_info(&n);
+
+    ll_print_int(&n);
+
+    ll_remove(&n, 1);
+    ll_info(&n);
 
     ll_free(&n);
     ll_info(&n);

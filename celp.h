@@ -427,6 +427,7 @@ typedef struct { \
     #define ll_add celp_ll_add
     #define ll_remove_first celp_ll_remove_first
     #define ll_remove_last celp_ll_remove_last
+    #define ll_remove celp_ll_remove
     #define ll_info celp_ll_info
     #define ll_free celp_ll_free
     #define ll_print_int celp_ll_print_int
