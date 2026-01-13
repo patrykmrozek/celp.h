@@ -375,6 +375,29 @@ typedef struct { \
         } \
     } while(0)
 
+//assumes the value can be incremented
+#define celp_map_increment(map, k) \
+    do { \
+        typeof((map)->buckets[0].head->data.key) __k = (k); \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        bool __found = false; \
+        while (__curr != (map)->buckets[__h].tail) { \
+            if (celp_compare(__curr->data.key, __k) == 0) { \
+                __curr->data.value++; \
+                __found = true; \
+                break; \
+            } \
+            __curr = __curr->next; \
+        } \
+        if (!__found) { \
+            typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = 1 }; \
+            celp_ll_add(&((map)->buckets[__h]), __kv); \
+            (map)->count++; \
+        } \
+    } while(0)
+
 #define celp_map_get(map, k, default_value) ({ \
     typeof((map)->buckets[0].head->data.key) __k = (k); \
     typeof((map)->buckets[0].head->data.value) __return = (default_value); \
@@ -484,7 +507,7 @@ typedef struct { \
 //shamelessly ripped from mr tsoding
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
-    //CELP_MISC
+    //MISC
     #define hash celp_hash
     #define compare celp_compare
     //CELP_LOG
