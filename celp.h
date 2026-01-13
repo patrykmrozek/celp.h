@@ -195,6 +195,7 @@ typedef struct { \
 #define celp_ll_add celp_ll_add_last
 
 #define celp_ll_remove_first(ll) ({ \
+        CELP_ASSERT((ll)->count > 0); \
         typeof((ll)->head) __to_remove = (ll)->head->next; \
         typeof((ll)->head->data) __return = __to_remove->data; \
         (ll)->head->next->next->prev = (ll)->head; \
@@ -206,6 +207,7 @@ typedef struct { \
     })
 
 #define celp_ll_remove_last(ll) ({ \
+        CELP_ASSERT((ll)->count > 0); \
         typeof((ll)->tail) __to_remove = (ll)->tail->prev; \
         typeof((ll)->head->data) __return = __to_remove->data; \
         (ll)->tail->prev->prev->next = (ll)->tail; \
@@ -217,7 +219,7 @@ typedef struct { \
     })
 
 #define celp_ll_remove_at_index(ll, i) ({ \
-        CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
+        CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
         typeof((ll)->head) __curr = (ll)->head; \
         typeof((ll)->head->data) __return = {0}; \
         for (size_t __i = 0; __i <= (i); __i++) { \
@@ -233,18 +235,15 @@ typedef struct { \
         __return; \
     })
 
-#define celp_ll_eq(n1, n2) (n1->data == n2->data && n1->prev == n2->prev && n1->next == n2->next)
-
 #define celp_ll_remove_node(ll, n) ({ \
-    typeof((ll)->head) __curr = (ll)->head; \
+    CELP_ASSERT((ll)->count > 0); \
+    typeof((ll)->head) __curr = (ll)->head->next; \
     typeof((ll)->head->data) __return = {0}; \
     for (size_t __i = 0; __i < (ll)->count; __i++) { \
-        if (celp_ll_eq(__curr, (n))) { \
-            __curr = (n); \
+        if (__curr == (n)) { \
             break; \
         } \
         __curr = __curr->next; \
-        /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */ \
     } \
     if (__curr == (n)) { \
         __curr->next->prev = __curr->prev; \
