@@ -174,6 +174,12 @@ typedef struct { \
         (ll)->count = 0; \
     } while(0)
 
+#define celp_ll_is_empty(ll) ((ll)->count == 0)
+
+#define celp_ll_get_first(ll) ((ll)->head->next->data)
+
+#define celp_ll_get_last(ll) ((ll)->tail->prev->data)
+
 #define celp_ll_add_after(ll, x, n) \
     do { \
         typeof((ll)->head) __node = __celp_create_node((ll), (x), (n), (n)->next); \
