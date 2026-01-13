@@ -33,7 +33,16 @@ int main() {
 
     celp_ll_print_int(&n);
 
-    celp_ll_remove(&n, 1);
+    int remove_idx = 1;
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Removing idx[%zu]", remove_idx);
+    int removed = celp_ll_remove_at_index(&n, remove_idx);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Removed idx[%zu]: %i", remove_idx, removed);
+    celp_ll_info(&n);
+
+    LLN_int_t* node = n.head->next;
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Removing using node");
+    celp_ll_remove_node(&n, node);
+    celp_ll_print_int(&n);
     celp_ll_info(&n);
 
     celp_ll_free(&n);

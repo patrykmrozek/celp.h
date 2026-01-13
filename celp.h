@@ -216,7 +216,7 @@ typedef struct { \
         __return; \
     })
 
-#define celp_ll_remove(ll, i) ({ \
+#define celp_ll_remove_at_index(ll, i) ({ \
         CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
         typeof((ll)->head) __curr = (ll)->head; \
         typeof((ll)->head->data) __return = {0}; \
@@ -232,6 +232,32 @@ typedef struct { \
         \
         __return; \
     })
+
+#define celp_ll_eq(n1, n2) (n1->data == n2->data && n1->prev == n2->prev && n1->next == n2->next)
+
+#define celp_ll_remove_node(ll, n) ({ \
+    typeof((ll)->head) __curr = (ll)->head; \
+    typeof((ll)->head->data) __return = {0}; \
+    for (size_t __i = 0; __i < (ll)->count; __i++) { \
+        if (celp_ll_eq(__curr, (n))) { \
+            __curr = (n); \
+            break; \
+        } \
+        __curr = __curr->next; \
+        /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */ \
+    } \
+    if (__curr == (n)) { \
+        __curr->next->prev = __curr->prev; \
+        __curr->prev->next = __curr->next; \
+        __return = __curr->data; \
+        CELP_FREE(__curr); \
+        (ll)->count--; \
+    } else { \
+        celp_log(CELP_LOG_LEVEL_INFO, "Failed to find and remove node"); \
+    } \
+    \
+    __return; \
+})
 
 #define celp_ll_free(ll) \
     do { \
@@ -325,20 +351,20 @@ typedef struct { \
 
 #define celp_map_get(map, k, default_value) ({ \
     typeof((map)->buckets[0].head->data.key) __k = (k); \
-    typeof((map)->buckets[0].head->data.value) __return_value = (default_value); \
+    typeof((map)->buckets[0].head->data.value) __return = (default_value); \
     if ((map)->buckets != NULL && (map)->capacity > 0) { \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
         uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
         typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
         while(__curr != (map)->buckets[__h].tail) { \
             if (celp_compare(__curr->data.key, __k) == 0) { \
-                __return_value = __curr->data.value; \
+                __return = __curr->data.value; \
                 break; \
             } \
             __curr = __curr->next; \
         } \
     } \
-    __return_value; \
+    __return; \
 })
 
 #define celp_map_contains(map, k) ({ \
@@ -357,6 +383,25 @@ typedef struct { \
         } \
     } \
     __found; \
+})
+
+#define celp_map_remove(map, k) ({ \
+    typeof((map)->buckets[0].head->data.key) __k = (k); \
+    typeof((map)->buckets[0].head->data.value) __return = {0}; \
+    if ((map)->buckets != NULL && (map)->capacity > 0) { \
+        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        while(__curr != (map)->buckets[__h].tail) { \
+            if (celp_compare(__curr->data.key, __k) == 0) { \
+                __return = __curr->data.value; \
+                celp_ll_remove_node((map)->buckets[__h], __curr); \
+                break; \
+            } \
+            __curr = __curr->next; \
+        } \
+    } \
+    __return; \
 })
 
 #define celp_map_free(map) \
@@ -434,7 +479,7 @@ typedef struct { \
     #define ll_add celp_ll_add
     #define ll_remove_first celp_ll_remove_first
     #define ll_remove_last celp_ll_remove_last
-    #define ll_remove celp_ll_remove
+    #define ll_remove_at_index celp_ll_remove_at_index
     #define ll_info celp_ll_info
     #define ll_free celp_ll_free
     #define ll_print_int celp_ll_print_int
