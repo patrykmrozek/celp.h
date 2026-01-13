@@ -201,9 +201,15 @@ typedef struct { \
         (ll)->count--; \
     }while(0)
 
-#define celp_ll_remove_last(ll)
+#define celp_ll_remove_last(ll) \
+    do { \
+        (ll)->tail->prev->prev->next = (ll)->tail; \
+        (ll)->tail->prev = (ll)->tail->prev->prev; \
+        (ll)->count--; \
+    } while(0)
 
 #define celp_ll_remove(ll, i) \
+    CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
     do { \
         \
     } while(0)
@@ -533,6 +539,8 @@ typedef struct { \
     #define ll_add_first celp_ll_add_first
     #define ll_add_last celp_ll_add_last
     #define ll_add celp_ll_add
+    #define ll_remove_first celp_ll_remove_first
+    #define ll_remove_last celp_ll_remove_last
     #define ll_info celp_ll_info
     #define ll_free celp_ll_free
     //CELP_MAP

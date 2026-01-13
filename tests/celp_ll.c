@@ -21,11 +21,18 @@ int main() {
         celp_log(CELP_LOG_LEVEL_DEBUG, "[%zu] %i", i, curr.data);
         curr = *curr.next;
     }
+
     celp_ll_info(&n);
     celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);
     celp_ll_remove_first(&n);
     celp_log(CELP_LOG_LEVEL_DEBUG, "After removing first: %i", n.head->next->data);
     celp_ll_info(&n);
+
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing last: %i", n.tail->prev->data);
+    celp_ll_remove_last(&n);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "After removing last: %i", n.tail->prev->data);
+    celp_ll_info(&n);
+
     celp_ll_free(&n);
     celp_ll_info(&n);
     return 0;
