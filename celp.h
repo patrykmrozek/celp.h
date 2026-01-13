@@ -58,6 +58,8 @@ typedef enum {
 
 CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
+/* Compare */
+
 #define celp_compare(a, b) \
     memcmp(&(a), &(b), sizeof(a))
 
@@ -191,6 +193,20 @@ typedef struct { \
     } while(0)
 
 #define celp_ll_add celp_ll_add_last
+
+#define celp_ll_remove_first(ll) \
+    do { \
+        (ll)->head->next->next->prev = (ll)->head; \
+        (ll)->head->next = (ll)->head->next->next; \
+        (ll)->count--; \
+    }while(0)
+
+#define celp_ll_remove_last(ll)
+
+#define celp_ll_remove(ll, i) \
+    do { \
+        \
+    } while(0)
 
 #define celp_ll_free(ll) \
     do { \

@@ -18,9 +18,14 @@ int main() {
 
     LLN_int_t curr = *n.head->next;
     for (size_t i = 0; i < n.count; i++) {
-        celp_log(CELP_LOG_LEVEL_INFO, "[%zu] %i", i, curr.data);
+        celp_log(CELP_LOG_LEVEL_DEBUG, "[%zu] %i", i, curr.data);
         curr = *curr.next;
     }
+    celp_ll_info(&n);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);
+    celp_ll_remove_first(&n);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "After removing first: %i", n.head->next->data);
+    celp_ll_info(&n);
     celp_ll_free(&n);
     celp_ll_info(&n);
     return 0;
