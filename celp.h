@@ -354,9 +354,21 @@ typedef struct { \
         typeof((map)->buckets[0].head->data.key) __k = (k); \
         const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
         uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head->data) __kv = { .key = (__k), .value = (v) }; \
-        celp_ll_add(&((map)->buckets[__h]), __kv); \
-        (map)->count++; \
+        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        bool __found = false; \
+        while (__curr != (map)->buckets[__h].tail) { \
+            if (celp_compare(__curr->data.key, __k) == 0) { \
+                __curr->data.value = (v); \
+                __found = true; \
+                break; \
+            } \
+            __curr = __curr->next; \
+        } \
+        if (!__found) { \
+            typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = (v) }; \
+            celp_ll_add(&((map)->buckets[__h]), __kv); \
+            (map)->count++; \
+        } \
     } while(0)
 
 #define celp_map_get(map, k, default_value) ({ \
@@ -405,7 +417,8 @@ typedef struct { \
         while(__curr != (map)->buckets[__h].tail) { \
             if (celp_compare(__curr->data.key, __k) == 0) { \
                 __return = __curr->data.value; \
-                celp_ll_remove_node((map)->buckets[__h], __curr); \
+                celp_ll_remove_node(&((map)->buckets[__h]), __curr); \
+                (map)->count--; \
                 break; \
             } \
             __curr = __curr->next; \

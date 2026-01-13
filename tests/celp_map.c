@@ -13,6 +13,8 @@ int main() {
     uint32_t h = celp_hash(k_bytes, sizeof(k)) % test.capacity;
     celp_log(CELP_LOG_LEVEL_DEBUG, "hash for key 10: %u, bucket count: %zu",h, test.buckets[h].count);
     celp_map_insert(&test, 10, 100);
+    celp_map_insert(&test, 11, 100);
+    celp_map_insert(&test, 12, 100);
     celp_log(CELP_LOG_LEVEL_DEBUG, "after, bucket[%u].count = %zu, map.count = %zu", h, test.buckets[h].count, test.count);
     celp_log(CELP_LOG_LEVEL_DEBUG, "bucket %u first item key: %d", h, test.buckets[h].head->next->data.key);
     celp_map_info(&test);
