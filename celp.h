@@ -196,22 +196,34 @@ typedef struct { \
 
 #define celp_ll_remove_first(ll) \
     do { \
+        typeof((ll)->head) __to_remove = (ll)->head->next; \
         (ll)->head->next->next->prev = (ll)->head; \
         (ll)->head->next = (ll)->head->next->next; \
+        CELP_FREE(__to_remove); \
         (ll)->count--; \
     }while(0)
 
 #define celp_ll_remove_last(ll) \
     do { \
+        typeof((ll)->tail) __to_remove = (ll)->tail->prev; \
         (ll)->tail->prev->prev->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->tail->prev->prev; \
+        CELP_FREE(__to_remove); \
         (ll)->count--; \
     } while(0)
 
 #define celp_ll_remove(ll, i) \
     CELP_ASSERT((i) > 0 && (i) < (ll)->count); \
     do { \
-        \
+        typeof((ll)->head) __curr = (ll)->head; \
+        for (size_t __i = 0; __i < (ll)->count; __i++) { \
+            __curr = __curr->next; \
+            /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */\
+        } \
+        __curr->next->prev = __curr->prev; \
+        __curr->prev->next = __curr->next; \
+        CELP_FREE(__curr); \
+        (ll)->count--; \
     } while(0)
 
 #define celp_ll_free(ll) \
@@ -227,6 +239,15 @@ typedef struct { \
         (ll)->head = NULL; \
         (ll)->tail = NULL; \
         (ll)->count = 0; \
+    } while(0)
+
+#define celp_ll_print_int(ll) \
+    do { \
+        typeof((ll)->head) __curr = (ll)->head->next; \
+        for (size_t __i = 0; __i < (ll)->count; __i++) { \
+            celp_log(CELP_LOG_LEVEL_INFO, "[%zu] %i", __i, __curr->data); \
+            __curr = __curr->next; \
+        } \
     } while(0)
 
 #define celp_ll_info(ll) \
@@ -543,6 +564,7 @@ typedef struct { \
     #define ll_remove_last celp_ll_remove_last
     #define ll_info celp_ll_info
     #define ll_free celp_ll_free
+    #define ll_print_int celp_ll_print_int
     //CELP_MAP
     #define KV CELP_KV
     #define MAP CELP_MAP
