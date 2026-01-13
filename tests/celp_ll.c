@@ -17,8 +17,12 @@ int main() {
     celp_ll_add_last(&n, 11);
     celp_ll_info(&n);
 
-    celp_log(CELP_LOG_LEVEL_DEBUG, "ll print int: ");
-    celp_ll_print_int(&n);
+    celp_log(CELP_LOG_LEVEL_DEBUG, "ll print foreach: ");
+    size_t count = 0;
+    celp_ll_foreach(&n, i) {
+        celp_log(CELP_LOG_LEVEL_DEBUG, "[%zu] %i", count, i->data);
+        count++;
+    }
 
     celp_ll_info(&n);
     celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);

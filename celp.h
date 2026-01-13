@@ -288,6 +288,11 @@ typedef struct { \
         } \
     } while(0)
 
+#define celp_ll_foreach(ll, node) \
+    for (typeof((ll)->head) node = (ll)->head->next; \
+        node != (ll)->tail; \
+        node = node->next)
+
 #define celp_ll_info(ll) \
     do { \
         celp_log(CELP_LOG_LEVEL_INFO, "LL at: %p, Count: %zu", (ll), (ll)->count); \
