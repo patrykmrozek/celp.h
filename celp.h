@@ -483,6 +483,9 @@ typedef struct { \
     //CELP_LL
     #define LL CELP_LL
     #define ll_init celp_ll_init
+    #define ll_is_empty celp_ll_is_celp_ll_is_empty
+    #define ll_get_first celp_ll_celp_ll_get_first
+    #define ll_get_last celp_ll_get_last
     #define ll_add celp_ll_add
     #define ll_add_first celp_ll_add_first
     #define ll_add_last celp_ll_add_last
@@ -490,9 +493,10 @@ typedef struct { \
     #define ll_remove_first celp_ll_remove_first
     #define ll_remove_last celp_ll_remove_last
     #define ll_remove_at_index celp_ll_remove_at_index
-    #define ll_info celp_ll_info
-    #define ll_free celp_ll_free
     #define ll_print_int celp_ll_print_int
+    #define ll_foreach celp_ll_foreach
+    #define ll_free celp_ll_free
+    #define ll_info celp_ll_info
     //CELP_MAP
     #define KV CELP_KV
     #define MAP CELP_MAP
