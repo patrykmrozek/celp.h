@@ -59,10 +59,19 @@ typedef enum {
 
 CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
-/* Compare */
-
+/* Misc */
 #define celp_compare(a, b) \
     memcmp(&(a), &(b), sizeof(a))
+
+//djb2 hash alg
+#define celp_hash(buffer, buffer_size) \
+    ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i = 0; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
 
 /* Dynamic Array */
 #define CELP_DA_INITIAL_CAPACITY 256
@@ -128,7 +137,7 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         celp_da_pop(da); \
     })
 
-// user provides some label (i) -> macro initializes it as a pointer to (da)->itemsa
+// user provides some label (i) -> macro initializes it as a pointer to (da)->items
 // elements can be accessed by dereferencing (i)
 // to get index 0, suntract (i) from (da)->items
 #define celp_da_foreach(da, i) for (typeof(*(da)->items)* (i) = (da)->items; (i) < (da)->items + (da)->count; (i)++)
@@ -278,7 +287,7 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         CELP_FREE(__curr); \
         (ll)->count--; \
     } else { \
-        celp_log(CELP_LOG_LEVEL_INFO, "Failed to find and remove node"); \
+        celp_log(CELP_LOG_LEVEL_ERROR, "Failed to find and remove node"); \
     } \
     \
     __return; \
@@ -354,16 +363,6 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 #define celp_map_is_empty(map) ((map)->count == 0)
 
-//djb2 hash alg
-#define celp_hash(buffer, buffer_size) \
-    ({ \
-        uint32_t __hash = 5381; \
-        for (size_t __i = 0; __i < buffer_size; __i++) { \
-            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-        } \
-        __hash; \
-    })
-
 #define celp_map_insert(map, k, v) \
     do { \
         typeof((map)->buckets[0].head->data.key) __k = (k); \
@@ -386,7 +385,8 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         } \
     } while(0)
 
-//assumes the value can be incremented
+// assumes the value can be incremented
+// if the key isnt already in the map it assigns value 1
 #define celp_map_increment(map, k) \
     do { \
         typeof((map)->buckets[0].head->data.key) __k = (k); \
@@ -449,6 +449,7 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 #define celp_map_remove(map, k) \
     ({ \
+        CELP_ASSERT((map)->count > 0); \
         typeof((map)->buckets[0].head->data.key) __k = (k); \
         typeof((map)->buckets[0].head->data.value) __return = {0}; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
@@ -521,10 +522,13 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //MISC
-    #define hash celp_hash
     #define compare celp_compare
+    #define hash celp_hash
     //CELP_LOG
     #define log celp_log
+    #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
+    #define LOG_LEVEL_DEBUG CELP_LOG_LEVEL_DEBUG
+    #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR
     //CELP_DA
     #define DA CELP_DA
     #define da_init celp_da_init
@@ -562,6 +566,7 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
     #define map_init celp_map_init
     #define map_is_empty celp_map_is_empty
     #define map_insert celp_map_insert
+    #define map_increment celp_map_increment
     #define map_get celp_map_get
     #define map_contains celp_map_contains
     #define map_remove celp_map_remove

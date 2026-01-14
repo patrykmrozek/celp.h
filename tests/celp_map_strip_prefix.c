@@ -3,55 +3,33 @@
 #include "../celp.h"
 #include <stdio.h>
 
-typedef size_t sz;
-MAP(int, sz);
-//typedef Map_int_size_t_t Map_int_sz_t;
+typedef size_t sizet;
+MAP(int, sizet);
 
 int main() {
-    Map_int_sz_t test = {};
-
+    Map_int_sizet_t test = {};
     map_init(&test);
+    int k = 10;
+    const unsigned char* k_bytes = (const unsigned char*)&k;
+    uint32_t h = hash(k_bytes, sizeof(k)) % test.capacity;
+    log(LOG_LEVEL_DEBUG, "hash for key 10: %u, bucket count: %zu",h, test.buckets[h].count);
+    map_insert(&test, 10, 100);
+    map_insert(&test, 11, 100);
+    map_insert(&test, 12, 100);
+    log(LOG_LEVEL_DEBUG, "after, bucket[%u].count = %zu, map.count = %zu", h, test.buckets[h].count, test.count);
+    log(LOG_LEVEL_DEBUG, "bucket %u first item key: %d", h, test.buckets[h].head->next->data.key);
     map_info(&test);
+    size_t get = map_get(&test, 10, 0);
+    log(LOG_LEVEL_DEBUG, "Gotten: %zu", get);
+    log(LOG_LEVEL_DEBUG, "Incrementing");
+    map_increment(&test, 10);
+    log(LOG_LEVEL_DEBUG, "Gotten after: %zu", map_get(&test, 10, 0));
+    log(LOG_LEVEL_DEBUG, "Found key: %s", (map_contains(&test, 10) ? "yes" : "no"));
+    log(LOG_LEVEL_DEBUG, "Found key: %s", (map_contains(&test, 5) ? "yes" : "no"));
 
-    for (int i = 0; i < 10; i++) {
-        map_set(&test, i, i*10);
-        printf("Set key: %i, value: %i\n", i, i*10);
-    }
-    map_info(&test);
-
-    map_add(&test, 5);
-    int result = map_get(&test, 5, 0);
-    printf("Result: %i\n", result);
-
-    for (int i = 50; i < 200; i++) {
-        map_set(&test, i, i);
-        //printf("Set key: %i, value: %i\n", i, i*10);
-    }
-    map_info(&test);
-
-    printf("[1 before]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
-    for (size_t i = 0; i < 100; i++) {
-        map_add(&test, 1);
-        //printf("Adding to key (1): Current value: %lu\n", test.items[1].value);
-    }
-    printf("[1 after]Key: %i, Value: %lu\n", test.items[1].key, test.items[1].value);
-
-    uint32_t hash_result = celp_hash("hello", sizeof("hello"));
-    printf("'Hello' hashed: %i\n", hash_result);
-
-    for (size_t i = test.capacity - 5; i < test.capacity; i++) {
-        printf("[%zu] key: %i, value: %zu, state: %i\n", i, test.items[i].key, test.items[i].value, test.items[i].state);
-    }
-
-    int key_to_remove = test.items[test.capacity-1].key;
-    printf("Removing key: %i (at index %zu)\n\n", key_to_remove, test.capacity-1);
-    map_remove(&test, key_to_remove);
-
-    for (size_t i = test.capacity - 5; i < test.capacity; i++) {
-        printf("[%zu] key: %i, value: %zu, state: %i\n", i, test.items[i].key, test.items[i].value, test.items[i].state);
-    }
-
+    map_remove(&test, 10);
 
     map_free(&test);
+    map_info(&test);
     return 0;
 }
