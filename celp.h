@@ -71,18 +71,18 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
  * Generates an array struct for a given type
  */
 #define CELP_DA(dtype) \
-typedef struct { \
-    dtype* items; \
-    size_t count; \
-    size_t capacity; \
-} DA_##dtype##_t;
+    typedef struct { \
+        dtype* items; \
+        size_t count; \
+        size_t capacity; \
+    } DA_##dtype##_t;
 
 #define celp_da_init(da) \
-do { \
-    (da)->items = NULL;\
-    (da)->count = 0;\
-    (da)->capacity = 0;\
-} while(0)
+    do { \
+        (da)->items = NULL;\
+        (da)->count = 0;\
+        (da)->capacity = 0;\
+    } while(0)
 
 #define celp_da_clear(da) ((da)->count = 0)
 #define celp_da_is_empty(da) ((da)->count == 0)
@@ -107,17 +107,20 @@ do { \
         (da)->items[(da)->count++] = (item);\
     } while(0)
 
-#define celp_da_last(da) ({ \
-    CELP_ASSERT((da)->count > 0); \
-    (da)->items[(da)->count-1]; \
-})
+#define celp_da_last(da) \
+    ({ \
+        CELP_ASSERT((da)->count > 0); \
+        (da)->items[(da)->count-1]; \
+    })
 
-#define celp_da_pop(da) ({ \
-    CELP_ASSERT((da)->count > 0); \
-    (da)->items[--(da)->count]; \
-})
+#define celp_da_pop(da) \
+    ({ \
+        CELP_ASSERT((da)->count > 0); \
+        (da)->items[--(da)->count]; \
+    })
 
-#define celp_da_remove(da, idx) ({ \
+#define celp_da_remove(da, idx) \
+    ({ \
         CELP_ASSERT(idx < (da)->count); \
         typeof((da)->items[0]) __temp = (da)->items[(idx)]; \
         (da)->items[(idx)] = celp_da_last((da)); \
@@ -146,26 +149,27 @@ do { \
 
 /* Linked List */
 #define CELP_LL(dtype) \
-typedef struct LLN_##dtype##_t{ \
-    dtype data; \
-    struct LLN_##dtype##_t* prev; \
-    struct LLN_##dtype##_t* next; \
-}LLN_##dtype##_t; \
-\
-typedef struct { \
-    LLN_##dtype##_t* head; \
-    LLN_##dtype##_t* tail; \
-    size_t count; \
-} LL_##dtype##_t;
-
-#define __celp_create_node(ll, x, p, n) ({ \
-    typeof((ll)->head) __node = CELP_MALLOC(sizeof(*((ll)->head))); \
-    __node->data = (x); \
-    __node->prev = (p); \
-    __node->next = (n); \
+    typedef struct LLN_##dtype##_t{ \
+        dtype data; \
+        struct LLN_##dtype##_t* prev; \
+        struct LLN_##dtype##_t* next; \
+    }LLN_##dtype##_t; \
     \
-    __node; \
-})
+    typedef struct { \
+        LLN_##dtype##_t* head; \
+        LLN_##dtype##_t* tail; \
+        size_t count; \
+    } LL_##dtype##_t;
+
+#define __celp_create_node(ll, x, p, n) \
+    ({ \
+        typeof((ll)->head) __node = CELP_MALLOC(sizeof(*((ll)->head))); \
+        __node->data = (x); \
+        __node->prev = (p); \
+        __node->next = (n); \
+        \
+        __node; \
+    })
 
 #define celp_ll_init(ll) \
     do { \
@@ -180,14 +184,16 @@ typedef struct { \
 
 #define celp_ll_is_empty(ll) ((ll)->count == 0)
 
-#define celp_ll_get_first(ll) ({ \
-    CELP_ASSERT((ll)->count > 0); \
-    (ll)->head->next->data \
+#define celp_ll_get_first(ll) \
+    ({ \
+        CELP_ASSERT((ll)->count > 0); \
+        (ll)->head->next->data \
     })
 
-#define celp_ll_get_last(ll) ({ \
-    CELP_ASSERT((ll)->count > 0); \
-    (ll)->tail->prev->data \
+#define celp_ll_get_last(ll) \
+    ({ \
+        CELP_ASSERT((ll)->count > 0); \
+        (ll)->tail->prev->data \
     })
 
 #define celp_ll_add_after(ll, x, n) \
@@ -210,7 +216,8 @@ typedef struct { \
 
 #define celp_ll_add celp_ll_add_last
 
-#define celp_ll_remove_first(ll) ({ \
+#define celp_ll_remove_first(ll) \
+    ({ \
         CELP_ASSERT((ll)->count > 0); \
         typeof((ll)->head) __to_remove = (ll)->head->next; \
         typeof((ll)->head->data) __return = __to_remove->data; \
@@ -222,7 +229,8 @@ typedef struct { \
         __return; \
     })
 
-#define celp_ll_remove_last(ll) ({ \
+#define celp_ll_remove_last(ll) \
+    ({ \
         CELP_ASSERT((ll)->count > 0); \
         typeof((ll)->tail) __to_remove = (ll)->tail->prev; \
         typeof((ll)->head->data) __return = __to_remove->data; \
@@ -234,7 +242,8 @@ typedef struct { \
         __return; \
     })
 
-#define celp_ll_remove_at_index(ll, i) ({ \
+#define celp_ll_remove_at_index(ll, i) \
+    ({ \
         CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
         typeof((ll)->head) __curr = (ll)->head; \
         typeof((ll)->head->data) __return = {0}; \
@@ -251,7 +260,8 @@ typedef struct { \
         __return; \
     })
 
-#define celp_ll_remove_node(ll, n) ({ \
+#define celp_ll_remove_node(ll, n) \
+    ({ \
     CELP_ASSERT((ll)->count > 0); \
     typeof((ll)->head) __curr = (ll)->head->next; \
     typeof((ll)->head->data) __return = {0}; \
@@ -312,18 +322,18 @@ typedef struct { \
 #define CELP_MAP_INITIAL_CAPACITY 64
 
 #define CELP_MAP(key_dtype, value_dtype) \
-typedef struct { \
-    key_dtype key; \
-    value_dtype value; \
-} KV_##key_dtype##_##value_dtype; \
-\
-CELP_LL(KV_##key_dtype##_##value_dtype) \
-\
-typedef struct { \
-    LL_KV_##key_dtype##_##value_dtype##_t* buckets; \
-    size_t count; \
-    size_t capacity; \
-}  Map_##key_dtype##_##value_dtype##_t;
+    typedef struct { \
+        key_dtype key; \
+        value_dtype value; \
+    } KV_##key_dtype##_##value_dtype; \
+    \
+    CELP_LL(KV_##key_dtype##_##value_dtype) \
+    \
+    typedef struct { \
+        LL_KV_##key_dtype##_##value_dtype##_t* buckets; \
+        size_t count; \
+        size_t capacity; \
+    }  Map_##key_dtype##_##value_dtype##_t;
 
 #define __celp_map_clear(map) \
     do {\
@@ -345,13 +355,14 @@ typedef struct { \
 #define celp_map_is_empty(map) ((map)->count == 0)
 
 //djb2 hash alg
-#define celp_hash(buffer, buffer_size) ({ \
-    uint32_t __hash = 5381; \
-    for (size_t __i = 0; __i < buffer_size; __i++) { \
-        __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
-    } \
-    __hash; \
-})
+#define celp_hash(buffer, buffer_size) \
+    ({ \
+        uint32_t __hash = 5381; \
+        for (size_t __i = 0; __i < buffer_size; __i++) { \
+            __hash = ((__hash << 5) + __hash) + (uint32_t)buffer[__i]; \
+        } \
+        __hash; \
+    })
 
 #define celp_map_insert(map, k, v) \
     do { \
@@ -398,61 +409,64 @@ typedef struct { \
         } \
     } while(0)
 
-#define celp_map_get(map, k, default_value) ({ \
-    typeof((map)->buckets[0].head->data.key) __k = (k); \
-    typeof((map)->buckets[0].head->data.value) __return = (default_value); \
-    if ((map)->buckets != NULL && (map)->capacity > 0) { \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-        while(__curr != (map)->buckets[__h].tail) { \
-            if (celp_compare(__curr->data.key, __k) == 0) { \
-                __return = __curr->data.value; \
-                break; \
+#define celp_map_get(map, k, default_value) \
+    ({ \
+        typeof((map)->buckets[0].head->data.key) __k = (k); \
+        typeof((map)->buckets[0].head->data.value) __return = (default_value); \
+        if ((map)->buckets != NULL && (map)->capacity > 0) { \
+            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+            while(__curr != (map)->buckets[__h].tail) { \
+                if (celp_compare(__curr->data.key, __k) == 0) { \
+                    __return = __curr->data.value; \
+                    break; \
+                } \
+                __curr = __curr->next; \
             } \
-            __curr = __curr->next; \
         } \
-    } \
-    __return; \
-})
+        __return; \
+    })
 
-#define celp_map_contains(map, k) ({ \
-    typeof((map)->buckets[0].head->data.key) __k = (k); \
-    bool __found = false; \
-    if ((map)->buckets != NULL && (map)->capacity > 0) { \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-        while(__curr != (map)->buckets[__h].tail) { \
-            if (celp_compare(__curr->data.key, __k) == 0) { \
-                __found = true; \
-                break; \
+#define celp_map_contains(map, k) \
+    ({ \
+        typeof((map)->buckets[0].head->data.key) __k = (k); \
+        bool __found = false; \
+        if ((map)->buckets != NULL && (map)->capacity > 0) { \
+            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+            while(__curr != (map)->buckets[__h].tail) { \
+                if (celp_compare(__curr->data.key, __k) == 0) { \
+                    __found = true; \
+                    break; \
+                } \
+                __curr = __curr->next; \
             } \
-            __curr = __curr->next; \
         } \
-    } \
-    __found; \
-})
+        __found; \
+    })
 
-#define celp_map_remove(map, k) ({ \
-    typeof((map)->buckets[0].head->data.key) __k = (k); \
-    typeof((map)->buckets[0].head->data.value) __return = {0}; \
-    if ((map)->buckets != NULL && (map)->capacity > 0) { \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-        while(__curr != (map)->buckets[__h].tail) { \
-            if (celp_compare(__curr->data.key, __k) == 0) { \
-                __return = __curr->data.value; \
-                celp_ll_remove_node(&((map)->buckets[__h]), __curr); \
-                (map)->count--; \
-                break; \
+#define celp_map_remove(map, k) \
+    ({ \
+        typeof((map)->buckets[0].head->data.key) __k = (k); \
+        typeof((map)->buckets[0].head->data.value) __return = {0}; \
+        if ((map)->buckets != NULL && (map)->capacity > 0) { \
+            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+            while(__curr != (map)->buckets[__h].tail) { \
+                if (celp_compare(__curr->data.key, __k) == 0) { \
+                    __return = __curr->data.value; \
+                    celp_ll_remove_node(&((map)->buckets[__h]), __curr); \
+                    (map)->count--; \
+                    break; \
+                } \
+                __curr = __curr->next; \
             } \
-            __curr = __curr->next; \
         } \
-    } \
-    __return; \
-})
+        __return; \
+    })
 
 #define celp_map_free(map) \
     do { \
@@ -470,13 +484,12 @@ typedef struct { \
         celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %zu, Count: %zu", (map), (map)->capacity, (map)->count); \
     } while(0)
 
-
 #ifdef CELP_IMPLEMENTATION
 
-    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...) {
+    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
+    {
         va_list args;
         va_start(args, fmt_string); //last named param -> knows where to start with vargs
-
         FILE* out = NULL;
         const char* tag = NULL;
 
