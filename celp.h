@@ -490,27 +490,27 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 typedef struct {
     float x, y;
-} Celp_Vec2f;
+} Celp_Vec2f_t;
 
 typedef struct {
     double x, y;
-} Celp_Vec2d;
+} Celp_Vec2d_t;
 
 typedef struct {
     int x, y;
-} Celp_Vec2i;
+} Celp_Vec2i_t;
 
 typedef struct {
     float x, y, z;
-} Celp_Vec3f;
+} Celp_Vec3f_t;
 
 typedef struct {
     double x, y, z;
-} Celp_Vec3d;
+} Celp_Vec3d_t;
 
 typedef struct {
     int x, y, z;
-} Celp_Vec3i;
+} Celp_Vec3i_t;
 
 #define celp_vec2_add(v1, v2) \
     ({ \
@@ -531,6 +531,15 @@ typedef struct {
     })
 
 #define celp_vec2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
+
+#define celp_vec2_scale(v, s) \
+    ({ \
+        typeof((v)) __v_out = { \
+            .x = (v).x * s, \
+            .y = (v).y * s \
+        }; \
+        __v_out; \
+    })
 
 #define celp_vec3_add(v1, v2) \
     ({ \
@@ -553,6 +562,16 @@ typedef struct {
 })
 
 #define celp_vec3_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y) + ((v1).z * (v2).z)
+
+#define celp_vec3_scale(v, s) \
+    ({ \
+        typeof((v)) __v_out = { \
+            .x = (v).x * s, \
+            .y = (v).y * s \
+            .z = (v).z * s \
+        }; \
+        __v_out; \
+    })
 
 #ifdef CELP_IMPLEMENTATION
 
@@ -642,18 +661,20 @@ typedef struct {
     #define map_free celp_map_free
     #define map_info celp_map_info
     // CELP_MATH
-    typedef Celp_Vec2f Vec2f;
-    typedef Celp_Vec2d Vec2d;
-    typedef Celp_Vec2i Vec2i;
-    typedef Celp_Vec3f Vec3f;
-    typedef Celp_Vec3i Vec3i;
-    typedef Celp_Vec3d Vec3d;
+    typedef Celp_Vec2f_t Vec2f_t;
+    typedef Celp_Vec2d_t Vec2d_t;
+    typedef Celp_Vec2i_t Vec2i_t;
+    typedef Celp_Vec3f_t Vec3f_t;
+    typedef Celp_Vec3i_t Vec3i_t;
+    typedef Celp_Vec3d_t Vec3d_t;
     #define vec2_add celp_vec2_add
     #define vec2_sub celp_vec2_sub
     #define vec2_dot celp_vec2_dot
+    #define vec2_scale celp_vec2_scale
     #define vec3_add celp_vec3_add
     #define vec3_sub celp_vec3_sub
     #define vec3_dot celp_vec3_dot
+    #define vec3_scale celp_vec3_scale
 
 #endif //CELP_STRIP_PREFIX
 
