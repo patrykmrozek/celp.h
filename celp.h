@@ -521,6 +521,15 @@ typedef struct {
         __v_out; \
     })
 
+#define celp_vec2_sub(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x - (v2).x, \
+        .y = (v1).x - (v2).x \
+    }; \
+    __v_out; \
+})
+
 #define celp_vec3_add(v1, v2) \
     ({ \
        typeof((v1)) __v_out = { \
@@ -626,6 +635,7 @@ typedef struct {
     typedef Celp_Vec3i Vec3i;
     typedef Celp_Vec3d Vec3d;
     #define vec2_add celp_vec2_add
+    #define vec2_sub celp_vec2_sub
     #define vec3_add celp_vec3_add
 
 #endif //CELP_STRIP_PREFIX
