@@ -485,6 +485,42 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %zu, Count: %zu", (map), (map)->capacity, (map)->count); \
     } while(0)
 
+
+/* Math */
+
+typedef struct {
+    float x, y;
+} Celp_Vec2f;
+
+typedef struct {
+    double x, y;
+} Celp_Vec2d;
+
+typedef struct {
+    int x, y;
+} Celp_Vec2i;
+
+typedef struct {
+    float x, y, z;
+} Celp_Vec3f;
+
+typedef struct {
+    double x, y, z;
+} Celp_Vec3d;
+
+typedef struct {
+    int x, y, z;
+} Celp_Vec3i;
+
+#define celp_vec3_add(v1, v2) \
+    ({ \
+       typeof((v1)) __v_out = { \
+           .x = (v1).x + (v2).x, \
+           .y = (v1).y + (v2).y, \
+           .z = (v1).z = (v2).z\
+       } \
+    })
+
 #ifdef CELP_IMPLEMENTATION
 
     void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
@@ -572,6 +608,13 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
     #define map_remove celp_map_remove
     #define map_free celp_map_free
     #define map_info celp_map_info
+    // CELP_MATH
+    typedef Celp_Vec2f Vec2f;
+    typedef Celp_Vec2d Vec2d;
+    typedef Celp_Vec2i Vec2i;
+    typedef Celp_Vec3f Vec3f;
+    typedef Celp_Vec3i Vec3i;
+    typedef Celp_Vec3d Vec3d;
 
 #endif //CELP_STRIP_PREFIX
 
