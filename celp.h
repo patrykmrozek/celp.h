@@ -512,13 +512,23 @@ typedef struct {
     int x, y, z;
 } Celp_Vec3i;
 
+#define celp_vec2_add(v1, v2) \
+    ({ \
+        typeof((v1)) __v_out = { \
+            .x = (v1).x + (v2).x, \
+            .y = (v1).y + (v2).y \
+        }; \
+        __v_out; \
+    })
+
 #define celp_vec3_add(v1, v2) \
     ({ \
        typeof((v1)) __v_out = { \
            .x = (v1).x + (v2).x, \
            .y = (v1).y + (v2).y, \
-           .z = (v1).z = (v2).z\
-       } \
+           .z = (v1).z + (v2).z\
+       }; \
+       __v_out; \
     })
 
 #ifdef CELP_IMPLEMENTATION
@@ -615,6 +625,8 @@ typedef struct {
     typedef Celp_Vec3f Vec3f;
     typedef Celp_Vec3i Vec3i;
     typedef Celp_Vec3d Vec3d;
+    #define vec2_add celp_vec2_add
+    #define vec3_add celp_vec3_add
 
 #endif //CELP_STRIP_PREFIX
 
