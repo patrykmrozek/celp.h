@@ -567,7 +567,7 @@ typedef struct {
     ({ \
         typeof((v)) __v_out = { \
             .x = (v).x * s, \
-            .y = (v).y * s \
+            .y = (v).y * s, \
             .z = (v).z * s \
         }; \
         __v_out; \
