@@ -68,4 +68,16 @@ int main() {
         "[%i %i %i] * %i = [%i %i %i]",
         a2.x, a2.y, a2.z, scale2, r5.x, r5.y, r5.z);
 
+
+    Vec3i_t c1 = {2, 3, 4};
+    Vec3i_t c2 = {5, 6, 7};
+    Vec3i_t cr = celp_vec3_cross(c1, c2);
+
+    celp_log(CELP_LOG_LEVEL_DEBUG,
+        "Vec3 Cross: "
+        "[%i %i %i] X [%i %i %i] = [%i %i %i]",
+        c1.x, c1.y, c1.z,
+        c2.x, c2.y, c2.z,
+        cr.x, cr.y, cr.z);
+
 }
