@@ -573,6 +573,16 @@ typedef struct {
         __v_out; \
     })
 
+#define celp_vec3_cross(v1, v2) \
+    ({ \
+        typeof((v1)) __v_out = { \
+            .x = ((v1).y * (v2).z) - ((v1).z * (v2).y), \
+            .y = ((v1).z * (v2).x) - ((v1).x * (v2.z)), \
+            .z = ((v1).x * (v2).y) - ((v1).y * (v2).x) \
+        }; \
+        __v_out; \
+    })
+
 #ifdef CELP_IMPLEMENTATION
 
     void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
@@ -675,6 +685,7 @@ typedef struct {
     #define vec3_sub celp_vec3_sub
     #define vec3_dot celp_vec3_dot
     #define vec3_scale celp_vec3_scale
+    #define vec3_cross celp_vec3_cross
 
 #endif //CELP_STRIP_PREFIX
 
