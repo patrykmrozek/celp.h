@@ -540,6 +540,16 @@ typedef struct {
        __v_out; \
     })
 
+#define celp_vec3_sub(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x - (v2).x, \
+        .y = (v1).y - (v2).y, \
+        .z = (v1).z - (v2).z\
+    }; \
+    __v_out; \
+})
+
 #ifdef CELP_IMPLEMENTATION
 
     void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
@@ -637,6 +647,7 @@ typedef struct {
     #define vec2_add celp_vec2_add
     #define vec2_sub celp_vec2_sub
     #define vec3_add celp_vec3_add
+    #define vec3_sub celp_vec3_sub
 
 #endif //CELP_STRIP_PREFIX
 
