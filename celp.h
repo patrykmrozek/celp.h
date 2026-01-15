@@ -522,13 +522,15 @@ typedef struct {
     })
 
 #define celp_vec2_sub(v1, v2) \
-({ \
-    typeof((v1)) __v_out = { \
-        .x = (v1).x - (v2).x, \
-        .y = (v1).x - (v2).x \
-    }; \
-    __v_out; \
-})
+    ({ \
+        typeof((v1)) __v_out = { \
+            .x = (v1).x - (v2).x, \
+            .y = (v1).x - (v2).x \
+        }; \
+        __v_out; \
+    })
+
+#define celp_vec2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
 
 #define celp_vec3_add(v1, v2) \
     ({ \
@@ -549,6 +551,8 @@ typedef struct {
     }; \
     __v_out; \
 })
+
+#define celp_vec3_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y) + ((v1).z * (v2).z)
 
 #ifdef CELP_IMPLEMENTATION
 
@@ -646,8 +650,10 @@ typedef struct {
     typedef Celp_Vec3d Vec3d;
     #define vec2_add celp_vec2_add
     #define vec2_sub celp_vec2_sub
+    #define vec2_dot celp_vec2_dot
     #define vec3_add celp_vec3_add
     #define vec3_sub celp_vec3_sub
+    #define vec3_dot celp_vec3_dot
 
 #endif //CELP_STRIP_PREFIX
 
