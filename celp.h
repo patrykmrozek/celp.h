@@ -525,7 +525,7 @@ typedef struct {
     ({ \
         typeof((v1)) __v_out = { \
             .x = (v1).x - (v2).x, \
-            .y = (v1).x - (v2).x \
+            .y = (v1).y - (v2).y \
         }; \
         __v_out; \
     })
@@ -577,11 +577,26 @@ typedef struct {
     ({ \
         typeof((v1)) __v_out = { \
             .x = ((v1).y * (v2).z) - ((v1).z * (v2).y), \
-            .y = ((v1).z * (v2).x) - ((v1).x * (v2.z)), \
+            .y = ((v1).z * (v2).x) - ((v1).x * (v2).z), \
             .z = ((v1).x * (v2).y) - ((v1).y * (v2).x) \
         }; \
         __v_out; \
     })
+
+#define celp_vec3_normalize(v) \
+({ \
+    typeof((v)) __v_out = {0}; \
+    float len_sq = (v).x*(v).x + (v).y*(v).y + (v).z*(v).z; \
+    if (len_sq > 0.0f) { \
+        float inv_len = 1.0f / sqrtf(len_sq); \
+        __v_out = { \
+            .x = (v).x * inv_len, \
+            .y = (v).y * inv_len, \
+            .z = (v).z * inv_len \
+        }; \
+    } \
+    __v_out; \
+})
 
 #ifdef CELP_IMPLEMENTATION
 
@@ -686,6 +701,7 @@ typedef struct {
     #define vec3_dot celp_vec3_dot
     #define vec3_scale celp_vec3_scale
     #define vec3_cross celp_vec3_cross
+    #define vec3_normalize celp_vec3_normalize
 
 #endif //CELP_STRIP_PREFIX
 
