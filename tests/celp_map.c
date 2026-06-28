@@ -1,7 +1,7 @@
 #include "../celp.h"
 #include <stdio.h>
 
-int celp_map() {
+void celp_map() {
     CELP_MAP(int, size_t) test = {};
     celp_map_init(&test);
     int k = 10;
@@ -26,5 +26,4 @@ int celp_map() {
 
     celp_map_free(&test);
     celp_map_info(&test);
-    return 0;
 }

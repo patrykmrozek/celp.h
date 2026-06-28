@@ -2,7 +2,7 @@
 #include "../celp.h"
 #include <stdio.h>
 
-int celp_math() {
+void celp_math() {
     celp_log(CELP_LOG_LEVEL_DEBUG, "MATH");
 
     Vec2i_t w = {2, 2};
@@ -78,5 +78,4 @@ int celp_math() {
         c1.x, c1.y, c1.z,
         c2.x, c2.y, c2.z,
         cr.x, cr.y, cr.z);
-
 }

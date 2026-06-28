@@ -1,7 +1,7 @@
 #include "../celp.h"
 #include <stdio.h>
 
-int celp_ll() {
+void celp_ll() {
     celp_log(CELP_LOG_LEVEL_INFO, "LL!");
 
     CELP_LL(int) n;
@@ -60,5 +60,4 @@ int celp_ll() {
 
     celp_ll_free(&n);
     celp_ll_info(&n);
-    return 0;
 }

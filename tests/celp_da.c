@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-int celp_da() {
+void celp_da() {
  
     CELP_DA(int) n = {};
     celp_da_init(&n);
@@ -49,6 +49,4 @@ int celp_da() {
 
 
     celp_da_free(&n);
-    return 0;
-
 }
