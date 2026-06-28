@@ -5,7 +5,6 @@
 // - memory alloc/arena macros
 // - DSs
 // - Math (linear algebra)
-
 #ifndef CELP_H
 #define CELP_H
 
@@ -155,7 +154,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
         celp_log(CELP_LOG_LEVEL_INFO, "Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", (da), (da)->capacity, (da)->count); \
     } while(0)
 
-//TODO_DA: remove, insert, bulk append
+//TODO_DA: bulk append
 
 
 /* Linked List */
@@ -372,22 +371,23 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
         } \
     } while(0)
 
+#define _celp_map_init_k_and_hash(map) \
+    typeof((map)->buckets[0].head->data.key) __k = (k); \
+    const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
+    uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
+
 #define celp_map_is_empty(map) ((map)->count == 0)
 
 #define celp_map_insert(map, k, v) \
     do { \
-        typeof((map)->buckets[0].head->data.key) __k = (k); \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        _celp_map_init_k_and_hash(map) \
         bool __found = false; \
-        while (__curr != (map)->buckets[__h].tail) { \
-            if (celp_compare(__curr->data.key, __k) == 0) { \
-                __curr->data.value = (v); \
+        celp_ll_foreach((map)->buckets, __bucket) {\
+            if (celp_compare(__bucket->data.key, __k) == 0) { \
+                __bucket->data.value = (v); \
                 __found = true; \
                 break; \
             } \
-            __curr = __curr->next; \
         } \
         if (!__found) { \
             typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = (v) }; \
@@ -400,18 +400,14 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 // if the key isnt already in the map it assigns value 1
 #define celp_map_increment(map, k) \
     do { \
-        typeof((map)->buckets[0].head->data.key) __k = (k); \
-        const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-        uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-        typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
+        _celp_map_init_k_and_hash(map) \
         bool __found = false; \
-        while (__curr != (map)->buckets[__h].tail) { \
-            if (celp_compare(__curr->data.key, __k) == 0) { \
-                __curr->data.value++; \
+        celp_ll_foreach((map)->buckets, __bucket) { \
+            if (celp_compare(__bucket->data.key, __k) == 0) { \
+                __bucket->data.value++; \
                 __found = true; \
                 break; \
             } \
-            __curr = __curr->next; \
         } \
         if (!__found) { \
             typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = 1 }; \
@@ -422,18 +418,14 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 
 #define celp_map_get(map, k, default_value) \
     ({ \
-        typeof((map)->buckets[0].head->data.key) __k = (k); \
         typeof((map)->buckets[0].head->data.value) __return = (default_value); \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-            while(__curr != (map)->buckets[__h].tail) { \
-                if (celp_compare(__curr->data.key, __k) == 0) { \
-                    __return = __curr->data.value; \
+            _celp_map_init_k_and_hash(map) \
+            celp_ll_foreach((map)->buckets, __bucket) { \
+                if (celp_compare(__bucket->data.key, __k) == 0) { \
+                    __return = __bucket->data.value; \
                     break; \
                 } \
-                __curr = __curr->next; \
             } \
         } \
         __return; \
@@ -441,18 +433,14 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 
 #define celp_map_contains(map, k) \
     ({ \
-        typeof((map)->buckets[0].head->data.key) __k = (k); \
         bool __found = false; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-            while(__curr != (map)->buckets[__h].tail) { \
-                if (celp_compare(__curr->data.key, __k) == 0) { \
+            _celp_map_init_k_and_hash(map) \
+            celp_ll_foreach((map)->buckets, __bucket) { \
+                if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __found = true; \
                     break; \
                 } \
-                __curr = __curr->next; \
             } \
         } \
         __found; \
@@ -461,20 +449,16 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 #define celp_map_remove(map, k) \
     ({ \
         CELP_ASSERT((map)->count > 0); \
-        typeof((map)->buckets[0].head->data.key) __k = (k); \
         typeof((map)->buckets[0].head->data.value) __return = {0}; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
-            uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
-            typeof((map)->buckets[0].head) __curr = (map)->buckets[__h].head->next; \
-            while(__curr != (map)->buckets[__h].tail) { \
-                if (celp_compare(__curr->data.key, __k) == 0) { \
-                    __return = __curr->data.value; \
-                    celp_ll_remove_node(&((map)->buckets[__h]), __curr); \
+            _celp_map_init_k_and_hash(map) \
+            celp_ll_foreach((map)->buckets, __bucket) { \
+                if (celp_compare(__bucket->data.key, __k) == 0) { \
+                    __return = __bucket->data.value; \
+                    celp_ll_remove_node(&((map)->buckets[__h]), __bucket); \
                     (map)->count--; \
                     break; \
                 } \
-                __curr = __curr->next; \
             } \
         } \
         __return; \
