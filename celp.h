@@ -168,7 +168,9 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         LLN_##dtype##_t* head; \
         LLN_##dtype##_t* tail; \
         size_t count; \
-    } LL_##dtype##_t;
+    } LL_##dtype##_t; \
+    \
+    LL_##dtype##_t \
 
 #define __celp_create_node(ll, x, p, n) \
     ({ \
@@ -317,10 +319,15 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         } \
     } while(0)
 
-#define celp_ll_foreach(ll, node) \
-    for (typeof((ll)->head) node = (ll)->head->next; \
-        node != (ll)->tail; \
-        node = node->next)
+#define celp_ll_foreach(ll, iter) \
+    for (typeof((ll)->head) iter = (ll)->head->next; \
+        iter != (ll)->tail; \
+        iter = iter->next)
+
+#define celp_ll_foreach_until_node(ll, iter, n) \
+    for (typeof((ll)->head) iter = (ll)->head->next; \
+        iter != (n); \
+        iter = iter->next)
 
 #define celp_ll_info(ll) \
     do { \
@@ -589,11 +596,9 @@ typedef struct {
     float len_sq = (v).x*(v).x + (v).y*(v).y + (v).z*(v).z; \
     if (len_sq > 0.0f) { \
         float inv_len = 1.0f / sqrtf(len_sq); \
-        __v_out = { \
-            .x = (v).x * inv_len, \
-            .y = (v).y * inv_len, \
-            .z = (v).z * inv_len \
-        }; \
+        __v_out.x = (v).x * inv_len; \
+        __v_out.y = (v).y * inv_len; \
+        __v_out.z = (v).z * inv_len; \
     } \
     __v_out; \
 })

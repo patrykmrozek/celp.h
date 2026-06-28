@@ -39,7 +39,7 @@ int main() {
 
     int remove_idx = 1;
     log(CELP_LOG_LEVEL_DEBUG, "Removing idx[%zu]", remove_idx);
-    int removed = ll_remove(&n, remove_idx);
+    int removed = ll_remove_at_index(&n, remove_idx);
     log(CELP_LOG_LEVEL_DEBUG, "Removed idx[%zu]: %i", remove_idx, removed);
     ll_info(&n);
 

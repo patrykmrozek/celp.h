@@ -3,12 +3,10 @@
 #include "../celp.h"
 #include <stdio.h>
 
-CELP_LL(int);
-
 int main() {
     celp_log(CELP_LOG_LEVEL_INFO, "LL!");
 
-    LL_int_t n;
+    CELP_LL(int) n;
     celp_ll_init(&n);
     celp_ll_add(&n, 5);
     celp_ll_add(&n, 6);
@@ -19,8 +17,21 @@ int main() {
 
     celp_log(CELP_LOG_LEVEL_DEBUG, "ll print foreach: ");
     size_t count = 0;
+    celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach");
     celp_ll_foreach(&n, i) {
-        celp_log(CELP_LOG_LEVEL_DEBUG, "[%zu] %i", count, i->data);
+        celp_log(CELP_LOG_LEVEL_DEBUG,
+                "[%zu] %i", 
+                count, i->data);
+        count++;
+    }
+
+    LLN_int_t *until = n.tail->prev->prev;
+    count = 0;
+    celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach_until_node");
+    celp_ll_foreach_until_node(&n, iter, until) {
+        celp_log(CELP_LOG_LEVEL_DEBUG,
+                "[%zu] %i", 
+                count, iter->data);
         count++;
     }
 
