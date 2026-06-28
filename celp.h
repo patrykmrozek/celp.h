@@ -84,7 +84,9 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         dtype* items; \
         size_t count; \
         size_t capacity; \
-    } DA_##dtype##_t;
+    } DA_##dtype##_t; \
+    \
+    DA_##dtype##_t 
 
 #define celp_da_init(da) \
     do { \

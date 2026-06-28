@@ -6,9 +6,8 @@
 #include <stdio.h>
 
 int main(void) {
-
-    CELP_DA(int);
-    DA_int_t n = {};
+ 
+    CELP_DA(int) n = {};
     celp_da_init(&n);
 
     for (uint32_t i = 0; i < 10; i++) {
