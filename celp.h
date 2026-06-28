@@ -608,7 +608,7 @@ typedef struct {
 })
 
 #ifdef CELP_IMPLEMENTATION
-
+#ifdef  CELP_DEBUG
     void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
     {
         va_list args;
@@ -637,6 +637,12 @@ typedef struct {
 
         va_end(args);
     }
+#else 
+    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
+    {
+        (void)log_type; (void)fmt_string;
+    }
+#endif // CELP_DEBUG
 
 #endif //CELP_IMPLEMENTATION
 

@@ -1,9 +1,7 @@
-#include <complex.h>
-#define CELP_IMPLEMENTATION
 #include "../celp.h"
 #include <stdio.h>
 
-int main() {
+int celp_ll() {
     celp_log(CELP_LOG_LEVEL_INFO, "LL!");
 
     CELP_LL(int) n;

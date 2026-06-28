@@ -1,8 +1,7 @@
-#define CELP_IMPLEMENTATION
 #include "../celp.h"
 #include <stdio.h>
 
-int main() {
+int celp_map() {
     CELP_MAP(int, size_t) test = {};
     celp_map_init(&test);
     int k = 10;
