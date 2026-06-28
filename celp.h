@@ -680,6 +680,7 @@ typedef struct {
     #define ll_remove_node celp_ll_remove_node
     #define ll_print_int celp_ll_print_int
     #define ll_foreach celp_ll_foreach
+    #define ll_foreach_until_node celp_ll_foreach_until_node
     #define ll_free celp_ll_free
     #define ll_info celp_ll_info
     //CELP_MAP
