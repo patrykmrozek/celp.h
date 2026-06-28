@@ -55,9 +55,9 @@ typedef enum {
    CELP_LOG_LEVEL_INFO,
    CELP_LOG_LEVEL_DEBUG,
    CELP_LOG_LEVEL_ERROR,
-} Celp_Log_Level_t;
+} CELP_log_level_t;
 
-CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
+CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 
 /* Misc */
 #define celp_compare(a, b) \
@@ -501,27 +501,27 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
 
 typedef struct {
     float x, y;
-} Celp_Vec2f_t;
+} CELP_vec2f_t;
 
 typedef struct {
     double x, y;
-} Celp_Vec2d_t;
+} CELP_vec2d_t;
 
 typedef struct {
     int x, y;
-} Celp_Vec2i_t;
+} CELP_vec2i_t;
 
 typedef struct {
     float x, y, z;
-} Celp_Vec3f_t;
+} CELP_vec3f_t;
 
 typedef struct {
     double x, y, z;
-} Celp_Vec3d_t;
+} CELP_vec3d_t;
 
 typedef struct {
     int x, y, z;
-} Celp_Vec3i_t;
+} CELP_vec3i_t;
 
 #define celp_vec2_add(v1, v2) \
     ({ \
@@ -609,7 +609,7 @@ typedef struct {
 
 #ifdef CELP_IMPLEMENTATION
 #ifdef  CELP_DEBUG
-    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
+    void celp_log(CELP_log_level_t log_type, const char* fmt_string, ...)
     {
         va_list args;
         va_start(args, fmt_string); //last named param -> knows where to start with vargs
@@ -638,7 +638,7 @@ typedef struct {
         va_end(args);
     }
 #else 
-    void celp_log(Celp_Log_Level_t log_type, const char* fmt_string, ...)
+    void celp_log(CELP_log_level_t log_type, const char* fmt_string, ...)
     {
         (void)log_type; (void)fmt_string;
     }
@@ -702,12 +702,12 @@ typedef struct {
     #define map_free celp_map_free
     #define map_info celp_map_info
     // CELP_MATH
-    typedef Celp_Vec2f_t Vec2f_t;
-    typedef Celp_Vec2d_t Vec2d_t;
-    typedef Celp_Vec2i_t Vec2i_t;
-    typedef Celp_Vec3f_t Vec3f_t;
-    typedef Celp_Vec3i_t Vec3i_t;
-    typedef Celp_Vec3d_t Vec3d_t;
+    typedef CELP_vec2f_t Vec2f_t;
+    typedef CELP_vec2d_t Vec2d_t;
+    typedef CELP_vec2i_t Vec2i_t;
+    typedef CELP_vec3f_t Vec3f_t;
+    typedef CELP_vec3i_t Vec3i_t;
+    typedef CELP_vec3d_t Vec3d_t;
     #define vec2_add celp_vec2_add
     #define vec2_sub celp_vec2_sub
     #define vec2_dot celp_vec2_dot
