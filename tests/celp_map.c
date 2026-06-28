@@ -2,11 +2,8 @@
 #include "../celp.h"
 #include <stdio.h>
 
-typedef size_t sizet;
-CELP_MAP(int, sizet);
-
 int main() {
-    Map_int_sizet_t test = {};
+    CELP_MAP(int, size_t) test = {};
     celp_map_init(&test);
     int k = 10;
     const unsigned char* k_bytes = (const unsigned char*)&k;

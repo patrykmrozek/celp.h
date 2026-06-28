@@ -343,13 +343,15 @@ CELP_DEF void celp_log(Celp_Log_Level_t log_type, const char* msg, ...);
         value_dtype value; \
     } KV_##key_dtype##_##value_dtype; \
     \
-    CELP_LL(KV_##key_dtype##_##value_dtype) \
+    CELP_LL(KV_##key_dtype##_##value_dtype); \
     \
     typedef struct { \
         LL_KV_##key_dtype##_##value_dtype##_t* buckets; \
         size_t count; \
         size_t capacity; \
-    }  Map_##key_dtype##_##value_dtype##_t;
+    }  Map_##key_dtype##_##value_dtype##_t; \
+    \
+    Map_##key_dtype##_##value_dtype##_t
 
 #define __celp_map_clear(map) \
     do {\
