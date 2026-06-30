@@ -1,12 +1,11 @@
 //TODO:
 // - file reader
 // - string builder/view
-// - hashmap
 // - memory alloc/arena macros
 // - DSs
-// - Math (linear algebra)
-#ifndef CELP_H
-#define CELP_H
+//
+#ifndef _CELP_H
+#define _CELP_H
 
 #ifndef CELP_DEF
 #define CELP_DEF
@@ -54,9 +53,10 @@ typedef enum {
    CELP_LOG_LEVEL_INFO,
    CELP_LOG_LEVEL_DEBUG,
    CELP_LOG_LEVEL_ERROR,
+   CELP_LOG_LEVEL_TRACE,
 } CELP_log_level_t;
 
-CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
+CELP_DEF void celp_log(CELP_log_level_t log_level, const char* fmt_string, ...);
 
 /* Misc */
 #define celp_compare(a, b) \
@@ -371,7 +371,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
         } \
     } while(0)
 
-#define _celp_map_init_k_and_hash(map) \
+#define __celp_map_init_k_and_hash(map) \
     typeof((map)->buckets[0].head->data.key) __k = (k); \
     const unsigned char* __k_bytes = (const unsigned char*)&(__k); \
     uint32_t __h = celp_hash(__k_bytes, sizeof(__k)) % (map)->capacity; \
@@ -380,7 +380,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 
 #define celp_map_insert(map, k, v) \
     do { \
-        _celp_map_init_k_and_hash(map) \
+        __celp_map_init_k_and_hash(map) \
         bool __found = false; \
         celp_ll_foreach((map)->buckets, __bucket) {\
             if (celp_compare(__bucket->data.key, __k) == 0) { \
@@ -400,7 +400,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
 // if the key isnt already in the map it assigns value 1
 #define celp_map_increment(map, k) \
     do { \
-        _celp_map_init_k_and_hash(map) \
+        __celp_map_init_k_and_hash(map) \
         bool __found = false; \
         celp_ll_foreach((map)->buckets, __bucket) { \
             if (celp_compare(__bucket->data.key, __k) == 0) { \
@@ -420,7 +420,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
     ({ \
         typeof((map)->buckets[0].head->data.value) __return = (default_value); \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
+            __celp_map_init_k_and_hash(map) \
             celp_ll_foreach((map)->buckets, __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __return = __bucket->data.value; \
@@ -435,7 +435,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
     ({ \
         bool __found = false; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
+            __celp_map_init_k_and_hash(map) \
             celp_ll_foreach((map)->buckets, __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __found = true; \
@@ -451,7 +451,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_type, const char* msg, ...);
         CELP_ASSERT((map)->count > 0); \
         typeof((map)->buckets[0].head->data.value) __return = {0}; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
+            __celp_map_init_k_and_hash(map) \
             celp_ll_foreach((map)->buckets, __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __return = __bucket->data.value; \
@@ -592,35 +592,46 @@ typedef struct {
 })
 
 #ifdef CELP_IMPLEMENTATION
-#ifdef  CELP_DEBUG
-    void celp_log(CELP_log_level_t log_type, const char* fmt_string, ...)
-    {
-        va_list args;
-        va_start(args, fmt_string); //last named param -> knows where to start with vargs
-        FILE* out = NULL;
-        const char* tag = NULL;
+#ifdef     CELP_DEBUG
 
-        switch(log_type) {
-            case CELP_LOG_LEVEL_INFO:
-                out = stdout;
-                tag = "[INFO] ";
-                break;
-            case CELP_LOG_LEVEL_ERROR:
-                out = stderr;
-                tag = "[ERROR] ";
-                break;
-            case CELP_LOG_LEVEL_DEBUG:
-                out = stdout;
-                tag = "[DEBUG] ";
-                break;
-        }
+void celp_log(CELP_log_level_t log_level,
+              const char* fmt_string,
+              ...)
+{
+    va_list args;
+    va_start(args, fmt_string); 
+    FILE* out = NULL;
+    const char* tag = NULL;
 
-        fputs(tag, out);
-        vfprintf(out, fmt_string, args); //takes format string + va_list
-        fputc('\n', out);
-
-        va_end(args);
+    switch(log_level) {
+        case CELP_LOG_LEVEL_INFO:
+            out = stdout;
+            tag = "[INFO] ";
+            break;
+        case CELP_LOG_LEVEL_ERROR:
+            out = stderr;
+            tag = "[ERROR] ";
+            break;
+        case CELP_LOG_LEVEL_DEBUG:
+            out = stdout;
+            tag = "[DEBUG] ";
+            break;
+        case CELP_LOG_LEVEL_TRACE:
+            out = stdout;
+            tag = "[TRACE] ";
+            fputs(tag, out);
+            fprintf(out, "%s:", __FILE__);
+            fprintf(out, "%d:", __LINE__);
+            fprintf(out, "%s:\n\t", __FUNCTION__);
+            goto cont;
     }
+
+    fputs(tag, out);
+cont:
+    vfprintf(out, fmt_string, args); 
+    fputc('\n', out);
+    va_end(args);
+}
 #else 
     void celp_log(CELP_log_level_t log_type, const char* fmt_string, ...)
     {
@@ -640,7 +651,8 @@ typedef struct {
     #define log celp_log
     #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
     #define LOG_LEVEL_DEBUG CELP_LOG_LEVEL_DEBUG
-    #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR
+    #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR 
+    #define LOG_LEVEL_TRACE CELP_LOG_LEVEL_TRACE
     //CELP_DA
     #define DA CELP_DA
     #define da_init celp_da_init
@@ -705,4 +717,4 @@ typedef struct {
 
 #endif //CELP_STRIP_PREFIX
 
-#endif //CELP_H
+#endif //_CELP_H
