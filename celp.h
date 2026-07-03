@@ -613,29 +613,29 @@ void celp_log(CELP_log_level_t log_level,
             break;
         case CELP_LOG_LEVEL_ERROR:
             #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_ERROR)
-            out = stderr;
-            tag = "[ERROR] ";
+                out = stderr;
+                tag = "[ERROR] ";
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_ERROR
             break;
         case CELP_LOG_LEVEL_DEBUG:
             #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_DEBUG)
-            out = stdout;
-            tag = "[DEBUG] ";
+                out = stdout;
+                tag = "[DEBUG] ";
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_DEBUG
             break;
         case CELP_LOG_LEVEL_TRACE:
             #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_TRACE)
-            out = stdout;
-            out = stdout;
-            tag = "[TRACE] ";
-            fputs(tag, out);
-            fprintf(out, "%s:", __FILE__);
-            fprintf(out, "%d:", __LINE__);
-            fprintf(out, "%s:\n\t", __FUNCTION__);
+                out = stdout;
+                out = stdout;
+                tag = "[TRACE] ";
+                fputs(tag, out);
+                fprintf(out, "%s:", __FILE__);
+                fprintf(out, "%d:", __LINE__);
+                fprintf(out, "%s:\n\t", __FUNCTION__);
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_TRACE
