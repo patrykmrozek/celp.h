@@ -630,7 +630,6 @@ void celp_log(CELP_log_level_t log_level,
         case CELP_LOG_LEVEL_TRACE:
             #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_TRACE)
                 out = stdout;
-                out = stdout;
                 tag = "[TRACE] ";
                 fputs(tag, out);
                 fprintf(out, "%s:", __FILE__);
