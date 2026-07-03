@@ -592,7 +592,6 @@ typedef struct {
 })
 
 #ifdef CELP_IMPLEMENTATION
-#ifdef     CELP_DEBUG
 
 void celp_log(CELP_log_level_t log_level,
               const char* fmt_string,
@@ -605,24 +604,41 @@ void celp_log(CELP_log_level_t log_level,
 
     switch(log_level) {
         case CELP_LOG_LEVEL_INFO:
-            out = stdout;
-            tag = "[INFO] ";
+            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_INFO)
+                out = stdout;
+                tag = "[INFO] ";
+            #else
+                goto ignore;
+            #endif //CELP_LOG_MODE_INFO
             break;
         case CELP_LOG_LEVEL_ERROR:
+            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_ERROR)
             out = stderr;
             tag = "[ERROR] ";
+            #else
+                goto ignore;
+            #endif //CELP_LOG_MODE_ERROR
             break;
         case CELP_LOG_LEVEL_DEBUG:
+            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_DEBUG)
             out = stdout;
             tag = "[DEBUG] ";
+            #else
+                goto ignore;
+            #endif //CELP_LOG_MODE_DEBUG
             break;
         case CELP_LOG_LEVEL_TRACE:
+            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_TRACE)
+            out = stdout;
             out = stdout;
             tag = "[TRACE] ";
             fputs(tag, out);
             fprintf(out, "%s:", __FILE__);
             fprintf(out, "%d:", __LINE__);
             fprintf(out, "%s:\n\t", __FUNCTION__);
+            #else
+                goto ignore;
+            #endif //CELP_LOG_MODE_TRACE
             goto cont;
     }
 
@@ -631,13 +647,11 @@ cont:
     vfprintf(out, fmt_string, args); 
     fputc('\n', out);
     va_end(args);
+    return;
+ignore:
+    (void)log_level; (void)fmt_string;
+
 }
-#else 
-    void celp_log(CELP_log_level_t log_type, const char* fmt_string, ...)
-    {
-        (void)log_type; (void)fmt_string;
-    }
-#endif // CELP_DEBUG
 
 #endif //CELP_IMPLEMENTATION
 
@@ -646,7 +660,11 @@ cont:
 #ifdef CELP_STRIP_PREFIX
     //MISC
     #define compare celp_compare
-    #define hash celp_hash
+    #define hash celp_hash 
+    #define LOG_MODE_INFO CELP_LOG_MODE_INFO
+    #define LOG_MODE_DEBUG CELP_LOG_MODE_DEBUG
+    #define LOG_MODE_ERROR CELP_LOG_MODE_ERROR
+    #define LOG_MODE_TRACE CELP_LOG_MODE_TRACE
     //CELP_LOG
     #define log celp_log
     #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
