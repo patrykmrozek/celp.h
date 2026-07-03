@@ -659,17 +659,17 @@ ignore:
 #ifdef CELP_STRIP_PREFIX
     //MISC
     #define compare celp_compare
-    #define hash celp_hash 
-    #define LOG_MODE_INFO CELP_LOG_MODE_INFO
-    #define LOG_MODE_DEBUG CELP_LOG_MODE_DEBUG
-    #define LOG_MODE_ERROR CELP_LOG_MODE_ERROR
-    #define LOG_MODE_TRACE CELP_LOG_MODE_TRACE
+    #define hash celp_hash  
     //CELP_LOG
     #define log celp_log
     #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
     #define LOG_LEVEL_DEBUG CELP_LOG_LEVEL_DEBUG
     #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR 
     #define LOG_LEVEL_TRACE CELP_LOG_LEVEL_TRACE
+    #define LOG_MODE_INFO CELP_LOG_MODE_INFO
+    #define LOG_MODE_DEBUG CELP_LOG_MODE_DEBUG
+    #define LOG_MODE_ERROR CELP_LOG_MODE_ERROR
+    #define LOG_MODE_TRACE CELP_LOG_MODE_TRACE
     //CELP_DA
     #define DA CELP_DA
     #define da_init celp_da_init
