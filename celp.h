@@ -593,6 +593,32 @@ typedef struct {
 
 #ifdef CELP_IMPLEMENTATION
 
+// can't apply usual STRIP_PREFIX logic to these flags
+// since theyre passed in through stdin theyre technically
+// defined already, so to apply STREIP_PREFIX to these, we
+// have to first check if the stripped version have been
+// defined, then define the CELP equivalent which works on
+// celp_log later on..
+#ifdef LOG_MODE_ALL
+    #define CELP_LOG_MODE_ALL LOG_MODE_ALL
+#endif 
+
+#ifdef LOG_MODE_INFO
+    #define CELP_LOG_MODE_INFO LOG_MODE_INFO
+#endif 
+
+#ifdef LOG_MODE_DEBUG
+    #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
+#endif 
+
+#ifdef LOG_MODE_ERROR
+    #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
+#endif 
+
+#ifdef LOG_MODE_TRACE
+    #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
+#endif 
+
 void celp_log(CELP_log_level_t log_level,
               const char* fmt_string,
               ...)
@@ -665,11 +691,7 @@ ignore:
     #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
     #define LOG_LEVEL_DEBUG CELP_LOG_LEVEL_DEBUG
     #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR 
-    #define LOG_LEVEL_TRACE CELP_LOG_LEVEL_TRACE
-    #define LOG_MODE_INFO CELP_LOG_MODE_INFO
-    #define LOG_MODE_DEBUG CELP_LOG_MODE_DEBUG
-    #define LOG_MODE_ERROR CELP_LOG_MODE_ERROR
-    #define LOG_MODE_TRACE CELP_LOG_MODE_TRACE
+    #define LOG_LEVEL_TRACE CELP_LOG_LEVEL_TRACE  
     //CELP_DA
     #define DA CELP_DA
     #define da_init celp_da_init
