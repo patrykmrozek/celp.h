@@ -108,7 +108,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         (da)->capacity = 0;\
     } while(0)
 
-#define celp_da_clear(da) ((da)->count = 0)
+#define celp_da_clear(da)    ((da)->count = 0)
 #define celp_da_is_empty(da) ((da)->count == 0)
 
 #define celp_da_reserve(da, expected_capacity) \
@@ -120,7 +120,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
             while ((da)->capacity < expected_capacity) {\
                 (da)->capacity *= 2;\
             }\
-            (da)->items = CELP_REALLOC((da)->items, (da)->capacity * sizeof((da)->items[0]));\
+            (da)->items = CELP_REALLOC((da)->items, \
+                                       (da)->capacity * sizeof((da)->items[0]));\
             CELP_ASSERT((da)->items != NULL);\
         }\
     } while(0)
@@ -155,7 +156,10 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 // user provides some label (i) -> macro initializes it as a pointer to (da)->items
 // elements can be accessed by dereferencing (i)
 // to get index 0, suntract (i) from (da)->items
-#define celp_da_foreach(da, i) for (typeof(*(da)->items)* (i) = (da)->items; (i) < (da)->items + (da)->count; (i)++)
+#define celp_da_foreach(da, i) \
+    for (typeof(*(da)->items)* (i) = (da)->items; \
+         (i) < (da)->items + (da)->count; \
+         (i)++)
 
 #define celp_da_free(da) \
     do { \
@@ -165,7 +169,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_da_info(da) \
     do{ \
-        celp_log(CELP_LOG_LEVEL_INFO, "Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", (da), (da)->capacity, (da)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, \
+                 "Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", \
+                 (da), (da)->capacity, (da)->count); \
     } while(0)
 
 //TODO_DA: bulk append
@@ -339,14 +345,18 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     do { \
         typeof((ll)->head) __curr = (ll)->head->next; \
         for (size_t __i = 0; __i < (ll)->count; __i++) { \
-            celp_log(CELP_LOG_LEVEL_INFO, "[%zu] %i", __i, __curr->data); \
+            celp_log(CELP_LOG_LEVEL_INFO, \
+                     "[%zu] %i", \
+                     __i , __curr->data); \
             __curr = __curr->next; \
         } \
     } while(0)
 
 #define celp_ll_info(ll) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, "LL at: %p, Count: %zu", (ll), (ll)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, \
+                 "LL at: %p, Count: %zu", \
+                 (ll), (ll)->count); \
     } while(0)
 
 /* HashMap */
@@ -404,7 +414,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
             } \
         } \
         if (!__found) { \
-            typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = (v) }; \
+            typeof((map)->buckets[__h].head->data) __kv = \
+                { .key = (__k), .value = (v) }; \
             celp_ll_add(&((map)->buckets[__h]), __kv); \
             (map)->count++; \
         } \
@@ -424,7 +435,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
             } \
         } \
         if (!__found) { \
-            typeof((map)->buckets[__h].head->data) __kv = { .key = (__k), .value = 1 }; \
+            typeof((map)->buckets[__h].head->data) __kv = \
+                { .key = (__k), .value = 1 }; \
             celp_ll_add(&((map)->buckets[__h]), __kv); \
             (map)->count++; \
         } \
@@ -491,7 +503,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_map_info(map) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, "Map at: %p, Capacity: %zu, Count: %zu", (map), (map)->capacity, (map)->count); \
+        celp_log(CELP_LOG_LEVEL_INFO, \
+                 "Map at: %p, Capacity: %zu, Count: %zu", \
+                 (map), (map)->capacity, (map)->count); \
     } while(0)
 
 
@@ -637,7 +651,6 @@ typedef struct {
     #endif 
 #endif //LOG_MODE_ALL 
 
-
 CELP_DEF void celp_log(CELP_log_level_t log_level,
                        const char *file,
                        const char *function,
@@ -690,7 +703,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     }
 
 prepend:
-    snprintf(fmt_str_trace, 32, "%s:%s:%d ",
+    snprintf(fmt_str_trace, 56, "%s:%s:%d ",
              file, function, line);
     strncat(fmt_str_trace, fmt_string, 200);
     fmt_string = fmt_str_trace;
