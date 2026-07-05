@@ -13,7 +13,12 @@ void celp_ll() {
     celp_ll_add_last(&n, 11);
     celp_ll_info(&n);
 
-    celp_log(CELP_LOG_LEVEL_DEBUG, "ll print foreach: ");
+    celp_log(CELP_LOG_LEVEL_TRACE, "ll print foreach: ", 
+            __FILE__, __FUNCTION__, __LINE__);
+
+    //segfaults..
+    //celp_log(CELP_LOG_LEVEL_TRACE, "ll print foreach: "); 
+
     size_t count = 0;
     celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach");
     celp_ll_foreach(&n, i) {

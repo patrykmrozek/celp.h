@@ -1,7 +1,7 @@
 OUT = celp_test
 $(OUT):
 	gcc \
-		-DCELP_LOG_MODE_ALL \
+		-DLOG_MODE_TRACE \
 		tests/celp_test.c \
 		tests/celp_da.c \
 		tests/celp_ll.c \

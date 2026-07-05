@@ -601,6 +601,10 @@ typedef struct {
 // celp_log later on..
 #ifdef LOG_MODE_ALL
     #define CELP_LOG_MODE_ALL LOG_MODE_ALL
+    #define CELP_LOG_MODE_INFO LOG_MODE_INFO
+    #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
+    #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
+    #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
 #endif 
 
 #ifdef LOG_MODE_INFO
@@ -626,11 +630,12 @@ void celp_log(CELP_log_level_t log_level,
     va_list args;
     va_start(args, fmt_string); 
     FILE* out = NULL;
-    const char* tag = NULL;
+    char* tag = NULL;
+    char fmt_str_trace[256];
 
     switch(log_level) {
         case CELP_LOG_LEVEL_INFO:
-            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_INFO)
+            #if defined(CELP_LOG_MODE_INFO)
                 out = stdout;
                 tag = "[INFO] ";
             #else
@@ -638,7 +643,7 @@ void celp_log(CELP_log_level_t log_level,
             #endif //CELP_LOG_MODE_INFO
             break;
         case CELP_LOG_LEVEL_ERROR:
-            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_ERROR)
+            #if defined(CELP_LOG_MODE_ERROR)
                 out = stderr;
                 tag = "[ERROR] ";
             #else
@@ -646,7 +651,7 @@ void celp_log(CELP_log_level_t log_level,
             #endif //CELP_LOG_MODE_ERROR
             break;
         case CELP_LOG_LEVEL_DEBUG:
-            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_DEBUG)
+            #if defined(CELP_LOG_MODE_DEBUG)
                 out = stdout;
                 tag = "[DEBUG] ";
             #else
@@ -654,21 +659,29 @@ void celp_log(CELP_log_level_t log_level,
             #endif //CELP_LOG_MODE_DEBUG
             break;
         case CELP_LOG_LEVEL_TRACE:
-            #if defined(CELP_LOG_MODE_ALL) || defined(CELP_LOG_MODE_TRACE)
+            #if defined(CELP_LOG_MODE_TRACE)
                 out = stdout;
-                tag = "[TRACE] ";
-                fputs(tag, out);
-                fprintf(out, "%s:", __FILE__);
-                fprintf(out, "%d:", __LINE__);
-                fprintf(out, "%s:\n\t", __FUNCTION__);
+                tag = "[TRACE] "; 
+                //when calling log with LEVEL_TRACE it is assumed that
+                //it will be called with __FILE__, __LINE__, __FUNCTION__,
+                //in this case, these will be popped out of the va_list
+                //and prepended to the fmt_string
+                //the con is that without passing these three explicitly,
+                //the program crashes with segfault..
+                //need to look into va_list arg and type validation..
+                char *file = va_arg(args, char *);
+                char *function = va_arg(args, char *);
+                int line = va_arg(args, int);
+                snprintf(fmt_str_trace, 32, "%s:%s:%d ",
+                         file, function, line);
+                strncat(fmt_str_trace, fmt_string, 200);
+                fmt_string = fmt_str_trace;
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_TRACE
-            goto cont;
     }
 
     fputs(tag, out);
-cont:
     vfprintf(out, fmt_string, args); 
     fputc('\n', out);
     va_end(args);
