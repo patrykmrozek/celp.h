@@ -398,7 +398,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     do { \
         __celp_map_init_k_and_hash(map) \
         bool __found = false; \
-        celp_ll_foreach((map)->buckets, __bucket) {\
+        celp_ll_foreach(&(map)->buckets[__h], __bucket) {\
             if (celp_compare(__bucket->data.key, __k) == 0) { \
                 __bucket->data.value = (v); \
                 __found = true; \
@@ -418,7 +418,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     do { \
         __celp_map_init_k_and_hash(map) \
         bool __found = false; \
-        celp_ll_foreach((map)->buckets, __bucket) { \
+        celp_ll_foreach(&(map)->buckets[__h], __bucket) { \
             if (celp_compare(__bucket->data.key, __k) == 0) { \
                 __bucket->data.value++; \
                 __found = true; \
@@ -437,7 +437,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         typeof((map)->buckets[0].head->data.value) __return = (default_value); \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
             __celp_map_init_k_and_hash(map) \
-            celp_ll_foreach((map)->buckets, __bucket) { \
+            celp_ll_foreach(&(map)->buckets[__h], __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __return = __bucket->data.value; \
                     break; \
@@ -452,7 +452,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         bool __found = false; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
             __celp_map_init_k_and_hash(map) \
-            celp_ll_foreach((map)->buckets, __bucket) { \
+            celp_ll_foreach(&(map)->buckets[__h], __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __found = true; \
                     break; \
@@ -468,7 +468,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         typeof((map)->buckets[0].head->data.value) __return = {0}; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
             __celp_map_init_k_and_hash(map) \
-            celp_ll_foreach((map)->buckets, __bucket) { \
+            celp_ll_foreach(&(map)->buckets[__h], __bucket) { \
                 if (celp_compare(__bucket->data.key, __k) == 0) { \
                     __return = __bucket->data.value; \
                     celp_ll_remove_node(&((map)->buckets[__h]), __bucket); \
