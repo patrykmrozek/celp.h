@@ -13,10 +13,11 @@ void celp_ll() {
     celp_ll_add_last(&n, 11);
     celp_ll_info(&n);
 
-    celp_log(CELP_LOG_LEVEL_TRACE, "ll print foreach: ", 
-            __FILE__, __FUNCTION__, __LINE__);
+    celp_log(CELP_LOG_LEVEL_TRACE,
+             __FILE__, __FUNCTION__, __LINE__,
+             "ll print foreach: "); 
 
-    //segfaults..
+    //no longer segfaults but need to handle error..
     //celp_log(CELP_LOG_LEVEL_TRACE, "ll print foreach: "); 
 
     size_t count = 0;

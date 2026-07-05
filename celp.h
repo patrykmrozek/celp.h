@@ -49,14 +49,28 @@
 #include <stdint.h>
 
 /* Logging */
-typedef enum {
-   CELP_LOG_LEVEL_INFO,
-   CELP_LOG_LEVEL_DEBUG,
-   CELP_LOG_LEVEL_ERROR,
-   CELP_LOG_LEVEL_TRACE,
+typedef enum CELP_log_level_e {
+   _CELP_LOG_LEVEL_INFO,
+   _CELP_LOG_LEVEL_DEBUG,
+   _CELP_LOG_LEVEL_ERROR,
+   _CELP_LOG_LEVEL_TRACE,
 } CELP_log_level_t;
 
-CELP_DEF void celp_log(CELP_log_level_t log_level, const char* fmt_string, ...);
+//sort of implemented function overloading?
+//user uses these fake enums below, which automatically fill
+//out the (file, function, line) parameters in celp_log based 
+//on the log level
+#define CELP_LOG_LEVEL_INFO  (CELP_log_level_t)_CELP_LOG_LEVEL_INFO, NULL, NULL, 0
+#define CELP_LOG_LEVEL_DEBUG (CELP_log_level_t)_CELP_LOG_LEVEL_DEBUG, NULL, NULL, 0
+#define CELP_LOG_LEVEL_ERROR (CELP_log_level_t)_CELP_LOG_LEVEL_ERROR
+#define CELP_LOG_LEVEL_TRACE (CELP_log_level_t)_CELP_LOG_LEVEL_TRACE
+
+CELP_DEF void celp_log(CELP_log_level_t log_level,
+                       const char *file,
+                       const char *function,
+                       int line,
+                       const char* fmt_string,
+                       ...);
 
 /* Misc */
 #define celp_compare(a, b) \
@@ -290,7 +304,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level, const char* fmt_string, ...);
         CELP_FREE(__curr); \
         (ll)->count--; \
     } else { \
-        celp_log(CELP_LOG_LEVEL_ERROR, "Failed to find and remove node"); \
+        celp_log(CELP_LOG_LEVEL_ERROR, \
+                __FILE__, __FUNCTION__, __LINE__, \
+                "Failed to find and remove node"); \
     } \
     \
     __return; \
@@ -605,27 +621,31 @@ typedef struct {
     #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
     #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
     #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
-#endif 
+#else
+    #ifdef LOG_MODE_INFO
+        #define CELP_LOG_MODE_INFO LOG_MODE_INFO
+    #endif 
 
-#ifdef LOG_MODE_INFO
-    #define CELP_LOG_MODE_INFO LOG_MODE_INFO
-#endif 
+    #ifdef LOG_MODE_DEBUG
+        #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
+    #endif 
 
-#ifdef LOG_MODE_DEBUG
-    #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
-#endif 
+    #ifdef LOG_MODE_ERROR
+        #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
+    #endif 
 
-#ifdef LOG_MODE_ERROR
-    #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
-#endif 
+    #ifdef LOG_MODE_TRACE
+        #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
+    #endif 
+#endif //LOG_MODE_ALL 
 
-#ifdef LOG_MODE_TRACE
-    #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
-#endif 
 
-void celp_log(CELP_log_level_t log_level,
-              const char* fmt_string,
-              ...)
+CELP_DEF void celp_log(CELP_log_level_t log_level,
+                       const char *file,
+                       const char *function,
+                       int line,
+                       const char* fmt_string,
+                       ...)
 {
     va_list args;
     va_start(args, fmt_string); 
@@ -634,53 +654,49 @@ void celp_log(CELP_log_level_t log_level,
     char fmt_str_trace[256];
 
     switch(log_level) {
-        case CELP_LOG_LEVEL_INFO:
-            #if defined(CELP_LOG_MODE_INFO)
+        case _CELP_LOG_LEVEL_INFO:
+            #ifdef CELP_LOG_MODE_INFO
                 out = stdout;
                 tag = "[INFO] ";
+                (void)file; (void)function; (void)line;
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_INFO
-            break;
-        case CELP_LOG_LEVEL_ERROR:
-            #if defined(CELP_LOG_MODE_ERROR)
+            goto end;
+        case _CELP_LOG_LEVEL_ERROR:
+            #ifdef CELP_LOG_MODE_ERROR
                 out = stderr;
                 tag = "[ERROR] ";
+                goto prepend;
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_ERROR
-            break;
-        case CELP_LOG_LEVEL_DEBUG:
-            #if defined(CELP_LOG_MODE_DEBUG)
+            goto end;
+        case _CELP_LOG_LEVEL_DEBUG:
+            #ifdef CELP_LOG_MODE_DEBUG
                 out = stdout;
                 tag = "[DEBUG] ";
+                (void)file; (void)function; (void)line;
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_DEBUG
-            break;
-        case CELP_LOG_LEVEL_TRACE:
-            #if defined(CELP_LOG_MODE_TRACE)
+            goto end;
+        case _CELP_LOG_LEVEL_TRACE:
+            #ifdef CELP_LOG_MODE_TRACE
                 out = stdout;
                 tag = "[TRACE] "; 
-                //when calling log with LEVEL_TRACE it is assumed that
-                //it will be called with __FILE__, __LINE__, __FUNCTION__,
-                //in this case, these will be popped out of the va_list
-                //and prepended to the fmt_string
-                //the con is that without passing these three explicitly,
-                //the program crashes with segfault..
-                //need to look into va_list arg and type validation..
-                char *file = va_arg(args, char *);
-                char *function = va_arg(args, char *);
-                int line = va_arg(args, int);
-                snprintf(fmt_str_trace, 32, "%s:%s:%d ",
-                         file, function, line);
-                strncat(fmt_str_trace, fmt_string, 200);
-                fmt_string = fmt_str_trace;
+                goto prepend;
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_TRACE
     }
 
+prepend:
+    snprintf(fmt_str_trace, 32, "%s:%s:%d ",
+             file, function, line);
+    strncat(fmt_str_trace, fmt_string, 200);
+    fmt_string = fmt_str_trace;
+end:
     fputs(tag, out);
     vfprintf(out, fmt_string, args); 
     fputc('\n', out);
@@ -688,7 +704,6 @@ void celp_log(CELP_log_level_t log_level,
     return;
 ignore:
     (void)log_level; (void)fmt_string;
-
 }
 
 #endif //CELP_IMPLEMENTATION
