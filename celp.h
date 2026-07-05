@@ -210,6 +210,16 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_ll_is_empty(ll) ((ll)->count == 0)
 
+#define celp_ll_foreach(ll, iter) \
+    for (typeof((ll)->head) iter = (ll)->head->next; \
+        iter != (ll)->tail; \
+        iter = iter->next)
+
+#define celp_ll_foreach_until_node(ll, iter, n) \
+    for (typeof((ll)->head) iter = (ll)->head->next; \
+        iter != (n); \
+        iter = iter->next)
+
 #define celp_ll_get_first(ll) \
     ({ \
         CELP_ASSERT((ll)->count > 0); \
@@ -275,7 +285,6 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         typeof((ll)->head->data) __return = {0}; \
         for (size_t __i = 0; __i <= (i); __i++) { \
             __curr = __curr->next; \
-            /* celp_log(CELP_LOG_LEVEL_DEBUG, "current: %i", __curr->data); */ \
         } \
         __curr->next->prev = __curr->prev; \
         __curr->prev->next = __curr->next; \
@@ -289,21 +298,20 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define celp_ll_remove_node(ll, n) \
     ({ \
     CELP_ASSERT((ll)->count > 0); \
-    typeof((ll)->head) __curr = (ll)->head->next; \
     typeof((ll)->head->data) __return = {0}; \
-    for (size_t __i = 0; __i < (ll)->count; __i++) { \
+    bool __found = false; \
+    celp_ll_foreach((ll), __curr) { \
         if (__curr == (n)) { \
+            __curr->next->prev = __curr->prev; \
+            __curr->prev->next = __curr->next; \
+            __return = __curr->data; \
+            CELP_FREE(__curr); \
+            (ll)->count--; \
+            __found = true; \
             break; \
         } \
-        __curr = __curr->next; \
     } \
-    if (__curr == (n)) { \
-        __curr->next->prev = __curr->prev; \
-        __curr->prev->next = __curr->next; \
-        __return = __curr->data; \
-        CELP_FREE(__curr); \
-        (ll)->count--; \
-    } else { \
+    if (!__found) { \
         celp_log(CELP_LOG_LEVEL_ERROR, \
                 __FILE__, __FUNCTION__, __LINE__, \
                 "Failed to find and remove node"); \
@@ -335,16 +343,6 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
             __curr = __curr->next; \
         } \
     } while(0)
-
-#define celp_ll_foreach(ll, iter) \
-    for (typeof((ll)->head) iter = (ll)->head->next; \
-        iter != (ll)->tail; \
-        iter = iter->next)
-
-#define celp_ll_foreach_until_node(ll, iter, n) \
-    for (typeof((ll)->head) iter = (ll)->head->next; \
-        iter != (n); \
-        iter = iter->next)
 
 #define celp_ll_info(ll) \
     do { \
