@@ -3,7 +3,7 @@
 // - string builder/view
 // - memory alloc/arena macros
 // - DSs
-//
+
 #ifndef _CELP_H
 #define _CELP_H
 
@@ -60,7 +60,7 @@ typedef enum CELP_log_level_e {
 //user uses these fake enums below, which automatically fill
 //out the (file, function, line) parameters in celp_log based 
 //on the log level
-#define CELP_LOG_LEVEL_INFO  (CELP_log_level_t)_CELP_LOG_LEVEL_INFO, NULL, NULL, 0
+#define CELP_LOG_LEVEL_INFO  (CELP_log_level_t)_CELP_LOG_LEVEL_INFO,  NULL, NULL, 0
 #define CELP_LOG_LEVEL_DEBUG (CELP_log_level_t)_CELP_LOG_LEVEL_DEBUG, NULL, NULL, 0
 #define CELP_LOG_LEVEL_ERROR (CELP_log_level_t)_CELP_LOG_LEVEL_ERROR
 #define CELP_LOG_LEVEL_TRACE (CELP_log_level_t)_CELP_LOG_LEVEL_TRACE
@@ -616,8 +616,8 @@ typedef struct {
 // defined, then define the CELP equivalent which works on
 // celp_log later on..
 #ifdef LOG_MODE_ALL
-    #define CELP_LOG_MODE_ALL LOG_MODE_ALL
-    #define CELP_LOG_MODE_INFO LOG_MODE_INFO
+    #define CELP_LOG_MODE_ALL   LOG_MODE_ALL
+    #define CELP_LOG_MODE_INFO  LOG_MODE_INFO
     #define CELP_LOG_MODE_DEBUG LOG_MODE_DEBUG
     #define CELP_LOG_MODE_ERROR LOG_MODE_ERROR
     #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
@@ -712,75 +712,75 @@ ignore:
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //MISC
-    #define compare celp_compare
-    #define hash celp_hash  
+    #define compare               celp_compare
+    #define hash                  celp_hash  
     //CELP_LOG
-    #define log celp_log
-    #define LOG_LEVEL_INFO CELP_LOG_LEVEL_INFO
-    #define LOG_LEVEL_DEBUG CELP_LOG_LEVEL_DEBUG
-    #define LOG_LEVEL_ERROR CELP_LOG_LEVEL_ERROR 
-    #define LOG_LEVEL_TRACE CELP_LOG_LEVEL_TRACE  
+    #define log                   celp_log
+    #define LOG_LEVEL_INFO        CELP_LOG_LEVEL_INFO
+    #define LOG_LEVEL_DEBUG       CELP_LOG_LEVEL_DEBUG
+    #define LOG_LEVEL_ERROR       CELP_LOG_LEVEL_ERROR 
+    #define LOG_LEVEL_TRACE       CELP_LOG_LEVEL_TRACE  
     //CELP_DA
-    #define DA CELP_DA
-    #define da_init celp_da_init
-    #define da_clear celp_da_clear
-    #define da_is_empty celp_da_is_empty
-    #define da_reserve celp_da_reserve
-    #define da_append celp_da_append
-    #define da_last celp_da_last
-    #define da_pop celp_da_pop
-    #define da_remove celp_da_remove
-    #define da_foreach celp_da_foreach
-    #define da_free celp_da_free
-    #define da_info celp_da_info
+    #define DA                    CELP_DA
+    #define da_init               celp_da_init
+    #define da_clear              celp_da_clear
+    #define da_is_empty           celp_da_is_empty
+    #define da_reserve            celp_da_reserve
+    #define da_append             celp_da_append
+    #define da_last               celp_da_last
+    #define da_pop                celp_da_pop
+    #define da_remove             celp_da_remove
+    #define da_foreach            celp_da_foreach
+    #define da_free               celp_da_free
+    #define da_info               celp_da_info
     //CELP_LL
-    #define LL CELP_LL
-    #define ll_init celp_ll_init
-    #define ll_is_empty celp_ll_is_empty
-    #define ll_get_first celp_ll_get_first
-    #define ll_get_last celp_ll_get_last
-    #define ll_add celp_ll_add
-    #define ll_add_first celp_ll_add_first
-    #define ll_add_last celp_ll_add_last
-    #define ll_add celp_ll_add
-    #define ll_remove_first celp_ll_remove_first
-    #define ll_remove_last celp_ll_remove_last
-    #define ll_remove_at_index celp_ll_remove_at_index
-    #define ll_remove_node celp_ll_remove_node
-    #define ll_print_int celp_ll_print_int
-    #define ll_foreach celp_ll_foreach
+    #define LL                    CELP_LL
+    #define ll_init               celp_ll_init
+    #define ll_is_empty           celp_ll_is_empty
+    #define ll_get_first          celp_ll_get_first
+    #define ll_get_last           celp_ll_get_last
+    #define ll_add                celp_ll_add
+    #define ll_add_first          celp_ll_add_first
+    #define ll_add_last           celp_ll_add_last
+    #define ll_add                celp_ll_add
+    #define ll_remove_first       celp_ll_remove_first
+    #define ll_remove_last        celp_ll_remove_last
+    #define ll_remove_at_index    celp_ll_remove_at_index
+    #define ll_remove_node        celp_ll_remove_node
+    #define ll_print_int          celp_ll_print_int
+    #define ll_foreach            celp_ll_foreach
     #define ll_foreach_until_node celp_ll_foreach_until_node
-    #define ll_free celp_ll_free
-    #define ll_info celp_ll_info
+    #define ll_free               celp_ll_free
+    #define ll_info               celp_ll_info
     //CELP_MAP
-    #define KV CELP_KV
-    #define MAP CELP_MAP
-    #define map_init celp_map_init
-    #define map_is_empty celp_map_is_empty
-    #define map_insert celp_map_insert
-    #define map_increment celp_map_increment
-    #define map_get celp_map_get
-    #define map_contains celp_map_contains
-    #define map_remove celp_map_remove
-    #define map_free celp_map_free
-    #define map_info celp_map_info
+    #define KV                    CELP_KV
+    #define MAP                   CELP_MAP
+    #define map_init              celp_map_init
+    #define map_is_empty          celp_map_is_empty
+    #define map_insert            celp_map_insert
+    #define map_increment         celp_map_increment
+    #define map_get               celp_map_get
+    #define map_contains          celp_map_contains
+    #define map_remove            celp_map_remove
+    #define map_free              celp_map_free
+    #define map_info              celp_map_info
     // CELP_MATH
-    typedef CELP_vec2f_t Vec2f_t;
-    typedef CELP_vec2d_t Vec2d_t;
-    typedef CELP_vec2i_t Vec2i_t;
-    typedef CELP_vec3f_t Vec3f_t;
-    typedef CELP_vec3i_t Vec3i_t;
-    typedef CELP_vec3d_t Vec3d_t;
-    #define vec2_add celp_vec2_add
-    #define vec2_sub celp_vec2_sub
-    #define vec2_dot celp_vec2_dot
-    #define vec2_scale celp_vec2_scale
-    #define vec3_add celp_vec3_add
-    #define vec3_sub celp_vec3_sub
-    #define vec3_dot celp_vec3_dot
-    #define vec3_scale celp_vec3_scale
-    #define vec3_cross celp_vec3_cross
-    #define vec3_normalize celp_vec3_normalize
+    typedef CELP_vec2f_t           Vec2f_t;
+    typedef CELP_vec2d_t           Vec2d_t;
+    typedef CELP_vec2i_t           Vec2i_t;
+    typedef CELP_vec3f_t           Vec3f_t;
+    typedef CELP_vec3i_t           Vec3i_t;
+    typedef CELP_vec3d_t           Vec3d_t;
+    #define vec2_add               celp_vec2_add
+    #define vec2_sub               celp_vec2_sub
+    #define vec2_dot               celp_vec2_dot
+    #define vec2_scale             celp_vec2_scale
+    #define vec3_add               celp_vec3_add
+    #define vec3_sub               celp_vec3_sub
+    #define vec3_dot               celp_vec3_dot
+    #define vec3_scale             celp_vec3_scale
+    #define vec3_cross             celp_vec3_cross
+    #define vec3_normalize         celp_vec3_normalize
 
 #endif //CELP_STRIP_PREFIX
 
