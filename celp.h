@@ -526,7 +526,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define CELP_V3_T(dtype) CELP_V3_##dtype##_t
 
-#define celp_vec2_add(v1, v2) \
+#define celp_v2_add(v1, v2) \
     ({ \
         typeof((v1)) __v_out = { \
             .x = (v1).x + (v2).x, \
@@ -535,7 +535,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         __v_out; \
     })
 
-#define celp_vec2_sub(v1, v2) \
+#define celp_v2_sub(v1, v2) \
     ({ \
         typeof((v1)) __v_out = { \
             .x = (v1).x - (v2).x, \
@@ -544,9 +544,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         __v_out; \
     })
 
-#define celp_vec2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
+#define celp_v2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
 
-#define celp_vec2_scale(v, s) \
+#define celp_v2_scale(v, s) \
     ({ \
         typeof((v)) __v_out = { \
             .x = (v).x * s, \
@@ -555,7 +555,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         __v_out; \
     })
 
-#define celp_vec3_add(v1, v2) \
+#define celp_v3_add(v1, v2) \
     ({ \
        typeof((v1)) __v_out = { \
            .x = (v1).x + (v2).x, \
@@ -565,7 +565,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
        __v_out; \
     })
 
-#define celp_vec3_sub(v1, v2) \
+#define celp_v3_sub(v1, v2) \
 ({ \
     typeof((v1)) __v_out = { \
         .x = (v1).x - (v2).x, \
@@ -575,9 +575,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     __v_out; \
 })
 
-#define celp_vec3_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y) + ((v1).z * (v2).z)
+#define celp_v3_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y) + ((v1).z * (v2).z)
 
-#define celp_vec3_scale(v, s) \
+#define celp_v3_scale(v, s) \
     ({ \
         typeof((v)) __v_out = { \
             .x = (v).x * s, \
@@ -587,7 +587,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         __v_out; \
     })
 
-#define celp_vec3_cross(v1, v2) \
+#define celp_v3_cross(v1, v2) \
     ({ \
         typeof((v1)) __v_out = { \
             .x = ((v1).y * (v2).z) - ((v1).z * (v2).y), \
@@ -597,7 +597,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         __v_out; \
     })
 
-#define celp_vec3_normalize(v) \
+#define celp_v3_normalize(v) \
 ({ \
     typeof((v)) __v_out = {0}; \
     float len_sq = (v).x*(v).x + (v).y*(v).y + (v).z*(v).z; \
@@ -770,21 +770,20 @@ ignore:
     #define map_free              celp_map_free
     #define map_info              celp_map_info
     // CELP_MATH
-    #define V2                     CELP_V2
-    #define V2_T                   CELP_V2_T
-    #define V3                     CELP_V3
-    #define V3_T                   CELP_V3_T
-    #define vec2_add               celp_vec2_add
-    #define vec2_sub               celp_vec2_sub
-    #define vec2_dot               celp_vec2_dot
-    #define vec2_scale             celp_vec2_scale
-    #define vec3_add               celp_vec3_add
-    #define vec3_sub               celp_vec3_sub
-    #define vec3_dot               celp_vec3_dot
-    #define vec3_scale             celp_vec3_scale
-    #define vec3_cross             celp_vec3_cross
-    #define vec3_normalize         celp_vec3_normalize
+    #define V2                    CELP_V2
+    #define V2_T                  CELP_V2_T
+    #define V3                    CELP_V3
+    #define V3_T                  CELP_V3_T
+    #define v2_add                celp_v2_add
+    #define v2_sub                celp_v2_sub
+    #define v2_dot                celp_v2_dot
+    #define v2_scale              celp_v2_scale
+    #define v3_add                celp_v3_add
+    #define v3_sub                celp_v3_sub
+    #define v3_dot                celp_v3_dot
+    #define v3_scale              celp_v3_scale
+    #define v3_cross              celp_v3_cross
+    #define v3_normalize          celp_v3_normalize
 
 #endif //CELP_STRIP_PREFIX
-
 #endif //_CELP_H

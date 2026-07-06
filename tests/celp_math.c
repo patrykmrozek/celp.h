@@ -12,7 +12,7 @@ void celp_math() {
 
     v2i w = {2, 2};
     v2i e = {3, 3};
-    v2i r = celp_vec2_add(w, e);
+    v2i r = celp_v2_add(w, e);
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v2 Add: "
         "[%i %i] + [%i %i] = [%i %i]",
@@ -20,20 +20,20 @@ void celp_math() {
 
     v2i w2 = {2, 2};
     v2i e2 = {3, 3};
-    v2i r2 = celp_vec2_sub(w2, e2);
+    v2i r2 = celp_v2_sub(w2, e2);
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v2 Sub: "
         "[%i %i] - [%i %i] = [%i %i]",
         w2.x, w2.y, e2.x, e2.y, r2.x, r2.y);
 
-    int r3 = celp_vec2_dot(w, e);
+    int r3 = celp_v2_dot(w, e);
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v2 Dot: "
         "[%i %i] . [%i %i] = %i",
         w.x, w.y, e.x, e.y, r3);
 
     int scale = 2;
-    v2i r4 = celp_vec2_scale(w2, scale);
+    v2i r4 = celp_v2_scale(w2, scale);
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v2 Scale: "
         "[%i %i] * %i = [%i %i]",
@@ -41,7 +41,7 @@ void celp_math() {
 
     v3i a = {1, 1, 1};
     v3i b = {1, 1, 1};
-    v3i res = celp_vec3_add(a, b);
+    v3i res = celp_v3_add(a, b);
 
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v3 Add: "
@@ -50,14 +50,14 @@ void celp_math() {
 
     v3i a2 = {4, 4, 4};
     v3i b2 = {1, 1, 1};
-    v3i res2 = celp_vec3_sub(a2, b2);
+    v3i res2 = celp_v3_sub(a2, b2);
 
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v3 Sub: "
         "[%i %i %i] - [%i %i %i] = [%i %i %i]",
         a2.x, a2.y, a2.z, b2.x, b2.y, b2.z, res2.x, res2.y, res2.z);
 
-    int res3 = celp_vec3_dot(a2, b2);
+    int res3 = celp_v3_dot(a2, b2);
 
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v3 Sub: "
@@ -65,7 +65,7 @@ void celp_math() {
         a2.x, a2.y, a2.z, b2.x, b2.y, b2.z, res3);
 
     int scale2 = 4;
-    v3i r5 = celp_vec3_scale(a2, scale2);
+    v3i r5 = celp_v3_scale(a2, scale2);
 
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v3 Scale: "
@@ -74,7 +74,7 @@ void celp_math() {
 
     v3i c1 = {2, 3, 4};
     v3i c2 = {5, 6, 7};
-    v3i cr = celp_vec3_cross(c1, c2);
+    v3i cr = celp_v3_cross(c1, c2);
 
     celp_log(CELP_LOG_LEVEL_DEBUG,
         "v3 Cross: "
