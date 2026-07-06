@@ -93,13 +93,13 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
  * Generates an array struct for a given type
  */
 #define CELP_DA(dtype) \
-    typedef struct { \
+    typedef struct DA_##dtype##_s { \
         dtype* items; \
         size_t count; \
         size_t capacity; \
     } DA_##dtype##_t; \
-    \
-    DA_##dtype##_t 
+
+#define CELP_DA_T(dtype) DA_##dtype##_t 
 
 #define celp_da_init(da) \
     do { \
@@ -179,19 +179,20 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 /* Linked List */
 #define CELP_LL(dtype) \
-    typedef struct LLN_##dtype##_t{ \
+    typedef struct LLN_##dtype##_s { \
         dtype data; \
-        struct LLN_##dtype##_t* prev; \
-        struct LLN_##dtype##_t* next; \
-    }LLN_##dtype##_t; \
+        struct LLN_##dtype##_s* prev; \
+        struct LLN_##dtype##_s* next; \
+    } LLN_##dtype##_t; \
     \
-    typedef struct { \
+    typedef struct LL_##dtype##_s { \
         LLN_##dtype##_t* head; \
         LLN_##dtype##_t* tail; \
         size_t count; \
     } LL_##dtype##_t; \
-    \
-    LL_##dtype##_t \
+
+#define CELP_LLN_T(dtype) LLN_##dtype##_t
+#define CELP_LL_T(dtype)  LL_##dtype##_t
 
 #define __celp_create_node(ll, x, p, n) \
     ({ \
@@ -363,20 +364,21 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define CELP_MAP_INITIAL_CAPACITY 64
 
 #define CELP_MAP(key_dtype, value_dtype) \
-    typedef struct { \
+    typedef struct KV_##key_dtype##_##value_dtype##_s { \
         key_dtype key; \
         value_dtype value; \
-    } KV_##key_dtype##_##value_dtype; \
+    } KV_##key_dtype##_##value_dtype##_t; \
     \
-    CELP_LL(KV_##key_dtype##_##value_dtype); \
+    CELP_LL(KV_##key_dtype##_##value_dtype##_t); \
     \
-    typedef struct { \
-        LL_KV_##key_dtype##_##value_dtype##_t* buckets; \
+    typedef struct MAP_##key_dtype##_##value_dtype##_s { \
+        CELP_LL_T(KV_##key_dtype##_##value_dtype##_t)* buckets; \
         size_t count; \
         size_t capacity; \
-    }  Map_##key_dtype##_##value_dtype##_t; \
-    \
-    Map_##key_dtype##_##value_dtype##_t
+    }  MAP_##key_dtype##_##value_dtype##_t;
+    
+#define CELP_KV_T(key_dtype, value_dtype)  KV_##key_dtype##_##value_dtype##_t 
+#define CELP_MAP_T(key_dtype, value_dtype) MAP_##key_dtype##_##value_dtype##_t
 
 #define __celp_map_clear(map) \
     do {\
@@ -510,30 +512,19 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 
 /* Math */
+#define CELP_V2(dtype) \
+    typedef struct CELP_V2_##dtype##_s { \
+        dtype x, y; \
+    } CELP_V2_##dtype##_t;
 
-typedef struct {
-    float x, y;
-} CELP_vec2f_t;
+#define CELP_V2_T(dtype) CELP_V2_##dtype##_t
 
-typedef struct {
-    double x, y;
-} CELP_vec2d_t;
+#define CELP_V3(dtype) \
+    typedef struct CELP_V3_##dtype##_s { \
+        dtype x, y, z; \
+    } CELP_V3_##dtype##_t;
 
-typedef struct {
-    int x, y;
-} CELP_vec2i_t;
-
-typedef struct {
-    float x, y, z;
-} CELP_vec3f_t;
-
-typedef struct {
-    double x, y, z;
-} CELP_vec3d_t;
-
-typedef struct {
-    int x, y, z;
-} CELP_vec3i_t;
+#define CELP_V3_T(dtype) CELP_V3_##dtype##_t
 
 #define celp_vec2_add(v1, v2) \
     ({ \
@@ -682,7 +673,6 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
             #else
                 goto ignore;
             #endif //CELP_LOG_MODE_ERROR
-            goto end;
         case _CELP_LOG_LEVEL_DEBUG:
             #ifdef CELP_LOG_MODE_DEBUG
                 out = stdout;
@@ -732,7 +722,8 @@ ignore:
     #define LOG_LEVEL_ERROR       CELP_LOG_LEVEL_ERROR 
     #define LOG_LEVEL_TRACE       CELP_LOG_LEVEL_TRACE  
     //CELP_DA
-    #define DA                    CELP_DA
+    #define DA                    CELP_DA 
+    #define DA_T                  CELP_DA_T
     #define da_init               celp_da_init
     #define da_clear              celp_da_clear
     #define da_is_empty           celp_da_is_empty
@@ -745,7 +736,8 @@ ignore:
     #define da_free               celp_da_free
     #define da_info               celp_da_info
     //CELP_LL
-    #define LL                    CELP_LL
+    #define LL                    CELP_LL 
+    #define LL_T                  CELP_LL_T
     #define ll_init               celp_ll_init
     #define ll_is_empty           celp_ll_is_empty
     #define ll_get_first          celp_ll_get_first
@@ -765,7 +757,9 @@ ignore:
     #define ll_info               celp_ll_info
     //CELP_MAP
     #define KV                    CELP_KV
+    #define KV_T                  CELP_KV_T
     #define MAP                   CELP_MAP
+    #define MAP_T                 CELP_MAP_T 
     #define map_init              celp_map_init
     #define map_is_empty          celp_map_is_empty
     #define map_insert            celp_map_insert
@@ -776,12 +770,10 @@ ignore:
     #define map_free              celp_map_free
     #define map_info              celp_map_info
     // CELP_MATH
-    typedef CELP_vec2f_t           Vec2f_t;
-    typedef CELP_vec2d_t           Vec2d_t;
-    typedef CELP_vec2i_t           Vec2i_t;
-    typedef CELP_vec3f_t           Vec3f_t;
-    typedef CELP_vec3i_t           Vec3i_t;
-    typedef CELP_vec3d_t           Vec3d_t;
+    #define V2                     CELP_V2
+    #define V2_T                   CELP_V2_T
+    #define V3                     CELP_V3
+    #define V3_T                   CELP_V3_T
     #define vec2_add               celp_vec2_add
     #define vec2_sub               celp_vec2_sub
     #define vec2_dot               celp_vec2_dot

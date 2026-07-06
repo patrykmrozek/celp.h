@@ -6,7 +6,8 @@
 
 void celp_da() {
  
-    CELP_DA(int) n = {};
+    CELP_DA(int)
+    CELP_DA_T(int) n = {};
     celp_da_init(&n);
 
     for (uint32_t i = 0; i < 10; i++) {

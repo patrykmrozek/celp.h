@@ -4,7 +4,8 @@
 void celp_ll() {
     celp_log(CELP_LOG_LEVEL_INFO, "LL!");
 
-    CELP_LL(int) n;
+    CELP_LL(int);
+    CELP_LL_T(int) n;
     celp_ll_init(&n);
     celp_ll_add(&n, 5);
     celp_ll_add(&n, 6);

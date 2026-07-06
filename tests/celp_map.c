@@ -2,7 +2,8 @@
 #include <stdio.h>
 
 void celp_map() {
-    CELP_MAP(int, size_t) test = {};
+    CELP_MAP(int, size_t);
+    CELP_MAP_T(int, size_t) test = {};
     celp_map_init(&test);
     int k = 10;
     const unsigned char* k_bytes = (const unsigned char*)&k;
