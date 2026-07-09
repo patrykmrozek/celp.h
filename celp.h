@@ -76,6 +76,13 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define celp_compare(a, b) \
     memcmp(&(a), &(b), sizeof(a))
 
+#define celp_swap(a, b) \
+    do { \
+        typeof((a)) __t = (a); \
+        (a) = (b); \
+        (b) = __t; \
+    } while (0);
+
 //djb2 hash alg
 #define celp_hash(buffer, buffer_size) \
     ({ \
@@ -795,7 +802,8 @@ ignore:
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //MISC
-    #define compare               celp_compare
+    #define compare               celp_compare 
+    #define swap                  celp_swap
     #define hash                  celp_hash  
     //CELP_LOG
     #define log                   celp_log
