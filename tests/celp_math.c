@@ -1,6 +1,6 @@
+#define CELP_MATH
 #define CELP_STRIP_PREFIX
 #include "../celp.h"
-#include "../celp_math.h"
 #include <stdio.h>
 
 CELP_V2(int);

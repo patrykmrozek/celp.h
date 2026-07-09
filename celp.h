@@ -510,6 +510,188 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
                  (map), (map)->capacity, (map)->count); \
     } while(0)
 
+
+//math macros
+#ifdef CELP_MATH
+
+// V2
+#define CELP_V2(dtype) \
+    typedef struct CELP_V2_##dtype##_s { \
+        dtype x, y; \
+    } CELP_V2_##dtype##_t;
+
+#define CELP_V2_T(dtype) CELP_V2_##dtype##_t
+
+#define celp_v2_add(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x + (v2).x, \
+        .y = (v1).y + (v2).y \
+    }; \
+    __v_out; \
+})
+
+#define celp_v2_sub(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x - (v2).x, \
+        .y = (v1).y - (v2).y \
+    }; \
+    __v_out; \
+})
+
+#define celp_v2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
+
+#define celp_v2_scale(v, s) \
+({ \
+    typeof((v)) __v_out = { \
+        .x = (v).x * s, \
+        .y = (v).y * s \
+    }; \
+    __v_out; \
+})
+
+// V3
+
+#define CELP_V3(dtype) \
+    typedef struct CELP_V3_##dtype##_s { \
+        dtype x, y, z; \
+    } CELP_V3_##dtype##_t;
+
+#define CELP_V3_T(dtype) CELP_V3_##dtype##_t
+
+#define CELP_V3F_STR(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
+
+
+#define celp_v3_add(v1, v2) \
+({ \
+   typeof((v1)) __v_out = { \
+       .x = (v1).x + (v2).x, \
+       .y = (v1).y + (v2).y, \
+       .z = (v1).z + (v2).z\
+   }; \
+   __v_out; \
+})
+
+#define celp_v3_sub(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x - (v2).x, \
+        .y = (v1).y - (v2).y, \
+        .z = (v1).z - (v2).z\
+    }; \
+    __v_out; \
+})
+
+#define celp_v3_mul(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x * (v2).x, \
+        .y = (v1).y * (v2).y, \
+        .z = (v1).z * (v2).z\
+    }; \
+    __v_out; \
+})
+
+#define celp_v3_div(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = (v1).x / (v2).x, \
+        .y = (v1).y / (v2).y, \
+        .z = (v1).z / (v2).z\
+    }; \
+    __v_out; \
+})
+
+#define celp_v3_dot(v1, v2) \
+({ \
+    typeof((v1).x) __ret = ((v1).x * (v2).x) + \
+                           ((v1).y * (v2).y) + \
+                           ((v1).z * (v2).z);  \
+    __ret; \
+ })
+
+#define celp_v3_scale(v, s) \
+({ \
+    typeof((v)) __v_out = { \
+        .x = (v).x * s, \
+        .y = (v).y * s, \
+        .z = (v).z * s \
+    }; \
+    __v_out; \
+})
+
+#define celp_v3_cross(v1, v2) \
+({ \
+    typeof((v1)) __v_out = { \
+        .x = ((v1).y * (v2).z) - ((v1).z * (v2).y), \
+        .y = ((v1).z * (v2).x) - ((v1).x * (v2).z), \
+        .z = ((v1).x * (v2).y) - ((v1).y * (v2).x) \
+    }; \
+    __v_out; \
+})
+
+#define celp_v3_len(v) \
+    sqrtf(celp_v3_dot((v), (v)))
+
+#define celp_v3_norm(v) \
+({ \
+    typeof((v)) __v_out = {0}; \
+    float len = celp_v3_len((v));  \
+    typeof((v)) __v_len = {len, len, len}; \
+    __v_out = celp_v3_div((v), __v_len); \
+    __v_out; \
+})
+
+#define celp_v3_neg(v) {-(v).x, -(v).y, -(v).z};
+
+//matrices
+#define CELP_M4_ID (m4){{   \
+    {1, 0, 0, 0}, \
+    {0, 1, 0, 0}, \
+    {0, 0, 1, 0}, \
+    {0, 0, 0, 1}}}
+
+#define CELP_M4_TRANS(t) (m4){{       \
+    {1, 0, 0, t.x}, \
+    {0, 1, 0, t.y}, \
+    {0, 0, 1, t.z}, \
+    {0, 0, 0,  1}}}
+
+#define CELP_M4_SCALE(s) (m4){{  \
+    {s,     0,     0,   0}, \
+    {  0,   s,     0,   0}, \
+    {  0,     0,   s,   0}, \
+    {  0,     0,    0,   1}}}
+
+#define CELP_M4_SCALEV(s) (m4){{   \
+    {s.x,     0,     0,   0}, \
+    {  0,   s.y,     0,   0}, \
+    {  0,     0,   s.z,   0}, \
+    {  0,     0,     0,    1}}} 
+
+#define CELP_M4_ROTX(a) (m4){{     \
+    {1,       0,       0, 0}, \
+    {0, cos(a), -sin(a), 0}, \
+    {0, sin(a), cos(a), 0}, \
+    {0,       0,       0, 1}}}
+
+#define CELP_M4_ROTY(a) (m4){{     \
+    { cos(a), 0, sin(a), 0}, \
+    {       0, 1,        0, 0}, \
+    {-sin(a), 0,  cos(a), 0}, \
+    {       0, 0,        0, 1}}}
+
+#define CELP_M4_ROTZ(a) (m4){{     \
+    {cos(a), -sin(a), 0, 0}, \
+    {sin(a),  cos(a), 0, 0}, \
+    {       0,       0, 1, 0}, \
+    {       0,       0, 0, 1}}}
+
+#endif //CELP_MATH
+
+
+
 #ifdef CELP_IMPLEMENTATION
 
 // can't apply usual STRIP_PREFIX logic to these flags
@@ -670,5 +852,35 @@ ignore:
     #define map_free              celp_map_free
     #define map_info              celp_map_info
 
+#ifdef CELP_MATH
+    #define V2                    CELP_V2
+    #define V2_T                  CELP_V2_T
+    #define v2_add                celp_v2_add
+    #define v2_sub                celp_v2_sub
+    #define v2_dot                celp_v2_dot
+    #define v2_scale              celp_v2_scale
+
+    #define V3                    CELP_V3
+    #define V3_T                  CELP_V3_T
+    #define v3_add                celp_v3_add
+    #define v3_sub                celp_v3_sub
+    #define v3_dot                celp_v3_dot
+    #define v3_scale              celp_v3_scale
+    #define v3_cross              celp_v3_cross
+    #define v3_len                celp_v3_len
+    #define v3_norm               celp_v3_norm
+    #define v3_neg                celp_v3_neg
+    #define V3F_STR               CELP_V3F_STR
+
+    #define M4_ID                 CELP_M4_ID
+    #define M4_TRANS              CELP_M4_TRANS
+    #define M4_SCALE              CELP_M4_SCALE
+    #define M4_SCALEV             CELP_M4_SCALEV
+    #define M4_ROTX               CELP_M4_ROTX
+    #define M4_ROTY               CELP_M4_ROTY
+    #define M4_ROTZ               CELP_M4_ROTZ
+#endif //CELP_MATH
+       
 #endif //CELP_STRIP_PREFIX
+       
 #endif //_CELP_H
