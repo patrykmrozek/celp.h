@@ -7,7 +7,7 @@ void celp_map() {
     celp_map_init(&test);
     int k = 10;
     const unsigned char* k_bytes = (const unsigned char*)&k;
-    uint32_t h = celp_hash(k_bytes, sizeof(k)) % test.capacity;
+    uint32_t h = CELP_HASH(k_bytes, sizeof(k)) % test.capacity;
     celp_log(CELP_LOG_LEVEL_DEBUG, "hash for key 10: %u, bucket count: %zu",h, test.buckets[h].count);
     celp_map_insert(&test, 10, 100);
     celp_map_insert(&test, 11, 100);
