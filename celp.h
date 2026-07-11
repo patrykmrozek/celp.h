@@ -701,7 +701,30 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 ({ \
     CELP_V4_T(T) _v_out = {(v).x, (v).y, (v).z, 1}; \
     _v_out; \
- })
+})
+
+#define celp_v4_norm(v) \
+({ \
+    typeof((v)) _v_out = {(v).x/(v).w, (v).y/(v).w, \
+                          (v).z/(v).w, (v).w/(v).w}; \
+    _v_out; \
+})
+
+#define celp_v4_to_v3(v, T) \
+({ \
+    CELP_V3_T(T) _v_out = {(v).x, (v).y, (v).z}; \
+    _v_out; \
+})
+
+#define celp_v4_dot(v1, v2) \
+({ \
+    typeof((v1).x) _out = (((v1).x*(v2).x) + \
+                           ((v1).y*(v2).y) + \
+                           ((v1).z*(v2).z) + \
+                           ((v1).w*(v2).w)); \
+    _out; \
+})
+
 //M4
 #define _CELP_M4(T) CELP_M4_##T
 
@@ -956,7 +979,10 @@ ignore:
     #define V4                    CELP_V4
     #define V4_T                  CELP_V4_T
     #define V4F_STR               CELP_V4F_STR
-    #define v3_to_v4              celp_v3_to_v4
+    #define v3_to_v4              celp_v3_to_v4 
+    #define v4_norm               celp_v4_norm
+    #define v4_to_v3              celp_v4_to_v3
+    #define v4_dot                celp_v4_dot
 
     #define M4                    CELP_M4
     #define M4_T                  CELP_M4_T
