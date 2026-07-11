@@ -87,9 +87,9 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_CAT(a, b) a##b
 #define CELP_CAT(a, b) _CELP_CAT(a, b)
 
-#define _CELP_STRUCT(prefix) CELP_CAT(prefix, _s)
-#define _CELP_TYPE(prefix)   CELP_CAT(prefix, _t)
-#define _CELP_ENUM(prefix)   CELP_CAT(prefix, _e)
+#define CELP_STRUCT(prefix) CELP_CAT(prefix, _s)
+#define CELP_TYPE(prefix)   CELP_CAT(prefix, _t)
+#define CELP_ENUM(prefix)   CELP_CAT(prefix, _e)
 
 //djb2 hash alg
 #define CELP_HASH(buffer, buffer_size) \
@@ -111,13 +111,13 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_DA(T) DA_##T
 
 #define CELP_DA(T) \
-    typedef struct _CELP_STRUCT(_CELP_DA(T)) { \
+    typedef struct CELP_STRUCT(_CELP_DA(T)) { \
         T* items; \
         size_t count; \
         size_t capacity; \
-    } _CELP_TYPE(_CELP_DA(T)); \
+    } CELP_TYPE(_CELP_DA(T)); \
 
-#define CELP_DA_T(T) _CELP_TYPE(_CELP_DA(T)) 
+#define CELP_DA_T(T) CELP_TYPE(_CELP_DA(T)) 
 
 #define celp_da_init(da) \
     do { \
@@ -199,20 +199,20 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 /* Linked List */
 #define CELP_LL(T) \
-    typedef struct _CELP_STRUCT(_CELP_LLN(T)) { \
+    typedef struct CELP_STRUCT(_CELP_LLN(T)) { \
         T data; \
-        struct _CELP_STRUCT(_CELP_LLN(T))* prev; \
-        struct _CELP_STRUCT(_CELP_LLN(T))* next; \
-    } _CELP_TYPE(_CELP_LLN(T)); \
+        struct CELP_STRUCT(_CELP_LLN(T))* prev; \
+        struct CELP_STRUCT(_CELP_LLN(T))* next; \
+    } CELP_TYPE(_CELP_LLN(T)); \
     \
-    typedef struct _CELP_STRUCT(_CELP_LL(T)) { \
-        _CELP_TYPE(_CELP_LLN(T))* head; \
-        _CELP_TYPE(_CELP_LLN(T))* tail; \
+    typedef struct CELP_STRUCT(_CELP_LL(T)) { \
+        CELP_TYPE(_CELP_LLN(T))* head; \
+        CELP_TYPE(_CELP_LLN(T))* tail; \
         size_t count; \
-    } _CELP_TYPE(_CELP_LL(T)); \
+    } CELP_TYPE(_CELP_LL(T)); \
 
-#define CELP_LLN_T(T) _CELP_TYPE(_CELP_LLN(T))
-#define CELP_LL_T(T)  _CELP_TYPE(_CELP_LL(T))
+#define CELP_LLN_T(T) CELP_TYPE(_CELP_LLN(T))
+#define CELP_LL_T(T)  CELP_TYPE(_CELP_LL(T))
 
 #define _celp_create_node(ll, x, p, n) \
     ({ \
@@ -340,7 +340,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     } \
     if (!_found) { \
         celp_log(CELP_LOG_LEVEL_ERROR, \
-                _FILE_, _FUNCTION_, _LINE_, \
+                __FILE__, __FUNCTION__, __LINE__, \
                 "Failed to find and remove node"); \
     } \
     \
@@ -387,21 +387,21 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_MAP(kT, vT) MAP_##kT##_##vT
 
 #define CELP_MAP(kT, vT) \
-    typedef struct _CELP_STRUCT(_CELP_KV(kT, vT)) { \
+    typedef struct CELP_STRUCT(_CELP_KV(kT, vT)) { \
         kT key; \
         vT value; \
-    } _CELP_TYPE(_CELP_KV(kT, vT)); \
+    } CELP_TYPE(_CELP_KV(kT, vT)); \
     \
-    CELP_LL(_CELP_TYPE(_CELP_KV(kT, vT))); \
+    CELP_LL(CELP_TYPE(_CELP_KV(kT, vT))); \
     \
-    typedef struct _CELP_STRUCT(_CELP_MAP(kT, vT)) { \
-        CELP_LL_T(_CELP_TYPE(_CELP_KV(kT, vT)))* buckets; \
+    typedef struct CELP_STRUCT(_CELP_MAP(kT, vT)) { \
+        CELP_LL_T(CELP_TYPE(_CELP_KV(kT, vT)))* buckets; \
         size_t count; \
         size_t capacity; \
-    }  _CELP_TYPE(_CELP_MAP(kT, vT));
+    }  CELP_TYPE(_CELP_MAP(kT, vT));
     
-#define CELP_KV_T(kT, vT)  _CELP_TYPE(_CELP_KV(kT, vT)) 
-#define CELP_MAP_T(kT, vT) _CELP_TYPE(_CELP_MAP(kT, vT))
+#define CELP_KV_T(kT, vT)  CELP_TYPE(_CELP_KV(kT, vT)) 
+#define CELP_MAP_T(kT, vT) CELP_TYPE(_CELP_MAP(kT, vT))
 
 #define _celp_map_clear(map) \
     do {\
@@ -537,16 +537,16 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 //math macros
 #ifdef CELP_MATH
 
-#define CELP_f32 float
-#define CELP_f64 double
-#define CELP_u8 uint8_t
-#define CELP_u16 uint16_t
-#define CELP_u32 uint32_t
-#define CELP_u64 uint64_t
-#define CELP_i8 int8_t
-#define CELP_i16 int16_t
-#define CELP_i32 int32_t
-#define CELP_i64 int64_t
+#define CELP_f32   float
+#define CELP_f64   double
+#define CELP_u8    uint8_t
+#define CELP_u16   uint16_t
+#define CELP_u32   uint32_t
+#define CELP_u64   uint64_t
+#define CELP_i8    int8_t
+#define CELP_i16   int16_t
+#define CELP_i32   int32_t
+#define CELP_i64   int64_t
 #define CELP_usize size_t
 #define CELP_isize ssize_t
 
@@ -554,11 +554,11 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_V2(T) CELP_V2_##T
 
 #define CELP_V2(T) \
-    typedef struct _CELP_STRUCT(_CELP_V2(T)){ \
+    typedef struct CELP_STRUCT(_CELP_V2(T)){ \
         T x, y; \
-    } _CELP_TYPE(_CELP_V2(T));
+    } CELP_TYPE(_CELP_V2(T));
 
-#define CELP_V2_T(T) _CELP_TYPE(_CELP_V2(T))
+#define CELP_V2_T(T) CELP_TYPE(_CELP_V2(T))
 
 #define celp_v2_add(v1, v2) \
 ({ \
@@ -594,11 +594,11 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_V3(T) CELP_V3_##T
 
 #define CELP_V3(T) \
-    typedef struct _CELP_STRUCT(_CELP_V3(T)) { \
+    typedef struct CELP_STRUCT(_CELP_V3(T)) { \
         T x, y, z; \
-    } _CELP_TYPE(_CELP_V3(T));
+    } CELP_TYPE(_CELP_V3(T));
 
-#define CELP_V3_T(T) _CELP_TYPE(_CELP_V3(T))
+#define CELP_V3_T(T) CELP_TYPE(_CELP_V3(T))
 
 #define CELP_V3F_STR(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
 
@@ -689,11 +689,11 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_V4(T) CELP_V4_##T
 
 #define CELP_V4(T) \
-    typedef struct _CELP_STRUCT(_CELP_V4(T)) { \
+    typedef struct CELP_STRUCT(_CELP_V4(T)) { \
         T x, y, z, w; \
-    } _CELP_TYPE(_CELP_V4(T));
+    } CELP_TYPE(_CELP_V4(T));
 
-#define CELP_V4_T(T) _CELP_TYPE(_CELP_V4(T))
+#define CELP_V4_T(T) CELP_TYPE(_CELP_V4(T))
 
 #define CELP_V4F_STR(v) "{ %f, %f, %f, %f }", (v).x, (v).y, (v).z, (v).w
 
@@ -706,11 +706,11 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define _CELP_M4(T) CELP_M4_##T
 
 #define CELP_M4(T) \
-    typedef struct _CELP_STRUCT(_CELP_M4(T)) { \
+    typedef struct CELP_STRUCT(_CELP_M4(T)) { \
         T v[4][4]; \
-    } _CELP_TYPE(_CELP_M4(T));
+    } CELP_TYPE(_CELP_M4(T));
 
-#define CELP_M4_T(T) _CELP_TYPE(_CELP_M4(T))
+#define CELP_M4_T(T) CELP_TYPE(_CELP_M4(T))
 
 
 #define CELP_M4_ID (m4){{   \
