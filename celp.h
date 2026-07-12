@@ -735,6 +735,19 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define CELP_M4_T(T) CELP_TYPE(_CELP_M4(T))
 
+#define celp_m4_v4_mul(mat, vec) \
+({ \
+    typeof((vec)) _vec = (vec); \
+    typeof(_vec.x) _out[4] = {0}; \
+    for (CELP_u8 _row_idx = 0; _row_idx < 4; _row_idx++) { \
+        typeof(_vec) _row = {(mat).v[_row_idx][0],  \
+                            (mat).v[_row_idx][1],  \
+                            (mat).v[_row_idx][2],  \
+                            (mat).v[_row_idx][3]}; \
+        _out[_row_idx] = celp_v4_dot(_row, _vec); \
+    } \
+    (typeof(_vec)){_out[0], _out[1], _out[2], _out[3]}; \
+})
 
 #define CELP_M4_ID (m4){{   \
     {1, 0, 0, 0}, \
@@ -985,7 +998,8 @@ ignore:
     #define v4_dot                celp_v4_dot
 
     #define M4                    CELP_M4
-    #define M4_T                  CELP_M4_T
+    #define M4_T                  CELP_M4_T 
+    #define m4_v4_mul        celp_m4_v4_mul
     #define M4_ID                 CELP_M4_ID
     #define M4_TRANS              CELP_M4_TRANS
     #define M4_SCALE              CELP_M4_SCALE
