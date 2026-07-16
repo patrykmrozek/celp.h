@@ -735,20 +735,6 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define CELP_M4_T(T) CELP_TYPE(_CELP_M4(T))
 
-#define celp_m4_v4_mul(mat, vec) \
-({ \
-    typeof((vec)) _vec = (vec); \
-    typeof(_vec.x) _out[4] = {0}; \
-    for (CELP_u8 _row_idx = 0; _row_idx < 4; _row_idx++) { \
-        typeof(_vec) _row = {(mat).v[_row_idx][0],  \
-                            (mat).v[_row_idx][1],  \
-                            (mat).v[_row_idx][2],  \
-                            (mat).v[_row_idx][3]}; \
-        _out[_row_idx] = celp_v4_dot(_row, _vec); \
-    } \
-    (typeof(_vec)){_out[0], _out[1], _out[2], _out[3]}; \
-})
-
 #define CELP_M4_ID (m4){{   \
     {1, 0, 0, 0}, \
     {0, 1, 0, 0}, \
@@ -790,6 +776,46 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     {sin(a),  cos(a), 0, 0}, \
     {       0,       0, 1, 0}, \
     {       0,       0, 0, 1}}}
+
+
+#define celp_m4_v4_mul(m, _v) \
+({ \
+    typeof((_v)) __v = (_v); \
+    typeof(__v.x) _out[4] = {0}; \
+    for (CELP_u8 _row_idx = 0; _row_idx < 4; _row_idx++) { \
+        typeof(__v) _row = {(m).v[_row_idx][0],  \
+                            (m).v[_row_idx][1],  \
+                            (m).v[_row_idx][2],  \
+                            (m).v[_row_idx][3]}; \
+        _out[_row_idx] = celp_v4_dot(_row, __v); \
+    } \
+    (typeof(__v)){_out[0], _out[1], _out[2], _out[3]}; \
+})
+
+#define celp_m4_mul(m1, m2) \
+({ \
+    typeof((m1)) _out[4] = {0}; \
+    for (CELP_u8 _i = 0; _i < 4; _i++) { \
+        for (CELP_u8 _j = 0; _j < 4; _j++) { \
+            out.v[_i][_j] = v4_dot( \
+                ((v4){(m1).v[_i][0], (m1).v[_i][1], (m1).v[_i][2], (m1).v[_i][3]}), \
+                ((v4){(m2).v[0][_j], (m2).v[1][_j], (m2).v[2][_j], (m2).v[3][_j]})); \
+        } \
+    } \
+    _out; \
+})
+
+#define celp_v4_trans(v, t) \
+    celp_m4_v4_mul(CELP_M4_TRANS((t)), (v))
+
+#define celp_v3_trans(v, t) \
+    celp_v4_to_v3(celp_v4_trans(celp_v3_to_v4((v), typeof((v).x)), (t)), typeof((v).x))
+
+#define celp_v4_scale(v, s) \
+    celp_m4_v4_mul(CELP_M4_SCALE((s)), (v))
+
+#define celp_v4_scalev(v, s) \
+    celp_m4_v4_mul(CELP_M4_SCALEV((s)), (v))
 
 #endif //CELP_MATH
 
@@ -957,6 +983,7 @@ ignore:
     #define map_info              celp_map_info
 
 #ifdef CELP_MATH
+    //types
     #define f32                   CELP_f32
     #define f64                   CELP_f64 
     #define u8                    CELP_u8 
@@ -969,14 +996,14 @@ ignore:
     #define i64                   CELP_i64
     #define usize                 CELP_usize 
     #define isize                 CELP_isize
-
+    //v2
     #define V2                    CELP_V2
     #define V2_T                  CELP_V2_T
     #define v2_add                celp_v2_add
     #define v2_sub                celp_v2_sub
     #define v2_dot                celp_v2_dot
     #define v2_scale              celp_v2_scale
-
+    //v3
     #define V3                    CELP_V3
     #define V3_T                  CELP_V3_T
     #define v3_add                celp_v3_add
@@ -988,7 +1015,7 @@ ignore:
     #define v3_norm               celp_v3_norm
     #define v3_neg                celp_v3_neg
     #define V3F_STR               CELP_V3F_STR
-
+    //v4
     #define V4                    CELP_V4
     #define V4_T                  CELP_V4_T
     #define V4F_STR               CELP_V4F_STR
@@ -996,17 +1023,24 @@ ignore:
     #define v4_norm               celp_v4_norm
     #define v4_to_v3              celp_v4_to_v3
     #define v4_dot                celp_v4_dot
-
+    //m4
     #define M4                    CELP_M4
     #define M4_T                  CELP_M4_T 
-    #define m4_v4_mul        celp_m4_v4_mul
     #define M4_ID                 CELP_M4_ID
     #define M4_TRANS              CELP_M4_TRANS
     #define M4_SCALE              CELP_M4_SCALE
     #define M4_SCALEV             CELP_M4_SCALEV
     #define M4_ROTX               CELP_M4_ROTX
     #define M4_ROTY               CELP_M4_ROTY
-    #define M4_ROTZ               CELP_M4_ROTZ
+    #define M4_ROTZ               CELP_M4_ROTZ 
+    #define m4_v4_mul             celp_m4_v4_mul
+    #define m4_mul                celp_m4_mul
+    //m4 wrappers 
+    #define v4_trans              celp_v4_trans
+    #define v3_trans              celp_v3_trans
+    #define v4_scale              celp_v4_scale 
+    #define v4_scalev             celp_v4_scalev
+
 #endif //CELP_MATH
        
 #endif //CELP_STRIP_PREFIX
