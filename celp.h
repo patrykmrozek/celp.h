@@ -72,6 +72,15 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
                        const char* fmt_string,
                        ...);
 
+#define CELP_INFO(fmt, ...)  celp_log(CELP_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
+#define CELP_DEBUG(fmt, ...) celp_log(CELP_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+#define CELP_ERROR(fmt, ...) celp_log(CELP_LOG_LEVEL_ERROR, \
+                                      __FILE__, __FUNCTION__, __LINE__, \
+                                      fmt, ##__VA_ARGS__)
+#define CELP_TRACE(fmt, ...) celp_log(CELP_LOG_LEVEL_TRACE, \
+                                      __FILE__, __FUNCTION__, __LINE__, \
+                                      fmt, ##__VA_ARGS__)
+
 
 /* Misc */
 #define CELP_COMP(a, b) \
@@ -924,6 +933,10 @@ ignore:
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //MISC
+    #define INFO                  CELP_INFO 
+    #define DEBUG                 CELP_DEBUG 
+    #define ERROR                 CELP_ERROR 
+    #define TRACE                 CELP_TRACE
     #define COMP                  CELP_COMP 
     #define SWAP                  CELP_SWAP
     #define HASH                  CELP_HASH  
