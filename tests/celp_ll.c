@@ -30,7 +30,7 @@ void celp_ll() {
         count++;
     }
 
-    LLN_int_t *until = n.tail->prev->prev;
+    CELP_LLN_T(int) *until = n.tail->prev->prev;
     count = 0;
     celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach_until_node");
     celp_ll_foreach_until_node(&n, iter, until) {
@@ -59,7 +59,7 @@ void celp_ll() {
     celp_log(CELP_LOG_LEVEL_DEBUG, "Removed idx[%zu]: %i", remove_idx, removed);
     celp_ll_info(&n);
 
-    LLN_int_t* node = n.head->next;
+    CELP_LLN_T(int)* node = n.head->next;
     celp_log(CELP_LOG_LEVEL_DEBUG, "Removing using node");
     celp_ll_remove_node(&n, node);
     celp_ll_print_int(&n);
