@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 void celp_ll() {
-    celp_log(CELP_LOG_LEVEL_INFO, "LL!");
+    CELP_INFO("LL!");
 
     CELP_LL(int);
     CELP_LL_T(int) n;
@@ -14,17 +14,15 @@ void celp_ll() {
     celp_ll_add_last(&n, 11);
     celp_ll_info(&n);
 
-    celp_log(CELP_LOG_LEVEL_TRACE,
-             __FILE__, __FUNCTION__, __LINE__,
-             "ll print foreach: "); 
+    CELP_TRACE(1, "ll print foreach: "); 
 
     //no longer segfaults but need to handle error..
-    //celp_log(CELP_LOG_LEVEL_TRACE, "ll print foreach: "); 
+    //CELP_TRACE( "ll print foreach: "); 
 
     size_t count = 0;
-    celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach");
+    CELP_INFO("celp_ll_foreach");
     celp_ll_foreach(&n, i) {
-        celp_log(CELP_LOG_LEVEL_DEBUG,
+        CELP_DEBUG(1,
                 "[%zu] %i", 
                 count, i->data);
         count++;
@@ -32,35 +30,35 @@ void celp_ll() {
 
     CELP_LLN_T(int) *until = n.tail->prev->prev;
     count = 0;
-    celp_log(CELP_LOG_LEVEL_INFO, "celp_ll_foreach_until_node");
+    CELP_INFO("celp_ll_foreach_until_node");
     celp_ll_foreach_until_node(&n, iter, until) {
-        celp_log(CELP_LOG_LEVEL_DEBUG,
+        CELP_DEBUG(1, 
                 "[%zu] %i", 
                 count, iter->data);
         count++;
     }
 
     celp_ll_info(&n);
-    celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing first: %i", n.head->next->data);
+    CELP_DEBUG(1, "Before removing first: %i", n.head->next->data);
     celp_ll_remove_first(&n);
-    celp_log(CELP_LOG_LEVEL_DEBUG, "After removing first: %i", n.head->next->data);
+    CELP_DEBUG(1, "After removing first: %i", n.head->next->data);
     celp_ll_info(&n);
 
-    celp_log(CELP_LOG_LEVEL_DEBUG, "Before removing last: %i", n.tail->prev->data);
+    CELP_DEBUG(1, "Before removing last: %i", n.tail->prev->data);
     celp_ll_remove_last(&n);
-    celp_log(CELP_LOG_LEVEL_DEBUG, "After removing last: %i", n.tail->prev->data);
+    CELP_DEBUG(1, "After removing last: %i", n.tail->prev->data);
     celp_ll_info(&n);
 
     celp_ll_print_int(&n);
 
     int remove_idx = 1;
-    celp_log(CELP_LOG_LEVEL_DEBUG, "Removing idx[%zu]", remove_idx);
+    CELP_DEBUG(1, "Removing idx[%zu]", remove_idx);
     int removed = celp_ll_remove_at_index(&n, remove_idx);
-    celp_log(CELP_LOG_LEVEL_DEBUG, "Removed idx[%zu]: %i", remove_idx, removed);
+    CELP_DEBUG(1, "Removed idx[%zu]: %i", remove_idx, removed);
     celp_ll_info(&n);
 
     CELP_LLN_T(int)* node = n.head->next;
-    celp_log(CELP_LOG_LEVEL_DEBUG, "Removing using node");
+    CELP_DEBUG(1, "Removing using node");
     celp_ll_remove_node(&n, node);
     celp_ll_print_int(&n);
     celp_ll_info(&n);
