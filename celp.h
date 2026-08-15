@@ -573,6 +573,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_v2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
 
+#define celp_v2_cross(v1, v2) ((v1).x * (v2).y) - ((v1).y * (v2).x)
+
 #define celp_v2_scale(v, s) \
 ({ \
     typeof((v)) _v_out = { \
@@ -591,6 +593,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define CELP_V3_T(T) _CELP_T(_v3(T))
 
 #define CELP_V3F_STR(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
+
+#define celp_v3_contains_neg(v) (v.x < 0 || v.y < 0 || v.z < 0)
 
 #define celp_v3_is_empty(v) \
     ((v).x == 0 && \
@@ -913,7 +917,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     }
 
 prepend:
-    snprintf(fmt_str_trace, 56, "%s:%s:%d ",
+    snprintf(fmt_str_trace, 56, "%s:%s:%d\n\t",
              file, function, line);
     strncat(fmt_str_trace, fmt_string, 200);
     fmt_string = fmt_str_trace;
@@ -1008,26 +1012,14 @@ ignore:
     #define map_free              celp_map_free
     #define map_info              celp_map_info
 
-#ifdef CELP_MATH
-    //types
-    #define f32                   CELP_f32
-    #define f64                   CELP_f64 
-    #define u8                    CELP_u8 
-    #define u16                   CELP_u16 
-    #define u32                   CELP_u32
-    #define u64                   CELP_u64
-    #define i8                    CELP_i8
-    #define i16                   CELP_i16 
-    #define i32                   CELP_i32 
-    #define i64                   CELP_i64
-    #define usize                 CELP_usize 
-    #define isize                 CELP_isize
+#ifdef CELP_MATH 
     //v2
     #define V2                    CELP_V2
     #define V2_T                  CELP_V2_T
     #define v2_add                celp_v2_add
     #define v2_sub                celp_v2_sub
     #define v2_dot                celp_v2_dot
+    #define v2_cross              celp_v2_cross
     #define v2_scale              celp_v2_scale
     //v3
     #define V3                    CELP_V3
@@ -1040,7 +1032,9 @@ ignore:
     #define v3_len                celp_v3_len
     #define v3_norm               celp_v3_norm
     #define v3_neg                celp_v3_neg
+    #define v3_contains_neg       celp_v3_contains_neg
     #define V3F_STR               CELP_V3F_STR
+
     //v4
     #define V4                    CELP_V4
     #define V4_T                  CELP_V4_T
