@@ -62,35 +62,36 @@
 #define CELP_isize ssize_t
 
 /* Logging */
-typedef enum CELP_log_level_e {
-   _CELP_LOG_LEVEL_INFO,
-   _CELP_LOG_LEVEL_DEBUG,
-   _CELP_LOG_LEVEL_ERROR,
-   _CELP_LOG_LEVEL_TRACE,
-} CELP_log_level_t;
+typedef enum CELP_log_e {
+   _CELP_LOG_INFO,
+   _CELP_LOG_DEBUG,
+   _CELP_LOG_ERROR,
+   _CELP_LOG_TRACE,
+} CELP_log_t;
 
 //sort of implemented function overloading?
 //user uses these fake enums below, which automatically fill
 //out the (file, function, line) parameters in celp_log based 
 //on the log level
-#define CELP_LOG_LEVEL_INFO  (CELP_log_level_t)_CELP_LOG_LEVEL_INFO,  NULL, NULL, 0
-#define CELP_LOG_LEVEL_DEBUG (CELP_log_level_t)_CELP_LOG_LEVEL_DEBUG, NULL, NULL, 0
-#define CELP_LOG_LEVEL_ERROR (CELP_log_level_t)_CELP_LOG_LEVEL_ERROR, \
+#define CELP_LOG_INFO  (CELP_log_t)_CELP_LOG_INFO,  NULL, NULL, 0
+#define CELP_LOG_DEBUG (CELP_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0
+#define CELP_LOG_ERROR (CELP_log_t)_CELP_LOG_ERROR, \
                                                __FILE__, __FUNCTION__, __LINE__
-#define CELP_LOG_LEVEL_TRACE (CELP_log_level_t)_CELP_LOG_LEVEL_TRACE, \
+#define CELP_LOG_TRACE (CELP_log_t)_CELP_LOG_TRACE, \
                                                __FILE__, __FUNCTION__, __LINE__
 
-CELP_DEF void celp_log(CELP_log_level_t log_level,
+CELP_DEF void celp_log(CELP_u8 level,
+                       CELP_log_t log,
                        const char *file,
                        const char *function,
                        int line,
                        const char* fmt_string,
                        ...);
 
-#define CELP_INFO(fmt, ...)  celp_log(CELP_LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
-#define CELP_DEBUG(fmt, ...) celp_log(CELP_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
-#define CELP_ERROR(fmt, ...) celp_log(CELP_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
-#define CELP_TRACE(fmt, ...) celp_log(CELP_LOG_LEVEL_TRACE, fmt, ##__VA_ARGS__)
+#define CELP_INFO(fmt, ...)  celp_log(0, CELP_LOG_INFO, fmt, ##__VA_ARGS__)
+#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define CELP_ERROR(fmt, ...) celp_log(0, CELP_LOG_ERROR, fmt, ##__VA_ARGS__)
+#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, fmt, ##__VA_ARGS__)
 
 /* Misc */
 #define CELP_COMP(a, b) \
@@ -202,9 +203,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_da_info(da) \
     do{ \
-        celp_log(CELP_LOG_LEVEL_INFO, \
-                 "Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", \
-                 (da), (da)->capacity, (da)->count); \
+        CELP_INFO("Dynamic Array at: %p, Capacity: %zu, Count: %zu\n", \
+             (da), (da)->capacity, (da)->count); \
     } while(0)
 
 /* Linked List */
@@ -350,7 +350,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         } \
     } \
     if (!_found) { \
-        celp_log(CELP_LOG_LEVEL_ERROR, "Failed to find and remove node"); \
+        CELP_ERROR("Failed to find and remove node"); \
     } \
     \
     _return; \
@@ -376,18 +376,14 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
     do { \
         typeof((ll)->head) _curr = (ll)->head->next; \
         for (size_t _i = 0; _i < (ll)->count; _i++) { \
-            celp_log(CELP_LOG_LEVEL_INFO, \
-                     "[%zu] %i", \
-                     _i , _curr->data); \
+            CELP_INFO("[%zu] %i",_i , _curr->data); \
             _curr = _curr->next; \
         } \
     } while(0)
 
 #define celp_ll_info(ll) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, \
-                 "LL at: %p, Count: %zu", \
-                 (ll), (ll)->count); \
+        CELP_INFO("LL at: %p, Count: %zu", (ll), (ll)->count); \
     } while(0)
 
 /* HashMap */
@@ -536,9 +532,8 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 
 #define celp_map_info(map) \
     do { \
-        celp_log(CELP_LOG_LEVEL_INFO, \
-                 "Map at: %p, Capacity: %zu, Count: %zu", \
-                 (map), (map)->capacity, (map)->count); \
+        CELP_INFO("Map at: %p, Capacity: %zu, Count: %zu", \
+             (map), (map)->capacity, (map)->count); \
     } while(0)
 
 
@@ -690,7 +685,7 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 #define celp_v3_neg(v) {-(v).x, -(v).y, -(v).z};
 
 /* Vector4 */
-#define _v4(T) v4##T
+#define _v4(T) v4_##T
 #define CELP_V4(T) \
     typedef struct _CELP_S(_v4(T)) { \
         T x, y, z, w; \
@@ -865,54 +860,61 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
         #define CELP_LOG_MODE_TRACE LOG_MODE_TRACE
     #endif 
 #endif //LOG_MODE_ALL 
+       
+#ifndef LOG_LEVEL
+    #define LOG_LEVEL 0 
+#endif //LOG_LEVEL
+#define CELP_LOG_LEVEL LOG_LEVEL
 
-CELP_DEF void celp_log(CELP_log_level_t log_level,
+CELP_DEF void celp_log(CELP_u8 level,
+                       CELP_log_t log,
                        const char *file,
                        const char *function,
                        int line,
                        const char* fmt_string,
                        ...)
 {
+    if (level > CELP_LOG_LEVEL) return;
     va_list args;
     va_start(args, fmt_string); 
     FILE* out = NULL;
     char* tag = NULL;
     char fmt_str_trace[256];
 
-    switch(log_level) {
-        case _CELP_LOG_LEVEL_INFO:
+    switch(log) {
+        case _CELP_LOG_INFO:
             #ifdef CELP_LOG_MODE_INFO
                 out = stdout;
                 tag = "[INFO] ";
                 (void)file; (void)function; (void)line;
             #else
-                goto ignore;
+                return;
             #endif //CELP_LOG_MODE_INFO
             goto end;
-        case _CELP_LOG_LEVEL_ERROR:
+        case _CELP_LOG_ERROR:
             #ifdef CELP_LOG_MODE_ERROR
                 out = stderr;
                 tag = "[ERROR] ";
                 goto prepend;
             #else
-                goto ignore;
+                return;
             #endif //CELP_LOG_MODE_ERROR
-        case _CELP_LOG_LEVEL_DEBUG:
+        case _CELP_LOG_DEBUG:
             #ifdef CELP_LOG_MODE_DEBUG
                 out = stdout;
                 tag = "[DEBUG] ";
                 (void)file; (void)function; (void)line;
             #else
-                goto ignore;
+                return;
             #endif //CELP_LOG_MODE_DEBUG
             goto end;
-        case _CELP_LOG_LEVEL_TRACE:
+        case _CELP_LOG_TRACE:
             #ifdef CELP_LOG_MODE_TRACE
                 out = stdout;
                 tag = "[TRACE] "; 
                 goto prepend;
             #else
-                goto ignore;
+                return;
             #endif //CELP_LOG_MODE_TRACE
     }
 
@@ -927,8 +929,6 @@ end:
     fputc('\n', out);
     va_end(args);
     return;
-ignore:
-    (void)log_level; (void)fmt_string;
 }
 
 #endif //CELP_IMPLEMENTATION
@@ -959,10 +959,10 @@ ignore:
     #define HASH                  CELP_HASH  
     //CELP_LOG
     #define log                   celp_log
-    #define LOG_LEVEL_INFO        CELP_LOG_LEVEL_INFO
-    #define LOG_LEVEL_DEBUG       CELP_LOG_LEVEL_DEBUG
-    #define LOG_LEVEL_ERROR       CELP_LOG_LEVEL_ERROR 
-    #define LOG_LEVEL_TRACE       CELP_LOG_LEVEL_TRACE  
+    #define LOG_INFO              CELP_LOG_INFO
+    #define LOG_DEBUG             CELP_LOG_DEBUG
+    #define LOG_ERROR             CELP_LOG_ERROR 
+    #define LOG_TRACE             CELP_LOG_TRACE  
     //CELP_DA
     #define DA                    CELP_DA 
     #define DA_T                  CELP_DA_T
