@@ -48,6 +48,19 @@
 #include <string.h>
 #include <stdint.h>
 
+#define CELP_f32   float
+#define CELP_f64   double
+#define CELP_u8    uint8_t
+#define CELP_u16   uint16_t
+#define CELP_u32   uint32_t
+#define CELP_u64   uint64_t
+#define CELP_i8    int8_t
+#define CELP_i16   int16_t
+#define CELP_i32   int32_t
+#define CELP_i64   int64_t
+#define CELP_usize size_t
+#define CELP_isize ssize_t
+
 /* Logging */
 typedef enum CELP_log_level_e {
    _CELP_LOG_LEVEL_INFO,
@@ -532,19 +545,6 @@ CELP_DEF void celp_log(CELP_log_level_t log_level,
 //math macros
 #ifdef CELP_MATH
 
-#define CELP_f32   float
-#define CELP_f64   double
-#define CELP_u8    uint8_t
-#define CELP_u16   uint16_t
-#define CELP_u32   uint32_t
-#define CELP_u64   uint64_t
-#define CELP_i8    int8_t
-#define CELP_i16   int16_t
-#define CELP_i32   int32_t
-#define CELP_i64   int64_t
-#define CELP_usize size_t
-#define CELP_isize ssize_t
-
 /* Vector2 */
 #define _v2(T) v2_##T
 #define CELP_V2(T) \
@@ -932,6 +932,19 @@ ignore:
 //shamelessly ripped from mr tsoding
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
+    //TYPES
+    #define f32                   CELP_f32
+    #define f64                   CELP_f64 
+    #define u8                    CELP_u8 
+    #define u16                   CELP_u16 
+    #define u32                   CELP_u32
+    #define u64                   CELP_u64
+    #define i8                    CELP_i8
+    #define i16                   CELP_i16 
+    #define i32                   CELP_i32 
+    #define i64                   CELP_i64
+    #define usize                 CELP_usize 
+    #define isize                 CELP_isize
     //MISC
     #define INFO                  CELP_INFO 
     #define DEBUG                 CELP_DEBUG 
