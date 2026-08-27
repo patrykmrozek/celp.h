@@ -137,9 +137,14 @@
 #define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
 
 /* Testing */
-#define CELP_EXPECT(x)        CELP_ASSERT(x)
-#define CELP_EXPECT_EQ(x, y ) CELP_ASSERT(x==y)
-#define CELP_EXPECT_NEQ(x, y) CELP_ASSERT(x!=y)
+#define CELP_EXPECT(cond) do { \
+    if (!(cond)) { \
+        celp_test_result = CELP_TEST_RESULT_FAIL; \
+        CELP_ERROR("TESTCASE FAILURE: %s", #cond); \
+    } \
+} while(0)
+#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
+#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
 
 typedef enum celp_test_result_e {
     CELP_TEST_RESULT_PASS,
@@ -147,7 +152,13 @@ typedef enum celp_test_result_e {
     CELP_TEST_RESULT_NONE,
 } celp_test_result_t;
 
+static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
+static celp_u32 celp_test_runs = 0;
+static celp_u32 celp_test_passes = 0;
+static celp_u32 celp_test_fails = 0;
+
 typedef struct celp_testcase_s {
+    char *name;
     void (*testcase)(void);
     celp_test_result_t result;
 } celp_testcase_t;
@@ -155,6 +166,7 @@ typedef struct celp_testcase_s {
 CELP_LL(celp_testcase_t);
 typedef struct celp_test_suite_s {
     //struct celp_test_suite_s *suites;
+    char *name;
     void (*setup)(void);
     void (*teardown)(void);
     CELP_LL_T(celp_testcase_t) tests;
@@ -167,6 +179,7 @@ typedef struct celp_test_suite_s {
 #define CELP_TEST_SUITE_START(s) \
     CELP_DEF_SI celp_test_suite_t *suite_##s() { \
         celp_test_suite_t *_suite = CELP_MALLOC(sizeof(celp_test_suite_t)); \
+        _suite->name = #s; \
         _suite->setup = NULL; \
         _suite->teardown = NULL; \
         celp_ll_init(&_suite->tests); \
@@ -179,6 +192,7 @@ typedef struct celp_test_suite_s {
 
 #define CELP_TEST_SUITE_ADD_TEST(t) \
         celp_testcase_t _t; \
+        _t.name = #t; \
         _t.testcase = &test_##t; \
         _t.result = CELP_TEST_RESULT_NONE; \
         celp_ll_add(&_suite->tests, _t);
@@ -187,19 +201,31 @@ typedef struct celp_test_suite_s {
         return _suite; \
     }
 
-#define CELP_TEST_SUITE_RUN(s) do { \
+#define CELP_TEST_SUITE_RUN(s) \
     celp_test_suite_t *_suite = suite_##s(); \
     _suite->setup(); \
-    celp_ll_foreach(&_suite->tests, _test) { \
-        _test->data.testcase(); \
+    celp_ll_foreach(&_suite->tests, _t) { \
+        celp_test_result = CELP_TEST_RESULT_NONE; \
+        _t->data.testcase(); \
+        celp_test_runs++; \
+        _t->data.result = celp_test_result; \
+        (celp_test_result==CELP_TEST_RESULT_FAIL) ? \
+        celp_test_fails++ : celp_test_passes++; \
     } \
     _suite->teardown(); \
-} while(0);
 
-#define CELP_TEST_SUITE_REPORT(suite)
+#define CELP_TEST_SUITE_REPORT() \
+    celp_log(0, CELP_LOG_INFO,  "[TEST_SUITE] ", "%s", _suite->name); \
+    celp_ll_foreach(&_suite->tests, _t) { \
+        celp_log(0, CELP_LOG_INFO,  "\t[TESTCASE] ", "%s %s", _t->data.name, \
+                (celp_test_result==CELP_TEST_RESULT_FAIL) ? "[FAIL]" : "[PASS]"); \
+    } \
+    celp_log(0, CELP_LOG_INFO,  "[REPORT] ", "RUNS: %d - PASSED: %d - FAILED: %d\n", \
+            celp_test_runs, celp_test_passes, celp_test_fails); \
 
 #define CELP_TEST_SUITE_DESTROY() \
-    CELP_FREE(_suite)
+    celp_ll_free(&_suite->tests); \
+    CELP_FREE(_suite); \
 
 
 /* Logging */
@@ -208,7 +234,6 @@ typedef enum celp_log_e {
    _CELP_LOG_DEBUG,
    _CELP_LOG_ERROR,
    _CELP_LOG_TRACE,
-   _CELP_LOG_TEST,
 } celp_log_t;
 
 //sort of implemented function overloading?
@@ -221,21 +246,20 @@ typedef enum celp_log_e {
                                                __FILE__, __FUNCTION__, __LINE__
 #define CELP_LOG_TRACE (celp_log_t)_CELP_LOG_TRACE, \
                                                __FILE__, __FUNCTION__, __LINE__
-#define CELP_LOG_TEST (celp_log_t)_CELP_LOG_TEST, NULL, NULL, 0
 
 CELP_DEF void celp_log(celp_u8 level,
                        celp_log_t log,
                        const char *file,
                        const char *function,
                        int line,
+                       const char *tag,
                        const char* fmt_string,
                        ...);
 
-#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  fmt, ##__VA_ARGS__)
-#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, fmt, ##__VA_ARGS__)
-#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, fmt, ##__VA_ARGS__)
-#define CELP_TEST(fmt, ...)       celp_log(0,   CELP_LOG_TEST,  fmt, ##__VA_ARGS__)
+#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  "[INFO] ",  fmt, ##__VA_ARGS__)
+#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, "[DEBUG] ", fmt, ##__VA_ARGS__)
+#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, "[ERROR] ", fmt, ##__VA_ARGS__)
+#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", fmt, ##__VA_ARGS__)
 
 /* Dynamic Array */
 #define CELP_DA_INITIAL_CAPACITY 256
@@ -947,6 +971,7 @@ celp_log(celp_u8 level,
          const char *file,
          const char *function,
          int line,
+         const char *tag,
          const char* fmt_string,
          ...)
 {
@@ -954,14 +979,12 @@ celp_log(celp_u8 level,
     va_list args;
     va_start(args, fmt_string); 
     FILE* out = NULL;
-    char* tag = NULL;
     char fmt_str_trace[256];
 
     switch(log) {
         case _CELP_LOG_INFO:
             #ifdef CELP_LOG_MODE_INFO
                 out = stdout;
-                tag = "[INFO] ";
                 (void)file; (void)function; (void)line;
             #else
                 return;
@@ -970,7 +993,6 @@ celp_log(celp_u8 level,
         case _CELP_LOG_ERROR:
             #ifdef CELP_LOG_MODE_ERROR
                 out = stderr;
-                tag = "[ERROR] ";
                 goto prepend;
             #else
                 return;
@@ -978,7 +1000,6 @@ celp_log(celp_u8 level,
         case _CELP_LOG_DEBUG:
             #ifdef CELP_LOG_MODE_DEBUG
                 out = stdout;
-                tag = "[DEBUG] ";
                 (void)file; (void)function; (void)line;
             #else
                 return;
@@ -987,15 +1008,10 @@ celp_log(celp_u8 level,
         case _CELP_LOG_TRACE:
             #ifdef CELP_LOG_MODE_TRACE
                 out = stdout;
-                tag = "[TRACE] "; 
                 goto prepend;
             #else
                 return;
             #endif //CELP_LOG_MODE_TRACE
-        case _CELP_LOG_TEST:
-                out = stdout;
-                tag = "[TEST] ";
-                goto end;
     }
 
 prepend:
