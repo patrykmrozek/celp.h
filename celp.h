@@ -1,8 +1,6 @@
-//TODO:
-// - file reader
-// - string builder/view
-// - memory alloc/arena macros
-// - DSs
+/*
+ * celp.h - single header c util library.
+ */
 
 #ifndef _CELP_H
 #define _CELP_H
@@ -48,50 +46,18 @@
 #include <string.h>
 #include <stdint.h>
 
-#define CELP_f32   float
-#define CELP_f64   double
-#define CELP_u8    uint8_t
-#define CELP_u16   uint16_t
-#define CELP_u32   uint32_t
-#define CELP_u64   uint64_t
-#define CELP_i8    int8_t
-#define CELP_i16   int16_t
-#define CELP_i32   int32_t
-#define CELP_i64   int64_t
-#define CELP_usize size_t
-#define CELP_isize ssize_t
-
-/* Logging */
-typedef enum CELP_log_e {
-   _CELP_LOG_INFO,
-   _CELP_LOG_DEBUG,
-   _CELP_LOG_ERROR,
-   _CELP_LOG_TRACE,
-} CELP_log_t;
-
-//sort of implemented function overloading?
-//user uses these fake enums below, which automatically fill
-//out the (file, function, line) parameters in celp_log based 
-//on the log level
-#define CELP_LOG_INFO  (CELP_log_t)_CELP_LOG_INFO,  NULL, NULL, 0
-#define CELP_LOG_DEBUG (CELP_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0
-#define CELP_LOG_ERROR (CELP_log_t)_CELP_LOG_ERROR, \
-                                               __FILE__, __FUNCTION__, __LINE__
-#define CELP_LOG_TRACE (CELP_log_t)_CELP_LOG_TRACE, \
-                                               __FILE__, __FUNCTION__, __LINE__
-
-CELP_DEF void celp_log(CELP_u8 level,
-                       CELP_log_t log,
-                       const char *file,
-                       const char *function,
-                       int line,
-                       const char* fmt_string,
-                       ...);
-
-#define CELP_INFO(fmt, ...)  celp_log(0, CELP_LOG_INFO, fmt, ##__VA_ARGS__)
-#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define CELP_ERROR(fmt, ...) celp_log(0, CELP_LOG_ERROR, fmt, ##__VA_ARGS__)
-#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, fmt, ##__VA_ARGS__)
+#define celp_f32   float
+#define celp_f64   double
+#define celp_u8    uint8_t
+#define celp_u16   uint16_t
+#define celp_u32   uint32_t
+#define celp_u64   uint64_t
+#define celp_i8    int8_t
+#define celp_i16   int16_t
+#define celp_i32   int32_t
+#define celp_i64   int64_t
+#define celp_usize size_t
+#define celp_isize ssize_t
 
 /* Misc */
 #define CELP_COMP(a, b) \
@@ -121,17 +87,158 @@ CELP_DEF void celp_log(CELP_u8 level,
         _hash; \
     })
 
-/* Dynamic Array */
-#define CELP_DA_INITIAL_CAPACITY 256
+/* generic typedefs */
 
+/* Dynamic Array */
 #define _da(T) da_##T
 #define CELP_DA(T) \
     typedef struct _CELP_S(_da(T)) { \
         T* items; \
-        size_t count; \
-        size_t capacity; \
+        celp_usize count; \
+        celp_usize capacity; \
     } _CELP_T(_da(T));
 #define CELP_DA_T(T) _CELP_T(_da(T)) 
+
+/* Linked List */
+#define _lln(T) lln_##T
+#define _ll(T)  ll_##T
+#define CELP_LL(T) \
+    typedef struct _CELP_S(_lln(T)) { \
+        T data; \
+        struct _CELP_S(_lln(T))* prev; \
+        struct _CELP_S(_lln(T))* next; \
+    } _CELP_T(_lln(T)); \
+    \
+    typedef struct _CELP_S(_ll(T)) { \
+        _CELP_T(_lln(T))* head; \
+        _CELP_T(_lln(T))* tail; \
+        celp_usize count; \
+    } _CELP_T(_ll(T));
+#define CELP_LLN_T(T) _CELP_T(_lln(T))
+#define CELP_LL_T(T)  _CELP_T(_ll(T))
+
+/* HashMap */
+#define _kv(T)  kv_##kT##_##vT
+#define _map(T) map_##kT##_##vT
+#define CELP_MAP(kT, vT) \
+    typedef struct _CELP_S(_kv(T)) { \
+        kT key; \
+        vT value; \
+    } _CELP_T(_kv(T)); \
+    \
+    CELP_LL(_CELP_T(_kv(T))); \
+    \
+    typedef struct _CELP_S(_map(T)) { \
+        CELP_LL_T(_CELP_T(_kv(T)))* buckets; \
+        celp_usize count; \
+        celp_usize capacity; \
+    }  _CELP_T(_map(T));
+#define CELP_KV_T(kT, vT)  _CELP_T(_kv(T)) 
+#define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
+
+/* Testing */
+#define CELP_EXPECT(x)        CELP_ASSERT(x)
+#define CELP_EXPECT_EQ(x, y ) CELP_ASSERT(x==y)
+#define CELP_EXPECT_NEQ(x, y) CELP_ASSERT(x!=y)
+
+typedef enum celp_test_result_e {
+    CELP_TEST_RESULT_PASS,
+    CELP_TEST_RESULT_FAIL,
+    CELP_TEST_RESULT_NONE,
+} celp_test_result_t;
+
+typedef struct celp_testcase_s {
+    void (*testcase)(void);
+    celp_test_result_t result;
+} celp_testcase_t;
+
+CELP_LL(celp_testcase_t);
+typedef struct celp_test_suite_s {
+    //struct celp_test_suite_s *suites;
+    void (*setup)(void);
+    void (*teardown)(void);
+    CELP_LL_T(celp_testcase_t) tests;
+} celp_test_suite_t;
+
+#define CELP_TESTCASE(t)      void test_##t()
+#define CELP_TEST_SETUP(s)    void setup_##s()
+#define CELP_TEST_TEARDOWN(t) void teardown_##t()
+
+#define CELP_TEST_SUITE_START(s) \
+    CELP_DEF_SI celp_test_suite_t *suite_##s() { \
+        celp_test_suite_t *_suite = CELP_MALLOC(sizeof(celp_test_suite_t)); \
+        _suite->setup = NULL; \
+        _suite->teardown = NULL; \
+        celp_ll_init(&_suite->tests); \
+        
+#define CELP_TEST_SUITE_ADD_SETUP(s) \
+        _suite->setup = &(setup_##s);
+
+#define CELP_TEST_SUITE_ADD_TEARDOWN(t) \
+        _suite->teardown = &(teardown_##t);
+
+#define CELP_TEST_SUITE_ADD_TEST(t) \
+        celp_testcase_t _t; \
+        _t.testcase = &test_##t; \
+        _t.result = CELP_TEST_RESULT_NONE; \
+        celp_ll_add(&_suite->tests, _t);
+
+#define CELP_TEST_SUITE_END() \
+        return _suite; \
+    }
+
+#define CELP_TEST_SUITE_RUN(s) do { \
+    celp_test_suite_t *_suite = suite_##s(); \
+    _suite->setup(); \
+    celp_ll_foreach(&_suite->tests, _test) { \
+        _test->data.testcase(); \
+    } \
+    _suite->teardown(); \
+} while(0);
+
+#define CELP_TEST_SUITE_REPORT(suite)
+
+#define CELP_TEST_SUITE_DESTROY() \
+    CELP_FREE(_suite)
+
+
+/* Logging */
+typedef enum celp_log_e {
+   _CELP_LOG_INFO,
+   _CELP_LOG_DEBUG,
+   _CELP_LOG_ERROR,
+   _CELP_LOG_TRACE,
+   _CELP_LOG_TEST,
+} celp_log_t;
+
+//sort of implemented function overloading?
+//user uses these fake enums below, which automatically fill
+//out the (file, function, line) parameters in celp_log based 
+//on the log level
+#define CELP_LOG_INFO  (celp_log_t)_CELP_LOG_INFO,  NULL, NULL, 0
+#define CELP_LOG_DEBUG (celp_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0
+#define CELP_LOG_ERROR (celp_log_t)_CELP_LOG_ERROR, \
+                                               __FILE__, __FUNCTION__, __LINE__
+#define CELP_LOG_TRACE (celp_log_t)_CELP_LOG_TRACE, \
+                                               __FILE__, __FUNCTION__, __LINE__
+#define CELP_LOG_TEST (celp_log_t)_CELP_LOG_TEST, NULL, NULL, 0
+
+CELP_DEF void celp_log(celp_u8 level,
+                       celp_log_t log,
+                       const char *file,
+                       const char *function,
+                       int line,
+                       const char* fmt_string,
+                       ...);
+
+#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  fmt, ##__VA_ARGS__)
+#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, fmt, ##__VA_ARGS__)
+#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, fmt, ##__VA_ARGS__)
+#define CELP_TEST(fmt, ...)       celp_log(0,   CELP_LOG_TEST,  fmt, ##__VA_ARGS__)
+
+/* Dynamic Array */
+#define CELP_DA_INITIAL_CAPACITY 256
 
 #define celp_da_init(da) \
     do { \
@@ -207,23 +314,8 @@ CELP_DEF void celp_log(CELP_u8 level,
              (da), (da)->capacity, (da)->count); \
     } while(0)
 
-/* Linked List */
-#define _lln(T) lln_##T
-#define _ll(T)  ll_##T
-#define CELP_LL(T) \
-    typedef struct _CELP_S(_lln(T)) { \
-        T data; \
-        struct _CELP_S(_lln(T))* prev; \
-        struct _CELP_S(_lln(T))* next; \
-    } _CELP_T(_lln(T)); \
-    \
-    typedef struct _CELP_S(_ll(T)) { \
-        _CELP_T(_lln(T))* head; \
-        _CELP_T(_lln(T))* tail; \
-        CELP_usize count; \
-    } _CELP_T(_ll(T));
-#define CELP_LLN_T(T) _CELP_T(_lln(T))
-#define CELP_LL_T(T)  _CELP_T(_ll(T))
+
+/* Linked List*/
 
 #define _celp_ll_create_node(ll, x, p, n) \
     ({ \
@@ -386,26 +478,9 @@ CELP_DEF void celp_log(CELP_u8 level,
         CELP_INFO("LL at: %p, Count: %zu", (ll), (ll)->count); \
     } while(0)
 
+
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
-
-#define _kv(T)  kv_##kT##_##vT
-#define _map(T) map_##kT##_##vT
-#define CELP_MAP(kT, vT) \
-    typedef struct _CELP_S(_kv(T)) { \
-        kT key; \
-        vT value; \
-    } _CELP_T(_kv(T)); \
-    \
-    CELP_LL(_CELP_T(_kv(T))); \
-    \
-    typedef struct _CELP_S(_map(T)) { \
-        CELP_LL_T(_CELP_T(_kv(T)))* buckets; \
-        size_t count; \
-        size_t capacity; \
-    }  _CELP_T(_map(T));
-#define CELP_KV_T(kT, vT)  _CELP_T(_kv(T)) 
-#define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
 
 #define _celp_map_clear(map) \
     do {\
@@ -594,7 +669,7 @@ CELP_DEF void celp_log(CELP_u8 level,
 #define celp_v3_is_empty(v) \
     ((v).x == 0 && \
      (v).y == 0 && \
-     (v).z == 0);
+     (v).z == 0)
 
 #define celp_v3_contains_zero(v) \
     ((v).x == 0 || \
@@ -790,7 +865,7 @@ CELP_DEF void celp_log(CELP_u8 level,
 ({ \
     typeof((_v)) __v = (_v); \
     typeof(__v.x) _out[4] = {0}; \
-    for (CELP_u8 _row_idx = 0; _row_idx < 4; _row_idx++) { \
+    for (celp_u8 _row_idx = 0; _row_idx < 4; _row_idx++) { \
         typeof(__v) _row = {(m).v[_row_idx][0],  \
                             (m).v[_row_idx][1],  \
                             (m).v[_row_idx][2],  \
@@ -803,8 +878,8 @@ CELP_DEF void celp_log(CELP_u8 level,
 #define celp_m4_mul(m1, m2) \
 ({ \
     typeof((m1)) _out[4] = {0}; \
-    for (CELP_u8 _i = 0; _i < 4; _i++) { \
-        for (CELP_u8 _j = 0; _j < 4; _j++) { \
+    for (celp_u8 _i = 0; _i < 4; _i++) { \
+        for (celp_u8 _j = 0; _j < 4; _j++) { \
             out.v[_i][_j] = v4_dot( \
                 ((v4){(m1).v[_i][0], (m1).v[_i][1], (m1).v[_i][2], (m1).v[_i][3]}), \
                 ((v4){(m2).v[0][_j], (m2).v[1][_j], (m2).v[2][_j], (m2).v[3][_j]})); \
@@ -866,13 +941,14 @@ CELP_DEF void celp_log(CELP_u8 level,
 #endif //LOG_LEVEL
 #define CELP_LOG_LEVEL LOG_LEVEL
 
-CELP_DEF void celp_log(CELP_u8 level,
-                       CELP_log_t log,
-                       const char *file,
-                       const char *function,
-                       int line,
-                       const char* fmt_string,
-                       ...)
+CELP_DEF void 
+celp_log(celp_u8 level,
+         celp_log_t log,
+         const char *file,
+         const char *function,
+         int line,
+         const char* fmt_string,
+         ...)
 {
     if (level > CELP_LOG_LEVEL) return;
     va_list args;
@@ -916,6 +992,10 @@ CELP_DEF void celp_log(CELP_u8 level,
             #else
                 return;
             #endif //CELP_LOG_MODE_TRACE
+        case _CELP_LOG_TEST:
+                out = stdout;
+                tag = "[TEST] ";
+                goto end;
     }
 
 prepend:
@@ -937,18 +1017,18 @@ end:
 //if you dont want to keep writing celp :|
 #ifdef CELP_STRIP_PREFIX
     //TYPES
-    #define f32                   CELP_f32
-    #define f64                   CELP_f64 
-    #define u8                    CELP_u8 
-    #define u16                   CELP_u16 
-    #define u32                   CELP_u32
-    #define u64                   CELP_u64
-    #define i8                    CELP_i8
-    #define i16                   CELP_i16 
-    #define i32                   CELP_i32 
-    #define i64                   CELP_i64
-    #define usize                 CELP_usize 
-    #define isize                 CELP_isize
+    #define f32                   celp_f32
+    #define f64                   celp_f64 
+    #define u8                    celp_u8 
+    #define u16                   celp_u16 
+    #define u32                   celp_u32
+    #define u64                   celp_u64
+    #define i8                    celp_i8
+    #define i16                   celp_i16 
+    #define i32                   celp_i32 
+    #define i64                   celp_i64
+    #define usize                 celp_usize 
+    #define isize                 celp_isize
     //MISC
     #define INFO                  CELP_INFO 
     #define DEBUG                 CELP_DEBUG 
@@ -963,6 +1043,7 @@ end:
     #define LOG_DEBUG             CELP_LOG_DEBUG
     #define LOG_ERROR             CELP_LOG_ERROR 
     #define LOG_TRACE             CELP_LOG_TRACE  
+    #define LOG_TEST              CELP_LOG_TEST
     //CELP_DA
     #define DA                    CELP_DA 
     #define DA_T                  CELP_DA_T
@@ -1033,6 +1114,8 @@ end:
     #define v3_norm               celp_v3_norm
     #define v3_neg                celp_v3_neg
     #define v3_contains_neg       celp_v3_contains_neg
+    #define v3_contains_zero      celp_v3_contains_zero
+    #define v3_is_empty           celp_v3_is_empty
     #define V3F_STR               CELP_V3F_STR
 
     //v4
