@@ -138,14 +138,14 @@
 
 /* Testing */
 #define CELP_TEST_FAIL_MSG_LEN 1024
-char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
+static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
 
 #define CELP_EXPECT(cond) do { \
     celp_test_assertions++; \
     if (!(cond)) { \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
         snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                 "[FAILURE] %s %s %d: %s", \
+                 "%s %s %d: %s\n", \
                  __FILE__, __FUNCTION__, __LINE__, #cond); \
     } \
 } while(0)
@@ -216,7 +216,7 @@ typedef struct celp_test_suite_s {
         _t->data.testcase(); \
         celp_test_runs++; \
         _t->data.result = celp_test_result; \
-        (celp_test_result==CELP_TEST_RESULT_FAIL) ? \
+        (_t->data.result==CELP_TEST_RESULT_FAIL) ? \
         celp_test_fails++ : celp_test_passes++; \
     } \
     _suite->teardown(); \
@@ -227,16 +227,16 @@ typedef struct celp_test_suite_s {
         celp_log(0, CELP_LOG_INFO,  "\t[TESTCASE] ", "%s %s", _t->data.name, \
                 (_t->data.result==CELP_TEST_RESULT_FAIL) ? "[FAIL]" : "[PASS]"); \
     } \
-    printf("%s\n", celp_test_fail_msg); \
     celp_log(0, CELP_LOG_INFO, \
-            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d - PASSED: %d - FAILED: %d\n", \
+            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d - PASSED: %d - FAILED: %d", \
             celp_test_runs, celp_test_assertions, \
             celp_test_passes, celp_test_fails); \
+    char *celp_fail_tag = (celp_test_fails > 0) ? "[FAILURE] " : ""; \
+    celp_log(0, CELP_LOG_INFO, celp_fail_tag, "%s", celp_test_fail_msg); \
 
 #define CELP_TEST_SUITE_DESTROY() \
     celp_ll_free(&_suite->tests); \
     CELP_FREE(_suite); \
-
 
 /* Logging */
 typedef enum celp_log_e {
