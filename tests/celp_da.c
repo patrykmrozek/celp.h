@@ -1,7 +1,7 @@
 #define CELP_TEST
 #include "../celp.h"
 
-CELP_DA(int)
+CELP_DA(int);
 CELP_DA_T(int) n = {};
 
 CELP_TEST_SETUP(da)
