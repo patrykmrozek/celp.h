@@ -1,3 +1,4 @@
+#define CELP_TEST
 #include "../celp.h"
 
 CELP_DA(int)
