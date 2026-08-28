@@ -137,6 +137,8 @@
 #define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
 
 /* Testing */
+#ifdef CELP_TEST
+
 #define CELP_TEST_FAIL_MSG_LEN 1024
 static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
 
@@ -145,7 +147,7 @@ static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
     if (!(cond)) { \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
         snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                 "%s %s %d: %s\n", \
+                 "%s:%s:%d (%s)\n", \
                  __FILE__, __FUNCTION__, __LINE__, #cond); \
     } \
 } while(0)
@@ -237,6 +239,8 @@ typedef struct celp_test_suite_s {
 #define CELP_TEST_SUITE_DESTROY() \
     celp_ll_free(&_suite->tests); \
     CELP_FREE(_suite); \
+
+#endif //CELP_TEST
 
 /* Logging */
 typedef enum celp_log_e {
@@ -378,25 +382,32 @@ CELP_DEF void celp_log(celp_u8 level,
         iter != (ll)->tail; \
         iter = iter->next)
 
-#define celp_ll_foreach_until_node(ll, iter, n) \
-    for (typeof((ll)->head) iter = (ll)->head->next; \
-        iter != (n); \
-        iter = iter->next)
-
 #define celp_ll_get_first(ll) \
     ({ \
         CELP_ASSERT((ll)->count > 0); \
-        (ll)->head->next->data \
+        (ll)->head->next->data; \
     })
 
 #define celp_ll_get_last(ll) \
     ({ \
         CELP_ASSERT((ll)->count > 0); \
-        (ll)->tail->prev->data \
+        (ll)->tail->prev->data; \
     })
+
+#define celp_ll_get_at_index(ll, i) \
+    ({ \
+        CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
+        typeof((ll)->head) _curr = (ll)->head; \
+        for (celp_usize _i = 0; _i <= (i); _i++) { \
+            _curr = _curr->next; \
+        } \
+        \
+        _curr; \
+     })
 
 #define celp_ll_add_after(ll, x, n) \
     do { \
+        CELP_ASSERT((n) != (ll)->tail); \
         typeof((ll)->head) _node = _celp_ll_create_node((ll), (x), (n), (n)->next); \
         _node->prev->next = _node; \
         _node->next->prev = _node; \
@@ -444,14 +455,10 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_ll_remove_at_index(ll, i) \
     ({ \
         CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
-        typeof((ll)->head) _curr = (ll)->head; \
-        typeof((ll)->head->data) _return = {0}; \
-        for (size_t _i = 0; _i <= (i); _i++) { \
-            _curr = _curr->next; \
-        } \
+        typeof((ll)->head) _curr = celp_ll_get_at_index((ll), (i)); \
+        typeof((ll)->head->data) _return = _curr->data; \
         _curr->next->prev = _curr->prev; \
         _curr->prev->next = _curr->next; \
-        _return = _curr->data; \
         CELP_FREE(_curr); \
         (ll)->count--; \
         \
@@ -461,13 +468,13 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_ll_remove_node(ll, n) \
     ({ \
     CELP_ASSERT((ll)->count > 0); \
-    typeof((ll)->head->data) _return = {0}; \
+    typeof((ll)->head) _return = {0}; \
     bool _found = false; \
     celp_ll_foreach((ll), _curr) { \
         if (_curr == (n)) { \
             _curr->next->prev = _curr->prev; \
             _curr->prev->next = _curr->next; \
-            _return = _curr->data; \
+            _return = _curr; \
             CELP_FREE(_curr); \
             (ll)->count--; \
             _found = true; \
@@ -496,21 +503,6 @@ CELP_DEF void celp_log(celp_u8 level,
         (ll)->tail = NULL; \
         (ll)->count = 0; \
     } while(0)
-
-#define celp_ll_print_int(ll) \
-    do { \
-        typeof((ll)->head) _curr = (ll)->head->next; \
-        for (size_t _i = 0; _i < (ll)->count; _i++) { \
-            CELP_INFO("[%zu] %i",_i , _curr->data); \
-            _curr = _curr->next; \
-        } \
-    } while(0)
-
-#define celp_ll_info(ll) \
-    do { \
-        CELP_INFO("LL at: %p, Count: %zu", (ll), (ll)->count); \
-    } while(0)
-
 
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
@@ -618,7 +610,7 @@ CELP_DEF void celp_log(celp_u8 level,
             celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
                 if (CELP_COMP(_bucket->data.key, _k) == 0) { \
                     _return = _bucket->data.value; \
-                    celp_ll_remove_node(&((map)->buckets[_h]), _bucket); \
+                    (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket); \
                     (map)->count--; \
                     break; \
                 } \
