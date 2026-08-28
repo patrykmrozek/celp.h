@@ -137,11 +137,16 @@
 #define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
 
 /* Testing */
+#define CELP_TEST_FAIL_MSG_LEN 1024
+char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
+
 #define CELP_EXPECT(cond) do { \
     celp_test_assertions++; \
     if (!(cond)) { \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
-        CELP_ERROR("TESTCASE FAILURE: %s", #cond); \
+        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                 "[FAILURE] %s %s %d: %s", \
+                 __FILE__, __FUNCTION__, __LINE__, #cond); \
     } \
 } while(0)
 #define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
@@ -222,6 +227,7 @@ typedef struct celp_test_suite_s {
         celp_log(0, CELP_LOG_INFO,  "\t[TESTCASE] ", "%s %s", _t->data.name, \
                 (_t->data.result==CELP_TEST_RESULT_FAIL) ? "[FAIL]" : "[PASS]"); \
     } \
+    printf("%s\n", celp_test_fail_msg); \
     celp_log(0, CELP_LOG_INFO, \
             "[REPORT] ", "RUNS: %d - ASSERTIONS: %d - PASSED: %d - FAILED: %d\n", \
             celp_test_runs, celp_test_assertions, \
