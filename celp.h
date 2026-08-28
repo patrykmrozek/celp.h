@@ -73,9 +73,12 @@
 #define _CELP_CAT(a, b) a##b
 #define CELP_CAT(a, b) _CELP_CAT(a, b)
 
-#define _CELP_S(prefix)   CELP_CAT(prefix, _s)
-#define _CELP_T(prefix)   CELP_CAT(prefix, _t)
-#define _CELP_E(prefix)   CELP_CAT(prefix, _e)
+#define _CELP_CATTT(a, b, c) a##b##c
+#define CELP_CATTT(a, b, c) _CELP_CATTT(a, b, c)
+
+#define CELP_S(prefix)   CELP_CAT(prefix, _s)
+#define CELP_T(prefix)   CELP_CAT(prefix, _t)
+#define CELP_E(prefix)   CELP_CAT(prefix, _e)
 
 //djb2 hash alg
 #define CELP_HASH(buffer, buffer_size) \
@@ -92,49 +95,49 @@
 /* Dynamic Array */
 #define _da(T) da_##T
 #define CELP_DA(T) \
-    typedef struct _CELP_S(_da(T)) { \
+    typedef struct CELP_S(_da(T)) { \
         T* items; \
         celp_usize count; \
         celp_usize capacity; \
-    } _CELP_T(_da(T));
-#define CELP_DA_T(T) _CELP_T(_da(T)) 
+    } CELP_T(_da(T))
+#define CELP_DA_T(T) CELP_T(_da(T)) 
 
 /* Linked List */
 #define _lln(T) lln_##T
 #define _ll(T)  ll_##T
 #define CELP_LL(T) \
-    typedef struct _CELP_S(_lln(T)) { \
+    typedef struct CELP_S(_lln(T)) { \
         T data; \
-        struct _CELP_S(_lln(T))* prev; \
-        struct _CELP_S(_lln(T))* next; \
-    } _CELP_T(_lln(T)); \
+        struct CELP_S(_lln(T))* prev; \
+        struct CELP_S(_lln(T))* next; \
+    } CELP_T(_lln(T)); \
     \
-    typedef struct _CELP_S(_ll(T)) { \
-        _CELP_T(_lln(T))* head; \
-        _CELP_T(_lln(T))* tail; \
+    typedef struct CELP_S(_ll(T)) { \
+        CELP_T(_lln(T))* head; \
+        CELP_T(_lln(T))* tail; \
         celp_usize count; \
-    } _CELP_T(_ll(T));
-#define CELP_LLN_T(T) _CELP_T(_lln(T))
-#define CELP_LL_T(T)  _CELP_T(_ll(T))
+    } CELP_T(_ll(T));
+#define CELP_LLN_T(T) CELP_T(_lln(T))
+#define CELP_LL_T(T)  CELP_T(_ll(T))
 
 /* HashMap */
-#define _kv(T)  kv_##kT##_##vT
-#define _map(T) map_##kT##_##vT
+#define _kv(kT, vT)  CELP_CATTT(CELP_CAT(kv_, kT), _, vT) 
+#define _map(kT, vT) CELP_CATTT(CELP_CAT(map_, kT), _, vT)
 #define CELP_MAP(kT, vT) \
-    typedef struct _CELP_S(_kv(T)) { \
+    typedef struct CELP_S(_kv(kT, vT)) { \
         kT key; \
         vT value; \
-    } _CELP_T(_kv(T)); \
+    } CELP_T(_kv(kT, vT)); \
     \
-    CELP_LL(_CELP_T(_kv(T))); \
+    CELP_LL(CELP_T(_kv(kT, vT))); \
     \
-    typedef struct _CELP_S(_map(T)) { \
-        CELP_LL_T(_CELP_T(_kv(T)))* buckets; \
+    typedef struct CELP_S(_map(kT, vT)) { \
+        CELP_LL_T(CELP_T(_kv(kT, vT)))* buckets; \
         celp_usize count; \
         celp_usize capacity; \
-    }  _CELP_T(_map(T));
-#define CELP_KV_T(kT, vT)  _CELP_T(_kv(T)) 
-#define CELP_MAP_T(kT, vT) _CELP_T(_map(T))
+    }  CELP_T(_map(kT, vT));
+#define CELP_KV_T(kT, vT)  CELP_T(_kv(kT, vT)) 
+#define CELP_MAP_T(kT, vT) CELP_T(_map(kT, vT))
 
 /* Testing */
 #ifdef CELP_TEST
@@ -643,10 +646,10 @@ CELP_DEF void celp_log(celp_u8 level,
 /* Vector2 */
 #define _v2(T) v2_##T
 #define CELP_V2(T) \
-    typedef struct _CELP_S(_v2(T)){ \
+    typedef struct CELP_S(_v2(T)){ \
         T x, y; \
-    } _CELP_T(_v2(T));
-#define CELP_V2_T(T) _CELP_T(_v2(T))
+    } CELP_T(_v2(T));
+#define CELP_V2_T(T) CELP_T(_v2(T))
 
 #define celp_v2_add(v1, v2) \
 ({ \
@@ -682,10 +685,10 @@ CELP_DEF void celp_log(celp_u8 level,
 /* Vector3 */
 #define _v3(T) v3_##T
 #define CELP_V3(T) \
-    typedef struct _CELP_S(_v3(T)) { \
+    typedef struct CELP_S(_v3(T)) { \
         T x, y, z; \
-    } _CELP_T(_v3(T));
-#define CELP_V3_T(T) _CELP_T(_v3(T))
+    } CELP_T(_v3(T));
+#define CELP_V3_T(T) CELP_T(_v3(T))
 
 #define CELP_V3F_STR(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
 
@@ -787,10 +790,10 @@ CELP_DEF void celp_log(celp_u8 level,
 /* Vector4 */
 #define _v4(T) v4_##T
 #define CELP_V4(T) \
-    typedef struct _CELP_S(_v4(T)) { \
+    typedef struct CELP_S(_v4(T)) { \
         T x, y, z, w; \
-    } _CELP_T(_v4(T));
-#define CELP_V4_T(T) _CELP_T(_v4(T))
+    } CELP_T(_v4(T));
+#define CELP_V4_T(T) CELP_T(_v4(T))
 
 #define CELP_V4F_STR(v) "{ %f, %f, %f, %f }", (v).x, (v).y, (v).z, (v).w
 
@@ -838,10 +841,10 @@ CELP_DEF void celp_log(celp_u8 level,
 /* Matrix4 */
 #define _m4(T) m4_##T
 #define CELP_M4(T) \
-    typedef struct _CELP_S(_m4(T)) { \
+    typedef struct CELP_S(_m4(T)) { \
         T v[4][4]; \
-    } _CELP_T(_m4(T));
-#define CELP_M4_T(T) _CELP_T(_m4(T))
+    } CELP_T(_m4(T));
+#define CELP_M4_T(T) CELP_T(_m4(T))
 
 #define CELP_M4_ID (m4){{   \
     {1, 0, 0, 0}, \
