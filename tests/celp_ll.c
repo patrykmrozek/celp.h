@@ -1,68 +1,146 @@
+#define CELP_TEST
 #include "../celp.h"
-#include <stdio.h>
 
-void celp_ll() {
-    CELP_INFO("LL!");
+CELP_LL(int);
+CELP_LL_T(int) n;
 
-    CELP_LL(int);
-    CELP_LL_T(int) n;
+CELP_TEST_SETUP(ll)
+{
     celp_ll_init(&n);
-    celp_ll_add(&n, 5);
-    celp_ll_add(&n, 6);
-    celp_ll_add(&n, 7);
-    celp_ll_add_first(&n, 9);
-    celp_ll_add_last(&n, 11);
-    celp_ll_info(&n);
+}
 
-    CELP_TRACE(1, "ll print foreach: "); 
-
-    //no longer segfaults but need to handle error..
-    //CELP_TRACE( "ll print foreach: "); 
-
-    size_t count = 0;
-    CELP_INFO("celp_ll_foreach");
-    celp_ll_foreach(&n, i) {
-        CELP_DEBUG(1,
-                "[%zu] %i", 
-                count, i->data);
-        count++;
-    }
-
-    CELP_LLN_T(int) *until = n.tail->prev->prev;
-    count = 0;
-    CELP_INFO("celp_ll_foreach_until_node");
-    celp_ll_foreach_until_node(&n, iter, until) {
-        CELP_DEBUG(1, 
-                "[%zu] %i", 
-                count, iter->data);
-        count++;
-    }
-
-    celp_ll_info(&n);
-    CELP_DEBUG(1, "Before removing first: %i", n.head->next->data);
-    celp_ll_remove_first(&n);
-    CELP_DEBUG(1, "After removing first: %i", n.head->next->data);
-    celp_ll_info(&n);
-
-    CELP_DEBUG(1, "Before removing last: %i", n.tail->prev->data);
-    celp_ll_remove_last(&n);
-    CELP_DEBUG(1, "After removing last: %i", n.tail->prev->data);
-    celp_ll_info(&n);
-
-    celp_ll_print_int(&n);
-
-    int remove_idx = 1;
-    CELP_DEBUG(1, "Removing idx[%zu]", remove_idx);
-    int removed = celp_ll_remove_at_index(&n, remove_idx);
-    CELP_DEBUG(1, "Removed idx[%zu]: %i", remove_idx, removed);
-    celp_ll_info(&n);
-
-    CELP_LLN_T(int)* node = n.head->next;
-    CELP_DEBUG(1, "Removing using node");
-    celp_ll_remove_node(&n, node);
-    celp_ll_print_int(&n);
-    celp_ll_info(&n);
-
+CELP_TEST_TEARDOWN(ll)
+{
     celp_ll_free(&n);
-    celp_ll_info(&n);
+}
+
+CELP_TESTCASE(ll_add)
+{
+    celp_ll_add(&n, 5);
+    CELP_LLN_T(int) *curr = n.head->next;
+    CELP_EXPECT_EQ(curr->data, 5);
+
+    celp_ll_add(&n, 6);
+    curr = curr->next;
+    CELP_EXPECT_EQ(curr->data, 6);
+
+    celp_ll_add(&n, 7);
+    curr = curr->next;
+    CELP_EXPECT_EQ(curr->data, 7);
+
+    celp_ll_add_first(&n, 9);
+    CELP_EXPECT_EQ(n.head->next->data, 9);
+
+    celp_ll_add_last(&n, 11);
+    CELP_EXPECT_EQ(n.tail->prev->data, 11);
+
+    for (int i = 100; i < 150; i++) {
+        celp_ll_add(&n, i);
+    }
+}
+
+CELP_TESTCASE(ll_foreach)
+{
+    int count = 0;
+    celp_ll_foreach(&n, node) {
+        CELP_EXPECT(node);
+        count++;
+    }
+    CELP_EXPECT_EQ(n.count, count);
+}
+
+CELP_TESTCASE(ll_get_first)
+{
+    int first = celp_ll_get_first(&n);
+    int first_check = n.head->next->data;
+    CELP_EXPECT_EQ(first, first_check);
+}
+
+CELP_TESTCASE(ll_get_last)
+{
+    int last = celp_ll_get_last(&n);
+    int last_check = n.tail->prev->data;
+    CELP_EXPECT_EQ(last, last_check);
+}
+
+CELP_TESTCASE(ll_add_after)
+{
+    CELP_LLN_T(int) *check = n.head->next->next;
+    CELP_LLN_T(int) *check_after = check->next;
+    int check_val = 9;
+
+    celp_ll_add_after(&n, check_val, check);
+
+    CELP_EXPECT_NEQ(check_after->data, check_val);
+    CELP_EXPECT_EQ(check->next->data, check_val);
+    CELP_EXPECT_EQ(check_after->prev->data, check_val);
+}
+
+CELP_TESTCASE(ll_remove_first)
+{
+    int check = celp_ll_get_first(&n);
+    int count = n.count;
+    int ret = celp_ll_remove_first(&n);
+
+    CELP_EXPECT_EQ(ret, check);
+    CELP_EXPECT_EQ(n.count, count-1);
+    CELP_EXPECT_NEQ(celp_ll_get_first(&n), check);
+}
+
+CELP_TESTCASE(ll_remove_last)
+{
+    int check = celp_ll_get_last(&n);
+    int count = n.count;
+    int ret = celp_ll_remove_last(&n);
+
+    CELP_EXPECT_EQ(ret, check);
+    CELP_EXPECT_EQ(n.count, count-1);
+    CELP_EXPECT_NEQ(celp_ll_get_last(&n), check);
+}
+
+CELP_TESTCASE(ll_remove_at_index)
+{
+    int idx = 20;
+    int count = n.count;
+    CELP_LLN_T(int) *node = celp_ll_get_at_index(&n, idx);
+    int ret = celp_ll_remove_at_index(&n, idx);
+
+    CELP_EXPECT_NEQ(node->data, ret);
+    CELP_EXPECT_EQ(n.count, count-1);
+}
+
+CELP_TESTCASE(ll_remove_node)
+{
+    CELP_LLN_T(int) *node = celp_ll_get_at_index(&n, 10);
+    CELP_LLN_T(int) *node_after = node->next;
+    int count = n.count;
+    CELP_LLN_T(int) *ret = celp_ll_remove_node(&n, node);
+
+    CELP_EXPECT_EQ(n.count, count-1);
+    CELP_EXPECT_NEQ(node, celp_ll_get_at_index(&n, 10));
+    CELP_EXPECT_NEQ(node_after->prev, ret);
+}
+
+CELP_TEST_SUITE_START(linked_list);
+{
+    CELP_TEST_SUITE_ADD_SETUP(ll);
+    CELP_TEST_SUITE_ADD_TEARDOWN(ll);
+
+    CELP_TEST_SUITE_ADD_TEST(ll_add);
+    CELP_TEST_SUITE_ADD_TEST(ll_foreach);
+    CELP_TEST_SUITE_ADD_TEST(ll_get_first);
+    CELP_TEST_SUITE_ADD_TEST(ll_get_last);
+    CELP_TEST_SUITE_ADD_TEST(ll_add_after);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_first);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_last);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_at_index);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_node);
+}
+CELP_TEST_SUITE_END();
+
+void celp_ll()
+{
+    CELP_TEST_SUITE_RUN(linked_list);
+    CELP_TEST_SUITE_REPORT();
+    CELP_TEST_SUITE_DESTROY();
 }
