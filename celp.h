@@ -138,6 +138,7 @@
 
 /* Testing */
 #define CELP_EXPECT(cond) do { \
+    celp_test_assertions++; \
     if (!(cond)) { \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
         CELP_ERROR("TESTCASE FAILURE: %s", #cond); \
@@ -156,6 +157,7 @@ static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
 static celp_u32 celp_test_runs = 0;
 static celp_u32 celp_test_passes = 0;
 static celp_u32 celp_test_fails = 0;
+static celp_u32 celp_test_assertions = 0;
 
 typedef struct celp_testcase_s {
     char *name;
@@ -191,11 +193,11 @@ typedef struct celp_test_suite_s {
         _suite->teardown = &(teardown_##t);
 
 #define CELP_TEST_SUITE_ADD_TEST(t) \
-        celp_testcase_t _t; \
-        _t.name = #t; \
-        _t.testcase = &test_##t; \
-        _t.result = CELP_TEST_RESULT_NONE; \
-        celp_ll_add(&_suite->tests, _t);
+        celp_testcase_t _##t; \
+        _##t.name = #t; \
+        _##t.testcase = &test_##t; \
+        _##t.result = CELP_TEST_RESULT_NONE; \
+        celp_ll_add(&_suite->tests, _##t);
 
 #define CELP_TEST_SUITE_END() \
         return _suite; \
@@ -218,10 +220,12 @@ typedef struct celp_test_suite_s {
     celp_log(0, CELP_LOG_INFO,  "[TEST_SUITE] ", "%s", _suite->name); \
     celp_ll_foreach(&_suite->tests, _t) { \
         celp_log(0, CELP_LOG_INFO,  "\t[TESTCASE] ", "%s %s", _t->data.name, \
-                (celp_test_result==CELP_TEST_RESULT_FAIL) ? "[FAIL]" : "[PASS]"); \
+                (_t->data.result==CELP_TEST_RESULT_FAIL) ? "[FAIL]" : "[PASS]"); \
     } \
-    celp_log(0, CELP_LOG_INFO,  "[REPORT] ", "RUNS: %d - PASSED: %d - FAILED: %d\n", \
-            celp_test_runs, celp_test_passes, celp_test_fails); \
+    celp_log(0, CELP_LOG_INFO, \
+            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d - PASSED: %d - FAILED: %d\n", \
+            celp_test_runs, celp_test_assertions, \
+            celp_test_passes, celp_test_fails); \
 
 #define CELP_TEST_SUITE_DESTROY() \
     celp_ll_free(&_suite->tests); \
@@ -236,10 +240,6 @@ typedef enum celp_log_e {
    _CELP_LOG_TRACE,
 } celp_log_t;
 
-//sort of implemented function overloading?
-//user uses these fake enums below, which automatically fill
-//out the (file, function, line) parameters in celp_log based 
-//on the log level
 #define CELP_LOG_INFO  (celp_log_t)_CELP_LOG_INFO,  NULL, NULL, 0
 #define CELP_LOG_DEBUG (celp_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0
 #define CELP_LOG_ERROR (celp_log_t)_CELP_LOG_ERROR, \
@@ -256,10 +256,14 @@ CELP_DEF void celp_log(celp_u8 level,
                        const char* fmt_string,
                        ...);
 
-#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  "[INFO] ",  fmt, ##__VA_ARGS__)
-#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, "[DEBUG] ", fmt, ##__VA_ARGS__)
-#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, "[ERROR] ", fmt, ##__VA_ARGS__)
-#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", fmt, ##__VA_ARGS__)
+#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  "[INFO] ", \
+                                           fmt, ##__VA_ARGS__)
+#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, "[DEBUG] ", \
+                                           fmt, ##__VA_ARGS__)
+#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, "[ERROR] ", \
+                                           fmt, ##__VA_ARGS__)
+#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", \
+                                           fmt, ##__VA_ARGS__)
 
 /* Dynamic Array */
 #define CELP_DA_INITIAL_CAPACITY 256
@@ -286,7 +290,6 @@ CELP_DEF void celp_log(celp_u8 level,
             (da)->items = CELP_REALLOC((da)->items, \
                                        (da)->capacity * sizeof((da)->items[0]));\
             CELP_ASSERT((da)->items != NULL);\
-            CELP_ERROR("realloc failed"); \
         }\
     } while(0)
 
