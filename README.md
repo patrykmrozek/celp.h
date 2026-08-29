@@ -2,13 +2,13 @@
 `celp.h` (c-help) is a single header generic C util library.
 
 ### Features
-- Dynamic Array - `celp_da`
-- Linked List - `celp_ll`
-- Hashmap - `celp_map`
-- Unit Testing Framework `CELP_TEST`
-- Linear Algebra `CELP_MATH`  (v2, v3, v4, m4)
-- Logging - `celp_log` (or helpful macros `CELP_INFO/DEBUG/ERROR/TRACE`)
-- Prefix stripping - `CELP_STRIP_PREFIX` (if you don't want to keep writing celp..)
+- `celp_da` - Dynamic Array
+- `celp_ll` - Linked List
+- `celp_map` - HashMap
+- `CELP_TEST` - Unit Testing Framework
+- `CELP_MATH` - Linear Algebra (v2, v3, v4, m4)
+- `celp_log` - Logging (or helpful macros `CELP_INFO/DEBUG/ERROR/TRACE`)
+- `CELP_STRIP_PREFIX` - Prefix Stripping (if you don't want to keep writing celp..)
 - Type aliases
 - Other useful utilities..
 
