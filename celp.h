@@ -94,50 +94,60 @@
 
 /* Dynamic Array */
 #define _da(T) da_##T
-#define CELP_DA(T) \
-    typedef struct CELP_S(_da(T)) { \
+#define celp_da_s(T) CELP_S(_da(T))
+#define celp_da_t(T) CELP_T(_da(T))
+
+#define celp_da(T) \
+    typedef struct celp_da_s(T) { \
         T* items; \
         celp_usize count; \
         celp_usize capacity; \
-    } CELP_T(_da(T))
-#define CELP_DA_T(T) CELP_T(_da(T)) 
+    } celp_da_t(T);
 
 /* Linked List */
 #define _lln(T) lln_##T
-#define _ll(T)  ll_##T
-#define CELP_LL(T) \
-    typedef struct CELP_S(_lln(T)) { \
+#define celp_lln_s(T) CELP_S(_lln(T))
+#define celp_lln_t(T) CELP_T(_lln(T))
+
+#define _ll(T) ll_##T
+#define celp_ll_s(T)  CELP_S(_ll(T))
+#define celp_ll_t(T)  CELP_T(_ll(T))
+
+#define celp_ll(T) \
+    typedef struct celp_lln_s(T) { \
         T data; \
-        struct CELP_S(_lln(T))* prev; \
-        struct CELP_S(_lln(T))* next; \
-    } CELP_T(_lln(T)); \
+        struct celp_lln_s(T)* prev; \
+        struct celp_lln_s(T)* next; \
+    } celp_lln_t(T); \
     \
-    typedef struct CELP_S(_ll(T)) { \
-        CELP_T(_lln(T))* head; \
-        CELP_T(_lln(T))* tail; \
+    typedef struct celp_ll_s(T) { \
+        celp_lln_t(T) *head; \
+        celp_lln_t(T) *tail; \
         celp_usize count; \
-    } CELP_T(_ll(T));
-#define CELP_LLN_T(T) CELP_T(_lln(T))
-#define CELP_LL_T(T)  CELP_T(_ll(T))
+    } celp_ll_t(T);
 
 /* HashMap */
-#define _kv(kT, vT)  CELP_CATTT(CELP_CAT(kv_, kT), _, vT) 
 #define _map(kT, vT) CELP_CATTT(CELP_CAT(map_, kT), _, vT)
-#define CELP_MAP(kT, vT) \
-    typedef struct CELP_S(_kv(kT, vT)) { \
+#define celp_map_t(kT, vT) CELP_T(_map(kT, vT))
+#define celp_map_s(kT, vT) CELP_S(_map(kT, vT))
+
+#define _kv(kT, vT)  CELP_CATTT(CELP_CAT(kv_, kT), _, vT) 
+#define celp_kv_t(kT, vT)  CELP_T(_kv(kT, vT)) 
+#define celp_kv_s(kT, vT)  CELP_S(_kv(kT, vT)) 
+
+#define celp_map(kT, vT) \
+    typedef struct celp_kv_s(kT, vT) { \
         kT key; \
         vT value; \
-    } CELP_T(_kv(kT, vT)); \
+    } celp_kv_t(kT, vT); \
     \
-    CELP_LL(CELP_T(_kv(kT, vT))); \
+    celp_ll(celp_kv_t(kT, vT)); \
     \
-    typedef struct CELP_S(_map(kT, vT)) { \
-        CELP_LL_T(CELP_T(_kv(kT, vT)))* buckets; \
+    typedef struct celp_map_s(kT, vT) { \
+        celp_ll_t(celp_kv_t(kT, vT))* buckets; \
         celp_usize count; \
         celp_usize capacity; \
-    }  CELP_T(_map(kT, vT));
-#define CELP_KV_T(kT, vT)  CELP_T(_kv(kT, vT)) 
-#define CELP_MAP_T(kT, vT) CELP_T(_map(kT, vT))
+    }  celp_map_t(kT, vT);
 
 /* Testing */
 #ifdef CELP_TEST
@@ -175,13 +185,13 @@ typedef struct celp_testcase_s {
     celp_test_result_t result;
 } celp_testcase_t;
 
-CELP_LL(celp_testcase_t);
+celp_ll(celp_testcase_t);
 typedef struct celp_test_suite_s {
     //struct celp_test_suite_s *suites;
     char *name;
     void (*setup)(void);
     void (*teardown)(void);
-    CELP_LL_T(celp_testcase_t) tests;
+    celp_ll_t(celp_testcase_t) tests;
 } celp_test_suite_t;
 
 #define CELP_TESTCASE(t)      void test_##t()
@@ -645,11 +655,13 @@ CELP_DEF void celp_log(celp_u8 level,
 
 /* Vector2 */
 #define _v2(T) v2_##T
-#define CELP_V2(T) \
-    typedef struct CELP_S(_v2(T)){ \
+#define celp_v2_s(T) CELP_S(_v2(T))
+#define celp_v2_t(T) CELP_T(_v2(T))
+
+#define celp_v2(T) \
+    typedef struct celp_v2_s(T){ \
         T x, y; \
-    } CELP_T(_v2(T));
-#define CELP_V2_T(T) CELP_T(_v2(T))
+    } celp_v2_t(T)
 
 #define celp_v2_add(v1, v2) \
 ({ \
@@ -684,13 +696,15 @@ CELP_DEF void celp_log(celp_u8 level,
 
 /* Vector3 */
 #define _v3(T) v3_##T
-#define CELP_V3(T) \
-    typedef struct CELP_S(_v3(T)) { \
-        T x, y, z; \
-    } CELP_T(_v3(T));
-#define CELP_V3_T(T) CELP_T(_v3(T))
+#define celp_v3_s(T) CELP_S(_v3(T))
+#define celp_v3_t(T) CELP_T(_v3(T))
 
-#define CELP_V3F_STR(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
+#define celp_v3(T) \
+    typedef struct celp_v3_s(T) { \
+        T x, y, z; \
+    } celp_v3_t(T);
+
+#define celp_v3f_str(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
 
 #define celp_v3_contains_neg(v) (v.x < 0 || v.y < 0 || v.z < 0)
 
@@ -789,13 +803,15 @@ CELP_DEF void celp_log(celp_u8 level,
 
 /* Vector4 */
 #define _v4(T) v4_##T
-#define CELP_V4(T) \
-    typedef struct CELP_S(_v4(T)) { \
-        T x, y, z, w; \
-    } CELP_T(_v4(T));
-#define CELP_V4_T(T) CELP_T(_v4(T))
+#define celp_v4_t(T) CELP_T(_v4(T))
+#define celp_v4_s(T) CELP_S(_v4(T))
 
-#define CELP_V4F_STR(v) "{ %f, %f, %f, %f }", (v).x, (v).y, (v).z, (v).w
+#define celp_v4(T) \
+    typedef struct celp_v4_s(T) { \
+        T x, y, z, w; \
+    } celp_v4_t(T);
+
+#define celp_v4f_str(v) "{ %f, %f, %f, %f }", (v).x, (v).y, (v).z, (v).w
 
 #define celp_v4_is_empty(v) \
     ((v).x == 0 && \
@@ -811,7 +827,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_v3_to_v4(v, T) \
 ({ \
-    CELP_V4_T(T) _v_out = {(v).x, (v).y, (v).z, 1}; \
+    celp_v4_t(T) _v_out = {(v).x, (v).y, (v).z, 1}; \
     _v_out; \
 })
 
@@ -825,7 +841,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_v4_to_v3(v, T) \
 ({ \
-    CELP_V3_T(T) _v_out = {(v).x, (v).y, (v).z}; \
+    celp_v3_t(T) _v_out = {(v).x, (v).y, (v).z}; \
     _v_out; \
 })
 
@@ -840,49 +856,51 @@ CELP_DEF void celp_log(celp_u8 level,
 
 /* Matrix4 */
 #define _m4(T) m4_##T
-#define CELP_M4(T) \
-    typedef struct CELP_S(_m4(T)) { \
-        T v[4][4]; \
-    } CELP_T(_m4(T));
-#define CELP_M4_T(T) CELP_T(_m4(T))
+#define celp_m4_t(T) CELP_T(_m4(T))
+#define celp_m4_t(T) CELP_T(_m4(T))
 
-#define CELP_M4_ID (m4){{   \
+#define celp_m4(T) \
+    typedef struct celp_m4_s(T) { \
+        T v[4][4]; \
+    } celp_m4_t(T);
+
+#define celp_m4_id (m4){{   \
     {1, 0, 0, 0}, \
     {0, 1, 0, 0}, \
     {0, 0, 1, 0}, \
     {0, 0, 0, 1}}}
 
-#define CELP_M4_TRANS(t) (m4){{       \
+#define celp_m4_trans(t) (m4){{       \
     {1, 0, 0, t.x}, \
     {0, 1, 0, t.y}, \
     {0, 0, 1, t.z}, \
     {0, 0, 0,  1}}}
 
-#define CELP_M4_SCALE(s) (m4){{  \
+#define celp_m4_scale(s) (m4){{  \
     {s,     0,     0,   0}, \
     {  0,   s,     0,   0}, \
     {  0,     0,   s,   0}, \
     {  0,     0,    0,   1}}}
 
-#define CELP_M4_SCALEV(s) (m4){{   \
+#define celp_m4_scalev(s) (m4){{   \
     {s.x,     0,     0,   0}, \
     {  0,   s.y,     0,   0}, \
     {  0,     0,   s.z,   0}, \
     {  0,     0,     0,    1}}} 
 
-#define CELP_M4_ROTX(a) (m4){{     \
+#define celp_m4_rotx(a) (m4){{     \
     {1,       0,       0, 0}, \
     {0, cos(a), -sin(a), 0}, \
     {0, sin(a), cos(a), 0}, \
     {0,       0,       0, 1}}}
 
-#define CELP_M4_ROTY(a) (m4){{     \
+#define celp_m4_roty(a) (m4){{     \
     { cos(a), 0, sin(a), 0}, \
     {       0, 1,        0, 0}, \
     {-sin(a), 0,  cos(a), 0}, \
     {       0, 0,        0, 1}}}
 
-#define CELP_M4_ROTZ(a) (m4){{     \
+#define celp_m4_rotz(a) (m4){{     \
     {cos(a), -sin(a), 0, 0}, \
     {sin(a),  cos(a), 0, 0}, \
     {       0,       0, 1, 0}, \
@@ -917,16 +935,16 @@ CELP_DEF void celp_log(celp_u8 level,
 })
 
 #define celp_v4_trans(v, t) \
-    celp_m4_v4_mul(CELP_M4_TRANS((t)), (v))
+    celp_m4_v4_mul(celp_m4_trans((t)), (v))
 
 #define celp_v3_trans(v, t) \
     celp_v4_to_v3(celp_v4_trans(celp_v3_to_v4((v), typeof((v).x)), (t)), typeof((v).x))
 
 #define celp_v4_scale(v, s) \
-    celp_m4_v4_mul(CELP_M4_SCALE((s)), (v))
+    celp_m4_v4_mul(celp_m4_scale((s)), (v))
 
 #define celp_v4_scalev(v, s) \
-    celp_m4_v4_mul(CELP_M4_SCALEV((s)), (v))
+    celp_m4_v4_mul(celp_m4_scalev((s)), (v))
 
 #endif //CELP_MATH
 
@@ -1065,8 +1083,8 @@ end:
     #define LOG_TRACE             CELP_LOG_TRACE  
     #define LOG_TEST              CELP_LOG_TEST
     //CELP_DA
-    #define DA                    CELP_DA 
-    #define DA_T                  CELP_DA_T
+    #define da                    celp_da
+    #define da_t                  celp_da_t
     #define da_init               celp_da_init
     #define da_clear              celp_da_clear
     #define da_is_empty           celp_da_is_empty
@@ -1078,9 +1096,9 @@ end:
     #define da_foreach            celp_da_foreach
     #define da_free               celp_da_free
     #define da_info               celp_da_info
-    //CELP_LL
-    #define LL                    CELP_LL 
-    #define LL_T                  CELP_LL_T
+    //celp_ll
+    #define ll                    celp_ll 
+    #define ll_t                  celp_ll_t
     #define ll_init               celp_ll_init
     #define ll_is_empty           celp_ll_is_empty
     #define ll_get_first          celp_ll_get_first
@@ -1098,11 +1116,11 @@ end:
     #define ll_foreach_until_node celp_ll_foreach_until_node
     #define ll_free               celp_ll_free
     #define ll_info               celp_ll_info
-    //CELP_MAP
-    #define KV                    CELP_KV
-    #define KV_T                  CELP_KV_T
-    #define MAP                   CELP_MAP
-    #define MAP_T                 CELP_MAP_T 
+    //celp_map
+    #define kv                    celp_kv
+    #define kv_t                  celp_kv_t
+    #define map                   celp_map
+    #define map_t                 celp_map_t 
     #define map_init              celp_map_init
     #define map_is_empty          celp_map_is_empty
     #define map_insert            celp_map_insert
@@ -1115,16 +1133,16 @@ end:
 
 #ifdef CELP_MATH 
     //v2
-    #define V2                    CELP_V2
-    #define V2_T                  CELP_V2_T
+    #define v2                    celp_v2
+    #define v2_t                  celp_v2_t
     #define v2_add                celp_v2_add
     #define v2_sub                celp_v2_sub
     #define v2_dot                celp_v2_dot
     #define v2_cross              celp_v2_cross
     #define v2_scale              celp_v2_scale
     //v3
-    #define V3                    CELP_V3
-    #define V3_T                  CELP_V3_T
+    #define v3                    celp_v3
+    #define v3_t                  celp_v3_t
     #define v3_add                celp_v3_add
     #define v3_sub                celp_v3_sub
     #define v3_dot                celp_v3_dot
@@ -1136,26 +1154,26 @@ end:
     #define v3_contains_neg       celp_v3_contains_neg
     #define v3_contains_zero      celp_v3_contains_zero
     #define v3_is_empty           celp_v3_is_empty
-    #define V3F_STR               CELP_V3F_STR
+    #define v3f_str               celp_v3f_str
 
     //v4
-    #define V4                    CELP_V4
-    #define V4_T                  CELP_V4_T
-    #define V4F_STR               CELP_V4F_STR
+    #define v4                    celp_v4
+    #define v4_t                  celp_v4_t
+    #define v4f_str               celp_v4f_str
     #define v3_to_v4              celp_v3_to_v4 
     #define v4_norm               celp_v4_norm
     #define v4_to_v3              celp_v4_to_v3
     #define v4_dot                celp_v4_dot
     //m4
-    #define M4                    CELP_M4
-    #define M4_T                  CELP_M4_T 
-    #define M4_ID                 CELP_M4_ID
-    #define M4_TRANS              CELP_M4_TRANS
-    #define M4_SCALE              CELP_M4_SCALE
-    #define M4_SCALEV             CELP_M4_SCALEV
-    #define M4_ROTX               CELP_M4_ROTX
-    #define M4_ROTY               CELP_M4_ROTY
-    #define M4_ROTZ               CELP_M4_ROTZ 
+    #define m4                    celp_m4
+    #define m4_t                  celp_m4_t 
+    #define m4_id                 celp_m4_id
+    #define m4_trans              celp_m4_trans
+    #define m4_scale              celp_m4_scale
+    #define m4_scalev             celp_m4_scalev
+    #define m4_rotx               CELP_m4_rotx
+    #define m4_roty               CELP_m4_roty
+    #define m4_rotz               CELP_m4_rotz 
     #define m4_v4_mul             celp_m4_v4_mul
     #define m4_mul                celp_m4_mul
     //m4 wrappers 
