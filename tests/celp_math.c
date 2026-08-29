@@ -3,12 +3,12 @@
 #include "../celp.h"
 #include <stdio.h>
 
-CELP_V2(int);
-#define v2i CELP_V2_T(int)
-CELP_V3(int);
-#define v3i CELP_V3_T(int)
+celp_v2(int);
+#define v2i celp_v2_t(int)
+celp_v3(int);
+#define v3i celp_v3_t(int)
 
-void celp_math() {
+void test_celp_math() {
     CELP_DEBUG(1, "MATH");
 
     v2i w = {2, 2};
