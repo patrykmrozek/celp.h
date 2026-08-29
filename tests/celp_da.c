@@ -1,8 +1,8 @@
 #define CELP_TEST
 #include "../celp.h"
 
-CELP_DA(int);
-CELP_DA_T(int) n = {};
+celp_da(int);
+celp_da_t(int) n = {};
 
 CELP_TEST_SETUP(da)
 {
@@ -96,7 +96,7 @@ CELP_TEST_SUITE_START(dynamic_array);
 }
 CELP_TEST_SUITE_END();
 
-void celp_da()
+void test_celp_da()
 {
     CELP_TEST_SUITE_RUN(dynamic_array);
     CELP_TEST_SUITE_REPORT();
