@@ -5,6 +5,11 @@
 #ifndef _CELP_H
 #define _CELP_H
 
+#if defined(__GNUC__) || defined(__clang__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 #ifndef CELP_DEF
 #define CELP_DEF
 #endif //CELP_DEF
@@ -659,9 +664,12 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_v2_t(T) CELP_T(_v2(T))
 
 #define celp_v2(T) \
-    typedef struct celp_v2_s(T){ \
-        T x, y; \
-    } celp_v2_t(T)
+    typedef union celp_v2_s(T) { \
+        struct { \
+            T x, y; \
+        }; \
+        T vs[2]; \
+    } celp_v2_t(T); 
 
 #define celp_v2_add(v1, v2) \
 ({ \
@@ -700,8 +708,11 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_v3_t(T) CELP_T(_v3(T))
 
 #define celp_v3(T) \
-    typedef struct celp_v3_s(T) { \
-        T x, y, z; \
+    typedef union celp_v3_s(T) { \
+        struct { \
+            T x, y, z; \
+        }; \
+        T vs[3]; \
     } celp_v3_t(T);
 
 #define celp_v3f_str(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
@@ -807,8 +818,11 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_v4_s(T) CELP_S(_v4(T))
 
 #define celp_v4(T) \
-    typedef struct celp_v4_s(T) { \
-        T x, y, z, w; \
+    typedef union celp_v4_s(T) { \
+        struct { \
+            T x, y, z, w; \
+        }; \
+        T vs[4]; \
     } celp_v4_t(T);
 
 #define celp_v4f_str(v) "{ %f, %f, %f, %f }", (v).x, (v).y, (v).z, (v).w
@@ -856,7 +870,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 /* Matrix4 */
 #define _m4(T) m4_##T
-#define celp_m4_t(T) CELP_T(_m4(T))
+#define celp_m4_s(T) CELP_S(_m4(T))
 #define celp_m4_t(T) CELP_T(_m4(T))
 
 #define celp_m4(T) \
