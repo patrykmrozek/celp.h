@@ -1,8 +1,8 @@
 #define CELP_TEST
 #include "../celp.h"
 
-CELP_LL(int);
-CELP_LL_T(int) n;
+celp_ll(int);
+celp_ll_t(int) n;
 
 CELP_TEST_SETUP(ll)
 {
@@ -17,7 +17,7 @@ CELP_TEST_TEARDOWN(ll)
 CELP_TESTCASE(ll_add)
 {
     celp_ll_add(&n, 5);
-    CELP_LLN_T(int) *curr = n.head->next;
+    celp_lln_t(int) *curr = n.head->next;
     CELP_EXPECT_EQ(curr->data, 5);
 
     celp_ll_add(&n, 6);
@@ -65,8 +65,8 @@ CELP_TESTCASE(ll_get_last)
 
 CELP_TESTCASE(ll_add_after)
 {
-    CELP_LLN_T(int) *check = n.head->next->next;
-    CELP_LLN_T(int) *check_after = check->next;
+    celp_lln_t(int) *check = n.head->next->next;
+    celp_lln_t(int) *check_after = check->next;
     int check_val = 9;
 
     celp_ll_add_after(&n, check_val, check);
@@ -102,7 +102,7 @@ CELP_TESTCASE(ll_remove_at_index)
 {
     int idx = 20;
     int count = n.count;
-    CELP_LLN_T(int) *node = celp_ll_get_at_index(&n, idx);
+    celp_lln_t(int) *node = celp_ll_get_at_index(&n, idx);
     int ret = celp_ll_remove_at_index(&n, idx);
 
     CELP_EXPECT_NEQ(node->data, ret);
@@ -111,10 +111,10 @@ CELP_TESTCASE(ll_remove_at_index)
 
 CELP_TESTCASE(ll_remove_node)
 {
-    CELP_LLN_T(int) *node = celp_ll_get_at_index(&n, 10);
-    CELP_LLN_T(int) *node_after = node->next;
+    celp_lln_t(int) *node = celp_ll_get_at_index(&n, 10);
+    celp_lln_t(int) *node_after = node->next;
     int count = n.count;
-    CELP_LLN_T(int) *ret = celp_ll_remove_node(&n, node);
+    celp_lln_t(int) *ret = celp_ll_remove_node(&n, node);
 
     CELP_EXPECT_EQ(n.count, count-1);
     CELP_EXPECT_NEQ(node, celp_ll_get_at_index(&n, 10));
@@ -138,7 +138,7 @@ CELP_TEST_SUITE_START(linked_list);
 }
 CELP_TEST_SUITE_END();
 
-void celp_ll()
+void test_celp_ll()
 {
     CELP_TEST_SUITE_RUN(linked_list);
     CELP_TEST_SUITE_REPORT();
