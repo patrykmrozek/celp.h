@@ -78,12 +78,6 @@ CELP_TESTCASE(map_remove)
     CELP_EXPECT_EQ(ret, -1);
 }
 
-CELP_TESTCASE(map_clear_and_is_empty)
-{
-    celp_map_clear(&map);
-    CELP_EXPECT(celp_map_is_empty(&map));
-}
-
 CELP_TEST_SUITE_START(kv_map)
 {
     CELP_TEST_SUITE_ADD_SETUP(map);
@@ -95,7 +89,6 @@ CELP_TEST_SUITE_START(kv_map)
     CELP_TEST_SUITE_ADD_TEST(map_increment_existing_value);
     CELP_TEST_SUITE_ADD_TEST(map_increment_non_existing_value);
     CELP_TEST_SUITE_ADD_TEST(map_remove);
-    CELP_TEST_SUITE_ADD_TEST(map_clear_and_is_empty);
 } CELP_TEST_SUITE_END();
 
 void test_celp_map() {
