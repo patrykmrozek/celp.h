@@ -453,7 +453,8 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_get_at_index(ll, i, safe) \
     ({ \
-        typeof((ll)->head) _return = (safe); \
+        typeof(*(ll)->head) _safe = {(safe), NULL, NULL}; \
+        typeof((ll)->head) _return = &_safe; \
         _celp_ll_get_at_index((ll), (i), &_return); \
         _return->data; \
      })
@@ -514,13 +515,13 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_remove_at_index(ll, i, safe) \
     ({ \
-        typeof((safe)) _safe = (safe); \
-        typeof((ll)->head->data) _return = _safe->data;  \
+        typeof(*(ll)->head) _safe = {(safe), NULL, NULL}; \
+        typeof((ll)->head->data) _return = (safe);  \
         bool _ok = ((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
         if (_ok) { \
             typeof((ll)->head) _curr = \
-                celp_ll_get_at_index_node((ll), (i), _safe); \
-            if (_curr != _safe) { \
+                celp_ll_get_at_index_node((ll), (i), &_safe); \
+            if (_curr != &_safe) { \
                 _return = _curr->data; \
                 _curr->next->prev = _curr->prev; \
                 _curr->prev->next = _curr->next; \
