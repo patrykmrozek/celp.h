@@ -16,15 +16,35 @@ CELP_TEST_TEARDOWN(ll)
 
 CELP_TESTCASE(ll_get_first_empty)
 {
-    int backup = -1;
-    int check = celp_ll_get_first(&n, backup);
-    CELP_EXPECT_EQ(check, backup);
+    int safe = -1;
+    int check = celp_ll_get_first(&n, safe);
+    CELP_EXPECT_EQ(check, safe);
 }
 
+CELP_TESTCASE(ll_get_last_empty)
+{
+    int safe = -1;
+    int check = celp_ll_get_last(&n, safe);
+    CELP_EXPECT_EQ(check, safe);
+}
 CELP_TESTCASE(ll_get_first_node_empty)
 {
     lln_int_t *safe = CELP_LLN_SAFE(int, -1);
     lln_int_t *check = celp_ll_get_first_node(&n, safe);
+    CELP_EXPECT_EQ(check, safe);
+}
+
+CELP_TESTCASE(ll_remove_first_empty)
+{
+    int safe = -1;
+    int check = celp_ll_remove_first(&n, safe);
+    CELP_EXPECT_EQ(check, safe);
+}
+
+CELP_TESTCASE(ll_remove_last_empty)
+{
+    int safe = -1;
+    int check = celp_ll_remove_last(&n, safe);
     CELP_EXPECT_EQ(check, safe);
 }
 
@@ -114,17 +134,18 @@ CELP_TESTCASE(ll_add_after)
 
 CELP_TESTCASE(ll_remove_first)
 {
-    int backup = -1;
-    int check = celp_ll_get_first(&n, backup);
-    CELP_EXPECT_NEQ(check, backup);
+    int safe = -1;
+    int check = celp_ll_get_first(&n, safe);
+    CELP_EXPECT_NEQ(check, safe);
 
     int count = n.count;
-    int ret = celp_ll_remove_first(&n);
+    int ret = celp_ll_remove_first(&n, safe);
+    CELP_EXPECT_NEQ(ret, safe);
     CELP_EXPECT_EQ(ret, check);
     CELP_EXPECT_EQ(n.count, count-1);
 
-    int first = celp_ll_get_first(&n, backup); 
-    CELP_EXPECT_NEQ(check, backup);
+    int first = celp_ll_get_first(&n, safe); 
+    CELP_EXPECT_NEQ(check, safe);
     CELP_EXPECT_NEQ(first, check);
 }
 
@@ -133,8 +154,9 @@ CELP_TESTCASE(ll_remove_last)
     int safe = -1;
     int check = celp_ll_get_last(&n, safe);
     int count = n.count;
-    int ret = celp_ll_remove_last(&n);
+    int ret = celp_ll_remove_last(&n, safe);
 
+    CELP_EXPECT_NEQ(ret, safe);
     CELP_EXPECT_EQ(ret, check);
     CELP_EXPECT_EQ(n.count, count-1);
     CELP_EXPECT_NEQ(celp_ll_get_last(&n, safe), check);
@@ -143,29 +165,29 @@ CELP_TESTCASE(ll_remove_last)
 CELP_TESTCASE(ll_get_at_index)
 {
     int idx = 1;
-    lln_int_t *safe = CELP_LLN_SAFE(int, -1);
+    int safe = -1;
     int data = celp_ll_get_at_index(&n, idx, safe);
-    CELP_EXPECT_NEQ(data, safe->data);
+    CELP_EXPECT_NEQ(data, safe);
 }
 
 CELP_TESTCASE(ll_get_at_index_invalid)
 {
     int idx = -1;
-    lln_int_t *safe = CELP_LLN_SAFE(int, -1);
+    int safe = -1;
     int data = celp_ll_get_at_index(&n, idx, safe);
-    CELP_EXPECT_EQ(data, safe->data);
+    CELP_EXPECT_EQ(data, safe);
 }
 
 CELP_TESTCASE(ll_remove_at_index)
 {
     int idx = 20;
     int count = n.count;
-    lln_int_t *safe = CELP_LLN_SAFE(int, -1);
+    int safe = -1;
 
     int data = celp_ll_get_at_index(&n, idx, safe);
     int ret = celp_ll_remove_at_index(&n, idx, safe);
+    CELP_EXPECT_NEQ(ret, safe);
     CELP_EXPECT_EQ(data, ret);
-    CELP_EXPECT_NEQ(ret, safe->data);
     CELP_EXPECT_EQ(n.count, count-1);
 
     int data_after = celp_ll_get_at_index(&n, idx, safe);
@@ -175,9 +197,9 @@ CELP_TESTCASE(ll_remove_at_index)
 CELP_TESTCASE(ll_remove_at_index_invalid)
 {
     int idx = -1;
-    lln_int_t *safe = CELP_LLN_SAFE(int, -1);
+    int safe = -1;
     int ret = celp_ll_remove_at_index(&n, idx, safe);
-    CELP_EXPECT_EQ(ret, safe->data);
+    CELP_EXPECT_EQ(ret, safe);
 }
 
 CELP_TESTCASE(ll_remove_node)
@@ -210,7 +232,10 @@ CELP_TEST_SUITE_START(linked_list);
     CELP_TEST_SUITE_ADD_TEARDOWN(ll);
 
     CELP_TEST_SUITE_ADD_TEST(ll_get_first_empty);
+    CELP_TEST_SUITE_ADD_TEST(ll_get_last_empty);
     CELP_TEST_SUITE_ADD_TEST(ll_get_first_node_empty);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_first_empty);
+    CELP_TEST_SUITE_ADD_TEST(ll_remove_last_empty);
     CELP_TEST_SUITE_ADD_TEST(ll_add);
     CELP_TEST_SUITE_ADD_TEST(ll_foreach);
     CELP_TEST_SUITE_ADD_TEST(ll_get_first);
