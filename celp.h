@@ -5,11 +5,6 @@
 #ifndef _CELP_H
 #define _CELP_H
 
-#if defined(__GNUC__) || defined(__clang__)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wmissing-braces"
-#endif
-
 #ifndef CELP_DEF
 #define CELP_DEF
 #endif //CELP_DEF
@@ -157,7 +152,7 @@
 /* Testing */
 #ifdef CELP_TEST
 
-#define CELP_TEST_FAIL_MSG_LEN 1024
+#define CELP_TEST_FAIL_MSG_LEN 4096
 static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
 
 #define CELP_EXPECT(cond) do { \
@@ -400,27 +395,69 @@ CELP_DEF void celp_log(celp_u8 level,
         iter != (ll)->tail; \
         iter = iter->next)
 
-#define celp_ll_get_first(ll) \
+#define celp_ll_get_first(ll, safe) \
     ({ \
-        CELP_ASSERT((ll)->count > 0); \
-        (ll)->head->next->data; \
-    })
-
-#define celp_ll_get_last(ll) \
-    ({ \
-        CELP_ASSERT((ll)->count > 0); \
-        (ll)->tail->prev->data; \
-    })
-
-#define celp_ll_get_at_index(ll, i) \
-    ({ \
-        CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
-        typeof((ll)->head) _curr = (ll)->head; \
-        for (celp_usize _i = 0; _i <= (i); _i++) { \
-            _curr = _curr->next; \
+        typeof((ll)->head->data) _return = (safe); \
+        if ((ll)->count > 0) { \
+            _return = (ll)->head->next->data; \
         } \
-        \
-        _curr; \
+        _return; \
+    })
+
+#define celp_ll_get_first_node(ll, safe) \
+    ({ \
+        typeof((ll)->head) _return = (safe); \
+        if ((ll)->count > 0) { \
+            _return = (ll)->head->next; \
+        } \
+        _return; \
+    })
+
+#define celp_ll_get_last(ll, safe) \
+    ({ \
+        typeof((ll)->head->data) _return = (safe); \
+        if ((ll)->count > 0) { \
+            _return = (ll)->tail->prev->data; \
+        } \
+        _return; \
+    })
+
+#define celp_ll_get_last_node(ll, safe) \
+    ({ \
+        typeof((ll)->head) _return = (safe); \
+        if ((ll)->count > 0) { \
+            _return = (ll)->tail->prev; \
+        } \
+        _return; \
+    })
+
+#define _celp_ll_get_at_index(ll, i, ret) \
+    ({ \
+        bool _ok = ((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
+        if (_ok) { \
+            typeof((ll)->head) _curr = (ll)->head; \
+            for (celp_usize _i = 0; _i <= (i); _i++) { \
+                _curr = _curr->next; \
+            } \
+            \
+            *ret = _curr; \
+        } \
+     })
+
+#define CELP_LLN_SAFE(T, val) &(celp_lln_t(T)){(val), NULL, NULL}
+
+#define celp_ll_get_at_index(ll, i, safe) \
+    ({ \
+        typeof((ll)->head) _return = (safe); \
+        _celp_ll_get_at_index((ll), (i), &_return); \
+        _return->data; \
+     })
+
+#define celp_ll_get_at_index_node(ll, i, safe) \
+    ({ \
+        typeof((ll)->head) _return = (safe); \
+        _celp_ll_get_at_index((ll), (i), &_return); \
+        _return; \
      })
 
 #define celp_ll_add_after(ll, x, n) \
@@ -470,41 +507,53 @@ CELP_DEF void celp_log(celp_u8 level,
         _return; \
     })
 
-#define celp_ll_remove_at_index(ll, i) \
+#define celp_ll_remove_at_index(ll, i, safe) \
     ({ \
-        CELP_ASSERT((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
-        typeof((ll)->head) _curr = celp_ll_get_at_index((ll), (i)); \
-        typeof((ll)->head->data) _return = _curr->data; \
-        _curr->next->prev = _curr->prev; \
-        _curr->prev->next = _curr->next; \
-        CELP_FREE(_curr); \
-        (ll)->count--; \
-        \
+        typeof((safe)) _safe = (safe); \
+        typeof((ll)->head->data) _return = _safe->data;  \
+        bool _ok = ((i) >= 0 && (i) < (ll)->count && (ll)->count > 0); \
+        if (_ok) { \
+            typeof((ll)->head) _curr = \
+                celp_ll_get_at_index_node((ll), (i), _safe); \
+            if (_curr != _safe) { \
+                _return = _curr->data; \
+                _curr->next->prev = _curr->prev; \
+                _curr->prev->next = _curr->next; \
+                CELP_FREE(_curr); \
+                (ll)->count--; \
+            } \
+            \
+        } \
         _return; \
     })
 
-#define celp_ll_remove_node(ll, n) \
+#define celp_lln_exists(n) !((n)->next == NULL && (n)->prev == NULL)
+
+#define celp_ll_remove_node(ll, n, safe) \
     ({ \
-    CELP_ASSERT((ll)->count > 0); \
-    typeof((ll)->head) _return = {0}; \
-    bool _found = false; \
-    celp_ll_foreach((ll), _curr) { \
-        if (_curr == (n)) { \
-            _curr->next->prev = _curr->prev; \
-            _curr->prev->next = _curr->next; \
-            _return = _curr; \
-            CELP_FREE(_curr); \
-            (ll)->count--; \
-            _found = true; \
-            break; \
+        typeof((safe)->data) _return = (safe)->data; \
+        if ((ll)->count > 0) { \
+            bool _found = false; \
+            if (celp_lln_exists((n))) { \
+                celp_ll_foreach((ll), _curr) { \
+                    if (_curr == (n)) { \
+                        _curr->next->prev = _curr->prev; \
+                        _curr->prev->next = _curr->next; \
+                        _return = _curr->data; \
+                        CELP_FREE(_curr); \
+                        (ll)->count--; \
+                        _found = true; \
+                        break; \
+                    } \
+                } \
+            } \
+            if (!_found) { \
+                CELP_ERROR("Failed to find and remove node"); \
+            } \
         } \
-    } \
-    if (!_found) { \
-        CELP_ERROR("Failed to find and remove node"); \
-    } \
-    \
-    _return; \
-})
+        \
+        _return; \
+    })
 
 #define celp_ll_free(ll) \
     do { \
@@ -525,7 +574,7 @@ CELP_DEF void celp_log(celp_u8 level,
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
 
-#define celp_map_clear(map) \
+#define _celp_map_clear(map) \
     do {\
         (map)->buckets = NULL; \
         (map)->count = 0; \
@@ -534,7 +583,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_map_init(map) \
     do { \
-        celp_map_clear((map)); \
+        _celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
         for (size_t _i = 0; _i < (map)->capacity; _i++) { \
@@ -593,9 +642,9 @@ CELP_DEF void celp_log(celp_u8 level,
         } \
     } while(0)
 
-#define celp_map_get(map, k, default_value) \
+#define celp_map_get(map, k, safe) \
     ({ \
-        typeof((map)->buckets[0].head->data.value) _return = (default_value); \
+        typeof((map)->buckets[0].head->data.value) _return = (safe); \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
             typeof((map)->buckets[0].head->data.key) _k = (k); \
             celp_u32 _h = _celp_map_get_hash((map), _k); \
@@ -625,9 +674,9 @@ CELP_DEF void celp_log(celp_u8 level,
         _found; \
     })
 
-#define celp_map_remove(map, k, default_value) \
+#define celp_map_remove(map, k, safe) \
     ({ \
-        typeof((map)->buckets[0].head->data.value) _return = (default_value); \
+        typeof(safe) _return = (safe); \
         if ((map)->count > 0) { \
             if ((map)->buckets != NULL && (map)->capacity > 0) { \
                 typeof((map)->buckets[0].head->data.key) _k = (k); \
@@ -635,7 +684,10 @@ CELP_DEF void celp_log(celp_u8 level,
                 celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
                     if (CELP_COMP(_bucket->data.key, _k) == 0) { \
                         _return = _bucket->data.value; \
-                        (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket); \
+                        typeof((map)->buckets[_h].head->data) _kv_zero = {0}; \
+                        typeof(*_bucket) _safe = {_kv_zero, NULL, NULL}; \
+                        (void)celp_ll_remove_node(\
+                                &((map)->buckets[_h]), _bucket, &_safe); \
                         (map)->count--; \
                         break; \
                     } \
@@ -653,7 +705,7 @@ CELP_DEF void celp_log(celp_u8 level,
             } \
             CELP_FREE((map)->buckets); \
         } \
-        celp_map_clear((map)); \
+        _celp_map_clear((map)); \
     } while(0)
 
 #define celp_map_info(map) \
@@ -665,6 +717,12 @@ CELP_DEF void celp_log(celp_u8 level,
 
 //math macros
 #ifdef CELP_MATH
+
+//to silence vector {{x, y, z}} warning
+#if defined(__GNUC__) || defined(__clang__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
 
 /* Vector2 */
 #define _v2(T) v2_##T
