@@ -487,29 +487,33 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_add celp_ll_add_last
 
-#define celp_ll_remove_first(ll) \
+#define celp_ll_remove_first(ll, safe) \
     ({ \
-        CELP_ASSERT((ll)->count > 0); \
-        typeof((ll)->head) _to_remove = (ll)->head->next; \
-        typeof((ll)->head->data) _return = _to_remove->data; \
-        (ll)->head->next->next->prev = (ll)->head; \
-        (ll)->head->next = (ll)->head->next->next; \
-        CELP_FREE(_to_remove); \
-        (ll)->count--; \
-        \
+        typeof((ll)->head->data) _return = (safe); \
+        if((ll)->count > 0) {\
+            typeof((ll)->head) _to_remove = (ll)->head->next; \
+            _return = _to_remove->data; \
+            (ll)->head->next->next->prev = (ll)->head; \
+            (ll)->head->next = (ll)->head->next->next; \
+            CELP_FREE(_to_remove); \
+            (ll)->count--; \
+            \
+        } \
         _return; \
     })
 
-#define celp_ll_remove_last(ll) \
+#define celp_ll_remove_last(ll, safe) \
     ({ \
-        CELP_ASSERT((ll)->count > 0); \
-        typeof((ll)->tail) _to_remove = (ll)->tail->prev; \
-        typeof((ll)->head->data) _return = _to_remove->data; \
-        (ll)->tail->prev->prev->next = (ll)->tail; \
-        (ll)->tail->prev = (ll)->tail->prev->prev; \
-        CELP_FREE(_to_remove); \
-        (ll)->count--; \
-        \
+        typeof((ll)->head->data) _return = (safe); \
+        if((ll)->count > 0) { \
+            typeof((ll)->tail) _to_remove = (ll)->tail->prev; \
+            _return = _to_remove->data; \
+            (ll)->tail->prev->prev->next = (ll)->tail; \
+            (ll)->tail->prev = (ll)->tail->prev->prev; \
+            CELP_FREE(_to_remove); \
+            (ll)->count--; \
+            \
+        } \
         _return; \
     })
 
