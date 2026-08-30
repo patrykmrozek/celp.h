@@ -878,47 +878,47 @@ CELP_DEF void celp_log(celp_u8 level,
         T v[4][4]; \
     } celp_m4_t(T);
 
-#define celp_m4_id (m4){{   \
+#define celp_m4_id {{   \
     {1, 0, 0, 0}, \
     {0, 1, 0, 0}, \
     {0, 0, 1, 0}, \
     {0, 0, 0, 1}}}
 
-#define celp_m4_trans(t) (m4){{       \
+#define celp_m4_trans(t) {{       \
     {1, 0, 0, t.x}, \
     {0, 1, 0, t.y}, \
     {0, 0, 1, t.z}, \
     {0, 0, 0,  1}}}
 
-#define celp_m4_scale(s) (m4){{  \
-    {s,     0,     0,   0}, \
-    {  0,   s,     0,   0}, \
-    {  0,     0,   s,   0}, \
-    {  0,     0,    0,   1}}}
+#define celp_m4_scale(s) {{  \
+    {s, 0, 0, 0},  \
+    {0, s, 0, 0},  \
+    {0, 0, s, 0},  \
+    {0, 0, 0, 1}}}
 
-#define celp_m4_scalev(s) (m4){{   \
-    {s.x,     0,     0,   0}, \
-    {  0,   s.y,     0,   0}, \
-    {  0,     0,   s.z,   0}, \
-    {  0,     0,     0,    1}}} 
+#define celp_m4_scalev(s) {{ \
+    {s.x,   0,   0,  0},    \
+    {  0, s.y,   0,  0},    \
+    {  0,   0, s.z,  0},    \
+    {  0,   0,   0,  1}}} 
 
-#define celp_m4_rotx(a) (m4){{     \
-    {1,       0,       0, 0}, \
+#define celp_m4_rotx(a) {{   \
+    {1,      0,       0, 0}, \
     {0, cos(a), -sin(a), 0}, \
-    {0, sin(a), cos(a), 0}, \
-    {0,       0,       0, 1}}}
+    {0, sin(a),  cos(a), 0}, \
+    {0,      0,       0, 1}}}
 
-#define celp_m4_roty(a) (m4){{     \
+#define celp_m4_roty(a) {{   \
     { cos(a), 0, sin(a), 0}, \
-    {       0, 1,        0, 0}, \
-    {-sin(a), 0,  cos(a), 0}, \
-    {       0, 0,        0, 1}}}
+    {      0, 1,      0, 0}, \
+    {-sin(a), 0, cos(a), 0}, \
+    {      0, 0,      0, 1}}}
 
-#define celp_m4_rotz(a) (m4){{     \
+#define celp_m4_rotz(a) {{   \
     {cos(a), -sin(a), 0, 0}, \
     {sin(a),  cos(a), 0, 0}, \
-    {       0,       0, 1, 0}, \
-    {       0,       0, 0, 1}}}
+    {     0,       0, 1, 0}, \
+    {     0,       0, 0, 1}}}
 
 
 #define celp_m4_v4_mul(m, _v) \
@@ -937,12 +937,14 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_m4_mul(m1, m2) \
 ({ \
-    typeof((m1)) _out[4] = {0}; \
+    typeof((m1)) _out = {0}; \
     for (celp_u8 _i = 0; _i < 4; _i++) { \
         for (celp_u8 _j = 0; _j < 4; _j++) { \
-            out.v[_i][_j] = v4_dot( \
-                ((v4){(m1).v[_i][0], (m1).v[_i][1], (m1).v[_i][2], (m1).v[_i][3]}), \
-                ((v4){(m2).v[0][_j], (m2).v[1][_j], (m2).v[2][_j], (m2).v[3][_j]})); \
+        typeof((m1).v[0][0]) _sum = 0; \
+        for (celp_u8 _k = 0; _k < 4; _k++) { \
+            _sum += (m1).v[_i][_k] * (m1).v[_k][_j]; \
+        } \
+        _out.v[_i][_j] = _sum; \
         } \
     } \
     _out; \
