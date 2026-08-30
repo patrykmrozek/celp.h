@@ -525,7 +525,7 @@ CELP_DEF void celp_log(celp_u8 level,
 /* HashMap */
 #define CELP_MAP_INITIAL_CAPACITY 64
 
-#define _celp_map_clear(map) \
+#define celp_map_clear(map) \
     do {\
         (map)->buckets = NULL; \
         (map)->count = 0; \
@@ -534,7 +534,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_map_init(map) \
     do { \
-        _celp_map_clear((map)); \
+        celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
         for (size_t _i = 0; _i < (map)->capacity; _i++) { \
@@ -542,16 +542,19 @@ CELP_DEF void celp_log(celp_u8 level,
         } \
     } while(0)
 
-#define _celp_map_init_k_and_hash(map) \
-    typeof((map)->buckets[0].head->data.key) _k = (k); \
-    const unsigned char* _k_bytes = (const unsigned char*)&(_k); \
-    uint32_t _h = CELP_HASH(_k_bytes, sizeof(_k)) % (map)->capacity; \
+#define _celp_map_get_hash(map, k) \
+    ({ \
+        const unsigned char* _k_bytes = (const unsigned char*)&(k); \
+        celp_u32 _h = CELP_HASH(_k_bytes, sizeof((k))) % (map)->capacity; \
+        _h; \
+     })
 
 #define celp_map_is_empty(map) ((map)->count == 0)
 
 #define celp_map_insert(map, k, v) \
     do { \
-        _celp_map_init_k_and_hash(map) \
+        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
         celp_ll_foreach(&(map)->buckets[_h], _bucket) {\
             if (CELP_COMP(_bucket->data.key, _k) == 0) { \
@@ -572,7 +575,8 @@ CELP_DEF void celp_log(celp_u8 level,
 // if the key isnt already in the map it assigns value 1
 #define celp_map_increment(map, k) \
     do { \
-        _celp_map_init_k_and_hash(map) \
+        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
         celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
             if (CELP_COMP(_bucket->data.key, _k) == 0) { \
@@ -593,7 +597,8 @@ CELP_DEF void celp_log(celp_u8 level,
     ({ \
         typeof((map)->buckets[0].head->data.value) _return = (default_value); \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
+            typeof((map)->buckets[0].head->data.key) _k = (k); \
+            celp_u32 _h = _celp_map_get_hash((map), _k); \
             celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
                 if (CELP_COMP(_bucket->data.key, _k) == 0) { \
                     _return = _bucket->data.value; \
@@ -608,7 +613,8 @@ CELP_DEF void celp_log(celp_u8 level,
     ({ \
         bool _found = false; \
         if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
+            typeof((map)->buckets[0].head->data.key) _k = (k); \
+            celp_u32 _h = _celp_map_get_hash((map), _k); \
             celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
                 if (CELP_COMP(_bucket->data.key, _k) == 0) { \
                     _found = true; \
@@ -619,25 +625,27 @@ CELP_DEF void celp_log(celp_u8 level,
         _found; \
     })
 
-#define celp_map_remove(map, k) \
+#define celp_map_remove(map, k, default_value) \
     ({ \
-        CELP_ASSERT((map)->count > 0); \
-        typeof((map)->buckets[0].head->data.value) _return = {0}; \
-        if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            _celp_map_init_k_and_hash(map) \
-            celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
-                if (CELP_COMP(_bucket->data.key, _k) == 0) { \
-                    _return = _bucket->data.value; \
-                    (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket); \
-                    (map)->count--; \
-                    break; \
+        typeof((map)->buckets[0].head->data.value) _return = (default_value); \
+        if ((map)->count > 0) { \
+            if ((map)->buckets != NULL && (map)->capacity > 0) { \
+                typeof((map)->buckets[0].head->data.key) _k = (k); \
+                celp_u32 _h = _celp_map_get_hash((map), _k); \
+                celp_ll_foreach(&(map)->buckets[_h], _bucket) { \
+                    if (CELP_COMP(_bucket->data.key, _k) == 0) { \
+                        _return = _bucket->data.value; \
+                        (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket); \
+                        (map)->count--; \
+                        break; \
+                    } \
                 } \
             } \
         } \
         _return; \
     })
 
-#define celp_map_free(map) \
+#define celp_map_destroy(map) \
     do { \
         if ((map)->buckets != NULL) { \
             for (size_t _i = 0; _i < (map)->capacity; _i++) { \
@@ -645,7 +653,7 @@ CELP_DEF void celp_log(celp_u8 level,
             } \
             CELP_FREE((map)->buckets); \
         } \
-        _celp_map_clear((map)); \
+        celp_map_clear((map)); \
     } while(0)
 
 #define celp_map_info(map) \
