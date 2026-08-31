@@ -199,35 +199,37 @@ typedef struct celp_test_suite_s {
 #define CELP_TEST_TEARDOWN(t) void teardown_##t()
 
 #define CELP_TEST_SUITE_START(s) \
-    CELP_DEF_SI celp_test_suite_t *_celp_test_suite_##s() { \
-        celp_test_suite_t *_celp_test_suite = \
+    CELP_DEF_SI celp_test_suite_t \
+    *_celp_test_suite_##s##_func() { \
+        celp_test_suite_t *_celp_test_suite_##s = \
             CELP_MALLOC(sizeof(celp_test_suite_t)); \
-        _celp_test_suite->name = #s; \
-        _celp_test_suite->setup = NULL; \
-        _celp_test_suite->teardown = NULL; \
-        celp_ll_init(&_celp_test_suite->tests); \
+        _celp_test_suite_##s->name = #s; \
+        _celp_test_suite_##s->setup = NULL; \
+        _celp_test_suite_##s->teardown = NULL; \
+        celp_ll_init(&_celp_test_suite_##s->tests); \
         
-#define CELP_TEST_SUITE_ADD_SETUP(s) \
-        _celp_test_suite->setup = &(setup_##s);
+#define CELP_TEST_SUITE_ADD_SETUP(s, t) \
+        _celp_test_suite_##s->setup = &(setup_##t);
 
-#define CELP_TEST_SUITE_ADD_TEARDOWN(t) \
-        _celp_test_suite->teardown = &(teardown_##t);
+#define CELP_TEST_SUITE_ADD_TEARDOWN(s, t) \
+        _celp_test_suite_##s->teardown = &(teardown_##t);
 
-#define CELP_TEST_SUITE_ADD_TEST(t) \
+#define CELP_TEST_SUITE_ADD_TEST(s, t) \
         celp_testcase_t _##t; \
         _##t.name = #t; \
         _##t.testcase = &test_##t; \
         _##t.result = CELP_TEST_RESULT_NONE; \
-        celp_ll_add(&_celp_test_suite->tests, _##t);
+        celp_ll_add(&_celp_test_suite_##s->tests, _##t);
 
-#define CELP_TEST_SUITE_END() \
-        return _celp_test_suite; \
+#define CELP_TEST_SUITE_END(s) \
+        return _celp_test_suite_##s; \
     }
 
 #define CELP_TEST_SUITE_RUN(s) \
-    celp_test_suite_t *_celp_test_suite = _celp_test_suite_##s(); \
-    _celp_test_suite->setup(); \
-    celp_ll_foreach(&_celp_test_suite->tests, _t) { \
+    celp_test_suite_t *_celp_test_suite_##s = \
+        _celp_test_suite_##s##_func(); \
+    _celp_test_suite_##s->setup(); \
+    celp_ll_foreach(&_celp_test_suite_##s->tests, _t) { \
         celp_test_result = CELP_TEST_RESULT_NONE; \
         _t->data.testcase(); \
         celp_test_runs++; \
@@ -235,12 +237,12 @@ typedef struct celp_test_suite_s {
         (_t->data.result==CELP_TEST_RESULT_FAIL) ? \
         celp_test_fails++ : celp_test_passes++; \
     } \
-    _celp_test_suite->teardown(); \
+    _celp_test_suite_##s->teardown(); \
 
-#define CELP_TEST_SUITE_REPORT() \
+#define CELP_TEST_SUITE_REPORT(s) \
     celp_log(0, CELP_LOG_INFO, \
-             "[TEST_SUITE] ", "%s", _celp_test_suite->name); \
-    celp_ll_foreach(&_celp_test_suite->tests, _t) { \
+             "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
+    celp_ll_foreach(&_celp_test_suite_##s->tests, _t) { \
         celp_log(0, CELP_LOG_INFO, \
                 "\t[TESTCASE] ", "%s %s", _t->data.name, \
                 (_t->data.result==CELP_TEST_RESULT_FAIL) ? \
@@ -254,9 +256,9 @@ typedef struct celp_test_suite_s {
     char *celp_fail_tag = (celp_test_fails > 0) ? "[FAILURE] " : ""; \
     celp_log(0, CELP_LOG_INFO, celp_fail_tag, "%s", celp_test_fail_msg); \
 
-#define CELP_TEST_SUITE_DESTROY() \
-    celp_ll_free(&_celp_test_suite->tests); \
-    CELP_FREE(_celp_test_suite); \
+#define CELP_TEST_SUITE_DESTROY(s) \
+    celp_ll_free(&_celp_test_suite_##s->tests); \
+    CELP_FREE(_celp_test_suite_##s); \
 
 #endif //CELP_TEST
 
