@@ -83,22 +83,23 @@ CELP_TESTCASE(da_is_empty)
 
 CELP_TEST_SUITE_START(dynamic_array);
 {
-    CELP_TEST_SUITE_ADD_SETUP(da);
-    CELP_TEST_SUITE_ADD_TEARDOWN(da);
-    CELP_TEST_SUITE_ADD_TEST(da_append);
-    CELP_TEST_SUITE_ADD_TEST(da_pop);
-    CELP_TEST_SUITE_ADD_TEST(da_last);
-    CELP_TEST_SUITE_ADD_TEST(da_remove);
-    CELP_TEST_SUITE_ADD_TEST(da_foreach);
-    CELP_TEST_SUITE_ADD_TEST(da_reserve);
-    CELP_TEST_SUITE_ADD_TEST(da_clear);
-    CELP_TEST_SUITE_ADD_TEST(da_is_empty);
+    CELP_TEST_SUITE_ADD_SETUP(dynamic_array, da);
+    CELP_TEST_SUITE_ADD_TEARDOWN(dynamic_array, da);
+
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_append);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_pop);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_last);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_remove);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_foreach);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_reserve);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_clear);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_is_empty);
 }
-CELP_TEST_SUITE_END();
+CELP_TEST_SUITE_END(dynamic_array);
 
 void test_celp_da()
 {
     CELP_TEST_SUITE_RUN(dynamic_array);
-    CELP_TEST_SUITE_REPORT();
-    CELP_TEST_SUITE_DESTROY();
+    CELP_TEST_SUITE_REPORT(dynamic_array);
+    CELP_TEST_SUITE_DESTROY(dynamic_array);
 }
