@@ -228,35 +228,35 @@ CELP_TESTCASE(ll_remove_node_invalid)
 
 CELP_TEST_SUITE_START(linked_list);
 {
-    CELP_TEST_SUITE_ADD_SETUP(ll);
-    CELP_TEST_SUITE_ADD_TEARDOWN(ll);
+    CELP_TEST_SUITE_ADD_SETUP(linked_list, ll);
+    CELP_TEST_SUITE_ADD_TEARDOWN(linked_list, ll);
 
-    CELP_TEST_SUITE_ADD_TEST(ll_get_first_empty);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_last_empty);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_first_node_empty);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_first_empty);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_last_empty);
-    CELP_TEST_SUITE_ADD_TEST(ll_add);
-    CELP_TEST_SUITE_ADD_TEST(ll_foreach);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_first);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_first_node);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_last);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_last_node);
-    CELP_TEST_SUITE_ADD_TEST(ll_add_after);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_first);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_last);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_at_index);
-    CELP_TEST_SUITE_ADD_TEST(ll_get_at_index_invalid);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_at_index);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_at_index_invalid);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_node);
-    CELP_TEST_SUITE_ADD_TEST(ll_remove_node_invalid);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first_empty);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_last_empty);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first_node_empty);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_first_empty);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_last_empty);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_add);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_foreach);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first_node);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_last);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_last_node);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_add_after);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_first);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_last);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_at_index);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_at_index_invalid);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_at_index);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_at_index_invalid);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_node);
+    CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_node_invalid);
 }
-CELP_TEST_SUITE_END();
+CELP_TEST_SUITE_END(linked_list);
 
 void test_celp_ll()
 {
     CELP_TEST_SUITE_RUN(linked_list);
-    CELP_TEST_SUITE_REPORT();
-    CELP_TEST_SUITE_DESTROY();
+    CELP_TEST_SUITE_REPORT(linked_list);
+    CELP_TEST_SUITE_DESTROY(linked_list);
 }
