@@ -78,22 +78,24 @@ CELP_TESTCASE(map_remove)
     CELP_EXPECT_EQ(ret, -1);
 }
 
-CELP_TEST_SUITE_START(kv_map)
+CELP_TEST_SUITE_START(kv_map);
 {
-    CELP_TEST_SUITE_ADD_SETUP(map);
-    CELP_TEST_SUITE_ADD_TEARDOWN(map);
-    CELP_TEST_SUITE_ADD_TEST(map_hash);
-    CELP_TEST_SUITE_ADD_TEST(map_insert);
-    CELP_TEST_SUITE_ADD_TEST(map_contains);
-    CELP_TEST_SUITE_ADD_TEST(map_get);
-    CELP_TEST_SUITE_ADD_TEST(map_increment_existing_value);
-    CELP_TEST_SUITE_ADD_TEST(map_increment_non_existing_value);
-    CELP_TEST_SUITE_ADD_TEST(map_remove);
-} CELP_TEST_SUITE_END();
+    CELP_TEST_SUITE_ADD_SETUP(kv_map, map);
+    CELP_TEST_SUITE_ADD_TEARDOWN(kv_map, map);
+    
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_hash);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_insert);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_contains);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_get);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_increment_existing_value);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_increment_non_existing_value);
+    CELP_TEST_SUITE_ADD_TEST(kv_map, map_remove);
+}
+CELP_TEST_SUITE_END(kv_map);
 
 void test_celp_map() {
     CELP_TEST_SUITE_RUN(kv_map);
-    CELP_TEST_SUITE_REPORT();
-    CELP_TEST_SUITE_DESTROY();
+    CELP_TEST_SUITE_REPORT(kv_map);
+    CELP_TEST_SUITE_DESTROY(kv_map);
 }
 
