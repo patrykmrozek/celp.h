@@ -90,186 +90,6 @@
         _hash; \
     })
 
-/* generic typedefs */
-
-/* Dynamic Array */
-#define _da(T) da_##T
-#define celp_da_s(T) CELP_S(_da(T))
-#define celp_da_t(T) CELP_T(_da(T))
-
-#define celp_da(T) \
-    typedef struct celp_da_s(T) { \
-        T* items; \
-        celp_usize count; \
-        celp_usize capacity; \
-    } celp_da_t(T);
-
-/* Linked List */
-#define _lln(T) lln_##T
-#define celp_lln_s(T) CELP_S(_lln(T))
-#define celp_lln_t(T) CELP_T(_lln(T))
-
-#define _ll(T) ll_##T
-#define celp_ll_s(T)  CELP_S(_ll(T))
-#define celp_ll_t(T)  CELP_T(_ll(T))
-
-#define celp_ll(T) \
-    typedef struct celp_lln_s(T) { \
-        T data; \
-        struct celp_lln_s(T)* prev; \
-        struct celp_lln_s(T)* next; \
-    } celp_lln_t(T); \
-    \
-    typedef struct celp_ll_s(T) { \
-        celp_lln_t(T) *head; \
-        celp_lln_t(T) *tail; \
-        celp_usize count; \
-    } celp_ll_t(T);
-
-/* HashMap */
-#define _map(kT, vT) CELP_CATTT(CELP_CAT(map_, kT), _, vT)
-#define celp_map_t(kT, vT) CELP_T(_map(kT, vT))
-#define celp_map_s(kT, vT) CELP_S(_map(kT, vT))
-
-#define _kv(kT, vT)  CELP_CATTT(CELP_CAT(kv_, kT), _, vT) 
-#define celp_kv_t(kT, vT)  CELP_T(_kv(kT, vT)) 
-#define celp_kv_s(kT, vT)  CELP_S(_kv(kT, vT)) 
-
-#define celp_map(kT, vT) \
-    typedef struct celp_kv_s(kT, vT) { \
-        kT key; \
-        vT value; \
-    } celp_kv_t(kT, vT); \
-    \
-    celp_ll(celp_kv_t(kT, vT)); \
-    \
-    typedef struct celp_map_s(kT, vT) { \
-        celp_ll_t(celp_kv_t(kT, vT))* buckets; \
-        celp_usize count; \
-        celp_usize capacity; \
-    }  celp_map_t(kT, vT);
-
-/* Testing */
-#ifdef CELP_TEST
-
-#define CELP_TEST_FAIL_MSG_LEN 4096
-static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
-
-#define CELP_EXPECT(cond) do { \
-    celp_test_assertions++; \
-    if (!(cond)) { \
-        celp_test_fails++; \
-        celp_test_result = CELP_TEST_RESULT_FAIL; \
-        /*
-        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                 "%s:%s:%d (%s)\n", \
-                 __FILE__, __FUNCTION__, __LINE__, #cond); \
-        */ \
-        celp_log(0, _CELP_LOG_ERROR, \
-                 __FILE__, __FUNCTION__, __LINE__, \
-                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                "[FAILURE] ", "(%s)", #cond); \
-    } else { celp_test_passes++; } \
-} while(0)
-#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
-#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
-
-typedef enum celp_test_result_e {
-    CELP_TEST_RESULT_PASS,
-    CELP_TEST_RESULT_FAIL,
-    CELP_TEST_RESULT_NONE,
-} celp_test_result_t;
-
-static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
-static celp_u32 celp_test_runs = 0;
-static celp_u32 celp_test_passes = 0;
-static celp_u32 celp_test_fails = 0;
-static celp_u32 celp_test_assertions = 0;
-
-typedef struct celp_testcase_s {
-    char *name;
-    void (*testcase)(void);
-    celp_test_result_t result;
-} celp_testcase_t;
-
-celp_ll(celp_testcase_t);
-typedef struct celp_test_suite_s {
-    //struct celp_test_suite_s *suites;
-    char *name;
-    void (*setup)(void);
-    void (*teardown)(void);
-    celp_ll_t(celp_testcase_t) tests;
-} celp_test_suite_t;
-
-#define CELP_TESTCASE(t)      void _celp_testcase_##t()
-#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s()
-#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t()
-
-#define CELP_TEST_SUITE_START(s) \
-    CELP_DEF_SI celp_test_suite_t \
-    *_celp_test_suite_##s##_func() { \
-        celp_test_suite_t *_celp_test_suite_##s = \
-            CELP_MALLOC(sizeof(celp_test_suite_t)); \
-        _celp_test_suite_##s->name = #s; \
-        _celp_test_suite_##s->setup = NULL; \
-        _celp_test_suite_##s->teardown = NULL; \
-        celp_ll_init(&_celp_test_suite_##s->tests); \
-        
-#define CELP_TEST_SUITE_ADD_SETUP(s, t) \
-        _celp_test_suite_##s->setup = &(_celp_test_setup_##t);
-
-#define CELP_TEST_SUITE_ADD_TEARDOWN(s, t) \
-        _celp_test_suite_##s->teardown = &(_celp_test_teardown_##t);
-
-#define CELP_TEST_SUITE_ADD_TEST(s, t) \
-        celp_testcase_t _##t; \
-        _##t.name = #t; \
-        _##t.testcase = &_celp_testcase_##t; \
-        _##t.result = CELP_TEST_RESULT_NONE; \
-        celp_ll_add(&_celp_test_suite_##s->tests, _##t);
-
-#define CELP_TEST_SUITE_END(s) \
-        return _celp_test_suite_##s; \
-    }
-
-#define CELP_TEST_SUITE_RUN(s) \
-    celp_test_suite_t *_celp_test_suite_##s = \
-        _celp_test_suite_##s##_func(); \
-    if (_celp_test_suite_##s->setup) \
-        _celp_test_suite_##s->setup(); \
-    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
-        celp_test_result = CELP_TEST_RESULT_NONE; \
-        _celp_test->data.testcase(); \
-        celp_test_runs++; \
-        _celp_test->data.result = celp_test_result; \
-    } \
-    if (_celp_test_suite_##s->teardown) \
-        _celp_test_suite_##s->teardown(); \
-
-#define CELP_TEST_SUITE_REPORT(s) \
-    celp_log(0, CELP_LOG_INFO, \
-             "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
-    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
-        celp_log(0, CELP_LOG_INFO, \
-                "\t[TESTCASE] ", "%s %s", _celp_test->data.name, \
-                (_celp_test->data.result==CELP_TEST_RESULT_FAIL) ? \
-                "[FAIL]" : "[PASS]"); \
-    } \
-    celp_log(0, CELP_LOG_INFO, \
-            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d" \
-            " - PASSED: %d - FAILED: %d", \
-            celp_test_runs, celp_test_assertions, \
-            celp_test_passes, celp_test_fails); \
-    celp_log(0, CELP_LOG_INFO, \
-             (celp_test_fails > 0) ? "[FAILURE] " : "", \
-             "%s", celp_test_fail_msg); \
-
-#define CELP_TEST_SUITE_DESTROY(s) \
-    celp_ll_free(&_celp_test_suite_##s->tests); \
-    CELP_FREE(_celp_test_suite_##s); \
-
-#endif //CELP_TEST
-
 /* Logging */
 typedef enum celp_log_e {
    _CELP_LOG_INFO,
@@ -311,6 +131,17 @@ CELP_DEF void celp_log(celp_u8 level,
                                            fmt, ##__VA_ARGS__)
 
 /* Dynamic Array */
+#define _da(T) da_##T
+#define celp_da_s(T) CELP_S(_da(T))
+#define celp_da_t(T) CELP_T(_da(T))
+
+#define celp_da(T) \
+    typedef struct celp_da_s(T) { \
+        T* items; \
+        celp_usize count; \
+        celp_usize capacity; \
+    } celp_da_t(T);
+
 #define CELP_DA_INITIAL_CAPACITY 256
 
 #define celp_da_init(da) \
@@ -395,8 +226,27 @@ CELP_DEF void celp_log(celp_u8 level,
              (da), (da)->capacity, (da)->count); \
     } while(0)
 
+/* Linked List */
+#define _lln(T) lln_##T
+#define celp_lln_s(T) CELP_S(_lln(T))
+#define celp_lln_t(T) CELP_T(_lln(T))
 
-/* Linked List*/
+#define _ll(T) ll_##T
+#define celp_ll_s(T)  CELP_S(_ll(T))
+#define celp_ll_t(T)  CELP_T(_ll(T))
+
+#define celp_ll(T) \
+    typedef struct celp_lln_s(T) { \
+        T data; \
+        struct celp_lln_s(T)* prev; \
+        struct celp_lln_s(T)* next; \
+    } celp_lln_t(T); \
+    \
+    typedef struct celp_ll_s(T) { \
+        celp_lln_t(T) *head; \
+        celp_lln_t(T) *tail; \
+        celp_usize count; \
+    } celp_ll_t(T);
 
 #define _celp_ll_create_node(ll, x, p, n) \
     ({ \
@@ -608,6 +458,28 @@ CELP_DEF void celp_log(celp_u8 level,
     } while(0)
 
 /* HashMap */
+#define _map(kT, vT) CELP_CATTT(CELP_CAT(map_, kT), _, vT)
+#define celp_map_t(kT, vT) CELP_T(_map(kT, vT))
+#define celp_map_s(kT, vT) CELP_S(_map(kT, vT))
+
+#define _kv(kT, vT)  CELP_CATTT(CELP_CAT(kv_, kT), _, vT) 
+#define celp_kv_t(kT, vT)  CELP_T(_kv(kT, vT)) 
+#define celp_kv_s(kT, vT)  CELP_S(_kv(kT, vT)) 
+
+#define celp_map(kT, vT) \
+    typedef struct celp_kv_s(kT, vT) { \
+        kT key; \
+        vT value; \
+    } celp_kv_t(kT, vT); \
+    \
+    celp_ll(celp_kv_t(kT, vT)); \
+    \
+    typedef struct celp_map_s(kT, vT) { \
+        celp_ll_t(celp_kv_t(kT, vT))* buckets; \
+        celp_usize count; \
+        celp_usize capacity; \
+    }  celp_map_t(kT, vT);
+
 #define CELP_MAP_INITIAL_CAPACITY 64
 
 #define _celp_map_clear(map) \
@@ -912,8 +784,6 @@ CELP_DEF void celp_log(celp_u8 level,
     _v_out; \
 })
 
-#define celp_v3_neg(v) {-(v).x, -(v).y, -(v).z};
-
 /* Vector4 */
 #define _v4(T) v4_##T
 #define celp_v4_t(T) CELP_T(_v4(T))
@@ -1066,7 +936,126 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #endif //CELP_MATH
 
+/* Testing */
+#ifdef CELP_TEST
 
+#define CELP_TEST_FAIL_MSG_LEN 4096
+static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
+
+#define CELP_EXPECT(cond) do { \
+    celp_test_assertions++; \
+    if (!(cond)) { \
+        celp_test_fails++; \
+        celp_test_result = CELP_TEST_RESULT_FAIL; \
+        /*
+        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                 "%s:%s:%d (%s)\n", \
+                 __FILE__, __FUNCTION__, __LINE__, #cond); \
+        */ \
+        celp_log(0, _CELP_LOG_ERROR, \
+                 __FILE__, __FUNCTION__, __LINE__, \
+                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                "[FAILURE] ", "(%s)", #cond); \
+    } else { celp_test_passes++; } \
+} while(0)
+#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
+#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
+
+typedef enum celp_test_result_e {
+    CELP_TEST_RESULT_PASS,
+    CELP_TEST_RESULT_FAIL,
+    CELP_TEST_RESULT_NONE,
+} celp_test_result_t;
+
+static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
+static celp_u32 celp_test_runs = 0;
+static celp_u32 celp_test_passes = 0;
+static celp_u32 celp_test_fails = 0;
+static celp_u32 celp_test_assertions = 0;
+
+typedef struct celp_testcase_s {
+    char *name;
+    void (*testcase)(void);
+    celp_test_result_t result;
+} celp_testcase_t;
+
+celp_ll(celp_testcase_t);
+typedef struct celp_test_suite_s {
+    //struct celp_test_suite_s *suites;
+    char *name;
+    void (*setup)(void);
+    void (*teardown)(void);
+    celp_ll_t(celp_testcase_t) tests;
+} celp_test_suite_t;
+
+#define CELP_TESTCASE(t)      void _celp_testcase_##t()
+#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s()
+#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t()
+
+#define CELP_TEST_SUITE_START(s) \
+    CELP_DEF_SI celp_test_suite_t \
+    *_celp_test_suite_##s##_func() { \
+        celp_test_suite_t *_celp_test_suite_##s = \
+            CELP_MALLOC(sizeof(celp_test_suite_t)); \
+        _celp_test_suite_##s->name = #s; \
+        _celp_test_suite_##s->setup = NULL; \
+        _celp_test_suite_##s->teardown = NULL; \
+        celp_ll_init(&_celp_test_suite_##s->tests); \
+        
+#define CELP_TEST_SUITE_ADD_SETUP(s, t) \
+        _celp_test_suite_##s->setup = &(_celp_test_setup_##t);
+
+#define CELP_TEST_SUITE_ADD_TEARDOWN(s, t) \
+        _celp_test_suite_##s->teardown = &(_celp_test_teardown_##t);
+
+#define CELP_TEST_SUITE_ADD_TEST(s, t) \
+        celp_testcase_t _##t; \
+        _##t.name = #t; \
+        _##t.testcase = &_celp_testcase_##t; \
+        _##t.result = CELP_TEST_RESULT_NONE; \
+        celp_ll_add(&_celp_test_suite_##s->tests, _##t);
+
+#define CELP_TEST_SUITE_END(s) \
+        return _celp_test_suite_##s; \
+    }
+
+#define CELP_TEST_SUITE_RUN(s) \
+    celp_test_suite_t *_celp_test_suite_##s = \
+        _celp_test_suite_##s##_func(); \
+    if (_celp_test_suite_##s->setup) \
+        _celp_test_suite_##s->setup(); \
+    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+        celp_test_result = CELP_TEST_RESULT_NONE; \
+        _celp_test->data.testcase(); \
+        celp_test_runs++; \
+        _celp_test->data.result = celp_test_result; \
+    } \
+    if (_celp_test_suite_##s->teardown) \
+        _celp_test_suite_##s->teardown(); \
+
+#define CELP_TEST_SUITE_REPORT(s) \
+    celp_log(0, CELP_LOG_INFO, \
+             "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
+    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+        celp_log(0, CELP_LOG_INFO, \
+                "\t[TESTCASE] ", "%s %s", _celp_test->data.name, \
+                (_celp_test->data.result==CELP_TEST_RESULT_FAIL) ? \
+                "[FAIL]" : "[PASS]"); \
+    } \
+    celp_log(0, CELP_LOG_INFO, \
+            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d" \
+            " - PASSED: %d - FAILED: %d", \
+            celp_test_runs, celp_test_assertions, \
+            celp_test_passes, celp_test_fails); \
+    celp_log(0, CELP_LOG_INFO, \
+             (celp_test_fails > 0) ? "[FAILURE] " : "", \
+             "%s", celp_test_fail_msg); \
+
+#define CELP_TEST_SUITE_DESTROY(s) \
+    celp_ll_free(&_celp_test_suite_##s->tests); \
+    CELP_FREE(_celp_test_suite_##s); \
+
+#endif //CELP_TEST
 
 #ifdef CELP_IMPLEMENTATION
 
