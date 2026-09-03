@@ -344,25 +344,34 @@ CELP_DEF void celp_log(celp_u8 level,
         (da)->items[(da)->count++] = (item);\
     } while(0)
 
-#define celp_da_last(da) \
+#define celp_da_last(da, safe) \
     ({ \
-        CELP_ASSERT((da)->count > 0); \
-        (da)->items[(da)->count-1]; \
+        typeof(safe) _return = (safe); \
+        if((da)->count > 0) { \
+            _return = (da)->items[(da)->count-1]; \
+        } \
+        _return; \
     })
 
-#define celp_da_pop(da) \
+#define celp_da_pop(da, safe) \
     ({ \
-        CELP_ASSERT((da)->count > 0); \
-        (da)->items[--(da)->count]; \
+        typeof(safe) _return = (safe); \
+        if((da)->count > 0) { \
+            _return = (da)->items[--(da)->count]; \
+        } \
+        _return; \
     })
 
-#define celp_da_remove(da, idx) \
+#define celp_da_remove(da, idx, safe) \
     ({ \
-        CELP_ASSERT(idx < (da)->count); \
-        typeof((da)->items[0]) _temp = (da)->items[(idx)]; \
-        (da)->items[(idx)] = celp_da_last((da)); \
-        (da)->items[(da)->count-1] = _temp; \
-        celp_da_pop(da); \
+     typeof((safe)) _return = (safe); \
+        if(idx < (da)->count) { \
+            typeof((da)->items[0]) _temp = (da)->items[(idx)]; \
+            (da)->items[(idx)] = celp_da_last((da), (safe)); \
+            (da)->items[(da)->count-1] = _temp; \
+            _return = celp_da_pop(da, (safe)); \
+        } \
+        _return; \
     })
 
 // user provides some label (i) -> macro initializes it as a pointer to (da)->items
