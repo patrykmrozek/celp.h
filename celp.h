@@ -160,9 +160,15 @@ static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
     if (!(cond)) { \
         celp_test_fails++; \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
+        /*
         snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
                  "%s:%s:%d (%s)\n", \
                  __FILE__, __FUNCTION__, __LINE__, #cond); \
+        */ \
+        celp_log(0, _CELP_LOG_ERROR, \
+                 __FILE__, __FUNCTION__, __LINE__, \
+                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                "[FAILURE] ", "(%s)", #cond); \
     } else { celp_test_passes++; } \
 } while(0)
 #define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
@@ -254,8 +260,9 @@ typedef struct celp_test_suite_s {
             " - PASSED: %d - FAILED: %d", \
             celp_test_runs, celp_test_assertions, \
             celp_test_passes, celp_test_fails); \
-    char *celp_fail_tag = (celp_test_fails > 0) ? "[FAILURE] " : ""; \
-    celp_log(0, CELP_LOG_INFO, celp_fail_tag, "%s", celp_test_fail_msg); \
+    celp_log(0, CELP_LOG_INFO, \
+             (celp_test_fails > 0) ? "[FAILURE] " : "", \
+             "%s", celp_test_fail_msg); \
 
 #define CELP_TEST_SUITE_DESTROY(s) \
     celp_ll_free(&_celp_test_suite_##s->tests); \
@@ -271,18 +278,25 @@ typedef enum celp_log_e {
    _CELP_LOG_TRACE,
 } celp_log_t;
 
-#define CELP_LOG_INFO  (celp_log_t)_CELP_LOG_INFO,  NULL, NULL, 0
-#define CELP_LOG_DEBUG (celp_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0
+#define CELP_LOG_INFO  (celp_log_t)_CELP_LOG_INFO,  NULL, NULL, 0, \
+                                   stdout, NULL, 0
+#define CELP_LOG_DEBUG (celp_log_t)_CELP_LOG_DEBUG, NULL, NULL, 0, \
+                                   stdout, NULL, 0
 #define CELP_LOG_ERROR (celp_log_t)_CELP_LOG_ERROR, \
-                                               __FILE__, __FUNCTION__, __LINE__
+                                   __FILE__, __FUNCTION__, __LINE__, \
+                                   stderr, NULL, 0
 #define CELP_LOG_TRACE (celp_log_t)_CELP_LOG_TRACE, \
-                                               __FILE__, __FUNCTION__, __LINE__
+                                   __FILE__, __FUNCTION__, __LINE__, \
+                                   stderr, NULL, 0
 
 CELP_DEF void celp_log(celp_u8 level,
                        celp_log_t log,
                        const char *file,
                        const char *function,
-                       int line,
+                       celp_u32 line,
+                       FILE *out,
+                       char *buff,
+                       celp_u32 bufflen,
                        const char *tag,
                        const char* fmt_string,
                        ...);
@@ -1087,7 +1101,10 @@ celp_log(celp_u8 level,
          celp_log_t log,
          const char *file,
          const char *function,
-         int line,
+         celp_u32 line,
+         FILE *out, 
+         char *buff, /* optional if you want to log to a buffer */
+         celp_u32 bufflen,
          const char *tag,
          const char* fmt_string,
          ...)
@@ -1095,36 +1112,27 @@ celp_log(celp_u8 level,
     if (level > CELP_LOG_LEVEL) return;
     va_list args;
     va_start(args, fmt_string); 
-    FILE* out = NULL;
-    char fmt_str_trace[256];
+    char fmt_str_trace[1024];
 
     switch(log) {
         case _CELP_LOG_INFO:
-            #ifdef CELP_LOG_MODE_INFO
-                out = stdout;
-                (void)file; (void)function; (void)line;
-            #else
+            #ifndef CELP_LOG_MODE_INFO
                 return;
             #endif //CELP_LOG_MODE_INFO
             goto end;
         case _CELP_LOG_ERROR:
             #ifdef CELP_LOG_MODE_ERROR
-                out = stderr;
                 goto prepend;
             #else
                 return;
             #endif //CELP_LOG_MODE_ERROR
         case _CELP_LOG_DEBUG:
-            #ifdef CELP_LOG_MODE_DEBUG
-                out = stdout;
-                (void)file; (void)function; (void)line;
-            #else
+            #ifndef CELP_LOG_MODE_DEBUG
                 return;
             #endif //CELP_LOG_MODE_DEBUG
             goto end;
         case _CELP_LOG_TRACE:
             #ifdef CELP_LOG_MODE_TRACE
-                out = stdout;
                 goto prepend;
             #else
                 return;
@@ -1132,14 +1140,19 @@ celp_log(celp_u8 level,
     }
 
 prepend:
-    snprintf(fmt_str_trace, 56, "%s:%s:%d\n\t",
+    snprintf(fmt_str_trace, 424, "%s:%s:%d\n\t",
              file, function, line);
-    strncat(fmt_str_trace, fmt_string, 200);
+    strncat(fmt_str_trace, fmt_string, 600);
     fmt_string = fmt_str_trace;
 end:
-    fputs(tag, out);
-    vfprintf(out, fmt_string, args); 
-    fputc('\n', out);
+    if (out) {
+        fputs(tag, out);
+        vfprintf(out, fmt_string, args); 
+        fputc('\n', out);
+    }
+    if (buff) {
+        vsnprintf(buff, bufflen, fmt_string, args);
+    }
     va_end(args);
     return;
 }
