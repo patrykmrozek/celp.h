@@ -417,7 +417,7 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_remove_node(ll, n, safe) \
     ({ \
-        typeof((safe)->data) _return = (safe)->data; \
+        typeof((n)) _return = (safe); \
         if ((ll)->count > 0) { \
             bool _found = false; \
             if (celp_lln_exists((n))) { \
@@ -425,7 +425,7 @@ CELP_DEF void celp_log(celp_u8 level,
                     if (_curr == (n)) { \
                         _curr->next->prev = _curr->prev; \
                         _curr->prev->next = _curr->next; \
-                        _return = _curr->data; \
+                        _return = _curr; \
                         CELP_FREE(_curr); \
                         (ll)->count--; \
                         _found = true; \
