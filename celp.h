@@ -1,5 +1,21 @@
 /*
- * celp.h - single header c util library.
+ * celp.h - single header generic C util library.
+ *
+ * Provides many useful features like:
+ *  celp_log - comprehensive and detailed logger
+ *  celp_da - generic dynamic array implementation
+ *  celp_ll - generic doubly linked list implementation
+ *  celp_map - generic hashmap implementation
+ *  CELP_MATH - generic linear algebra
+ *  CELP_TEST - a lightweight unit testing framework
+ *
+ *  Additional Features:
+ *   CELP_STRIP_PREFIX - if defined before you include celp, it strips every
+ *   macro, function, type of the word "celp". An extra thing you can do with
+ *   this is, say you strip celp_log() of it's prefix, which leaves you with
+ *   "log()", this wil surely clash with an existing log function, and so you 
+ *   have the ability of "undefining" the stripped version for specific names
+ *   like this.
  */
 
 #ifndef _CELP_H
