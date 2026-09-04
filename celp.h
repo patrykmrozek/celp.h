@@ -359,6 +359,31 @@ CELP_DEF void celp_log(celp_u8 level,
     } while(0)
 
 /* Linked List */
+/*
+ * Generic linked list implementation (celp_ll). The ll is a bit more
+ * interesting, as with every definition, we actually need to define two types,
+ * Both the node and the list. The linked list is accessed by the celp_ll 
+ * prefix, while the node is accessed by the celp_lln prefix.
+ *
+ * Example:
+ *     celp_ll(int);
+ *     celp_ll_t(int) linked;
+ *     celp_ll_init(&linked);
+ *     celp_ll_add(&linked, 5);
+ *     celp_ll_add(&linked, 10);
+ *
+ *     int safe = -1;
+ *     int last = celp_ll_get_last(&linked, safe);
+ *     if (last == safe) return;
+ *
+ *     celp_ll_foreach(&linked, _node) {
+ *         _node->data++;
+ *     }
+ *
+ *     celp_lln_t(int) safe_node = CELP_LLN_SAFE(int, -1); 
+ *     celp_lln_t(int) node = celp_ll_get_at_index_node(&linked, 1, safe);
+ *     if (node == safe_node) return;
+ */
 #define _lln(T) lln_##T
 #define celp_lln_s(T) CELP_S(_lln(T))
 #define celp_lln_t(T) CELP_T(_lln(T))
