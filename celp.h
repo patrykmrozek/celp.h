@@ -615,6 +615,28 @@ CELP_DEF void celp_log(celp_u8 level,
     } while(0)
 
 /* HashMap */
+/*
+ * Generic hash map implementation (celp_map). The map is made up of a few 
+ * components:
+ *     kv: key value pair, user defines type for both.
+ *     buckets: a linked list of kv pairs.
+ *     map: the hashmap, which contains X buckets, a count and a capacity
+ *
+ * Within the initialization macro (celp_map(kT, vT)), we dynamically define
+ * both kv and map types. Also, we must generate a linked list with type
+ * kv(kT, vT) to be used for our buckets within the hashmap.
+ *
+ * The hashing function itself isn't very flexible and is designed for integers
+ * if I'm not mistaken so it will either need to be updated or I will need to 
+ * look into some type defined hashing.
+ *
+ * The general flow of all of these function is generate the hash for a given
+ * key, check at that hash to see if the key already exists, perform some 
+ * operation based on this..
+ *
+ * TODO: realloc and rehash after certain size
+ * TODO: update hashing func
+ */
 #define _map(kT, vT) CELP_CATTT(CELP_CAT(map_, kT), _, vT)
 #define celp_map_t(kT, vT) CELP_T(_map(kT, vT))
 #define celp_map_s(kT, vT) CELP_S(_map(kT, vT))
