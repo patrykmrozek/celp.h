@@ -204,27 +204,36 @@ CELP_TESTCASE(ll_remove_at_index_invalid)
 
 CELP_TESTCASE(ll_remove_node)
 {
+    lln_int_t *safe = CELP_LLN_SAFE(int, -1); 
     lln_int_t *node =
-        celp_ll_get_at_index_node(&n, 10, CELP_LLN_SAFE(int, -1));
+        celp_ll_get_at_index_node(&n, 10, safe);
     lln_int_t *node_after = node->next;
     int count = n.count;
-    int ret = celp_ll_remove_node(&n, node, CELP_LLN_SAFE(int, -1));
+    lln_int_t *ret = celp_ll_remove_node(&n, node, safe);
     lln_int_t *at_index =
         celp_ll_get_at_index_node(&n, 10, CELP_LLN_SAFE(int, -1));
-
+    printf("next: %p, prev: %p, data; %d\n", 
+            ret->next, ret->prev, ret->data);
     CELP_EXPECT_EQ(n.count, count-1);
     CELP_EXPECT_NEQ(node, at_index);
-    CELP_EXPECT_NEQ(node_after->prev->data, ret);
-    CELP_EXPECT_NEQ(ret, -1);
+    CELP_EXPECT_NEQ(node_after->prev, ret);
+    CELP_EXPECT_NEQ(ret, safe);
 }
 
 CELP_TESTCASE(ll_remove_node_invalid)
 {
     lln_int_t invalid = {0, NULL, NULL};
     lln_int_t *safe = CELP_LLN_SAFE(int, -1);
-    int ret = celp_ll_remove_node(&n, &invalid, safe);
-    CELP_EXPECT_EQ(ret, safe->data);
-}
+    lln_int_t *ret = celp_ll_remove_node(&n, &invalid, safe);
+    CELP_EXPECT_EQ(ret, safe);
+
+    int buffer_len = 256;
+    char buffer[buffer_len];
+    char *name = "John";
+    celp_log(0,CELP_LOG_NONE, __FILE__, __FUNCTION__, __LINE__,
+            stdout, buffer, buffer_len, "[MY INFO] ",
+            "Hello my name is %s", name);
+} 
 
 CELP_TEST_SUITE_START(linked_list);
 {
