@@ -108,6 +108,62 @@
 
 
 /* Logging */
+/*
+ * celp_log() is designed to be a detailed logger, giving the user absolute 
+ * control. Logging can be enabled by calling adding one or more of the 
+ * following compiler flags:
+ *     - LOG_MODE_INFO
+ *     - LOG_MODE_DEBUG
+ *     - LOG_MODE_TRACE
+ *     - LOG_MODE_ERROR
+ *     - LOG_MODE_ALL
+ *
+ * Paremeters of celp_log() explained: 
+ *
+ *celp_log(celp_u8 level,         - log level, the lower the level, the higher
+                                    the priority
+           celp_log_t log,        - celp_log_t enum type
+           const char *file,      - __FILE__
+           const char *function,  - __FUNCTION__
+           celp_u32 line,         - __LINE__
+           FILE *out,             - which output to write to (e.g stdout,..)
+           char *buff,            - which buffer to write to
+           celp_u32 bufflen,      - size of said buffer
+           const char *tag,       - log tag (e.g "[ERROR] ") - gets prepended
+           const char* fmt_string,- format string ("x: %f, y: %f")
+           ...);                  - variadic arguments to fill the fmt_string
+ *
+ *That being said, There exist many user friendly macro 
+ * wrappers for general use.
+ *
+ * celp_log_level_t is a private enumeration. It is defined this way so that
+ * a user can call the wrapper enums defined below which automatically override
+ * unecessary parameters based on the log type (except for CELP_LOG_NONE). For 
+ * example, with INFO and DEBUG logs, we don't care to log any tracing 
+ * information, so it is overridden with NULL'd out values. On the other hand,
+ * ERROR and TRACE do need tracing information, so we automatically fill this 
+ * out when this "enum" is passed in. These can be called as follows:
+ *
+ *     celp_log(0, CELP_LOG_INFO, "[MY TAG] ", "what is this: %f", x);
+ *     celp_log(0, CELP_LOG_ERROR, "[FAIL] ", "what is that: %d", y);
+ *
+ * Then, theres our highest level of abstraction macros, which fill out every 
+ * field for the user, bar the fmt string and args. These can be called as
+ * follows:
+ *  
+ *     CELP_INFO("Something!");
+ *     CELP_ERROR("X incorrect value! %f", x);
+ *
+ * And finally an example using the function wihtout any wrappers:
+ *
+ *     char *name = "John";
+ *     celp_u32 buffer_len = 256;
+ *     char buffer[buffer_len];
+ *     celp_log(0, CELP_LOG_NONE, __FILE__, __FUNCTION__, __LINE__,
+ *              stdout, buffer, buffer_len, "[MY INFO] ", 
+ *              "Hello my name is %s", name);
+ */
+
 typedef enum celp_log_e {
    _CELP_LOG_INFO,
    _CELP_LOG_DEBUG,
