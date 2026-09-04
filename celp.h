@@ -90,12 +90,14 @@
         _hash; \
     })
 
+
 /* Logging */
 typedef enum celp_log_e {
    _CELP_LOG_INFO,
    _CELP_LOG_DEBUG,
    _CELP_LOG_ERROR,
    _CELP_LOG_TRACE,
+   CELP_LOG_NONE, /* if user wants explicit functionality */
 } celp_log_t;
 
 #define CELP_LOG_INFO  (celp_log_t)_CELP_LOG_INFO,  NULL, NULL, 0, \
