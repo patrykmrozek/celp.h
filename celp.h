@@ -204,7 +204,65 @@ CELP_DEF void celp_log(celp_u8 level,
 #define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", \
                                            fmt, ##__VA_ARGS__)
 
+/* Generic Abstract Data Types */
+/*
+ * The following are definitions for various generic abstract data types. The 
+ * convention for defining, instantiating and using these is as follows:
+ *     celp_example(TYPE);
+ *     celp_example_t(TYPE) object;
+ *     celp_example_init(&object);
+ *     celp_example_operation(&object);
+ *     celp_example_destroy(&object);
+ *
+ *  Under the hood, when celp_example(TYPE) is called, it dynamically generates
+ *  and defines the structure for the specific type passed in, and can from
+ *  then on be referenced by the same macro with the _t suffix.
+ *
+ *  Macro functions that are expected to return any value, that have a 
+ *  possibility of failing, are given one more parameter called "safe". This is
+ *  done so that in the case of this function failing (e.g. invalid index, out
+ *  of bounds,..) a user can check against the "safe" value to make sure that 
+ *  the function succeeded or not (if return == safe, something went wrong). It
+ *  was designed this way as, with generic types like this, it is difficult to
+ *  find a general "invalid/failing value", which is why leaving the definition
+ *  of this value to the user gives a much more flexible approach.
+ *
+ *  For example:
+ *      int safe = -1;
+ *      int x = celp_example_return(&object, safe);
+ *      if (x == safe) exit(1); //something went wrong..
+ */
+
+
 /* Dynamic Array */
+/*
+ * Generic dynamic array implementation (celp_da). This one is relatively 
+ * simple. The structure holds an array of items, a count describing how many 
+ * items are in the array and the capacity of items. Upon initialization of the
+ * da, we allocate initial capacity. Then when we append, we simply check if 
+ * adding one more item would exceed the capcity. If not, we just insert our 
+ * item into the next slot, but if it does exceed, we reallocate the items to 
+ * a block with double the size.
+ *
+ * Example:
+ *     celp_da(int);
+ *     celp_da_t(int) dynamic;
+ *     celp_da_init(&dyamic);
+ *     celp_da_append(&dynamic, 1);
+ *     celp_da_append(&dynamic, 2);
+ *     celp_da_append(&dynamic, 3);
+ *     celp_da_append(&dynamic, 4);
+ *
+ *     int safe -1;
+ *     int popped = celp_da_pop(&dyamic, safe);
+ *     if (popped == safe) return;
+ *
+ *     celp_da_foreach(&dynamic, item) {
+ *         *item++;
+ *     }
+ *
+ * TODO: realloc when shrinking.
+ */
 #define _da(T) da_##T
 #define celp_da_s(T) CELP_S(_da(T))
 #define celp_da_t(T) CELP_T(_da(T))
