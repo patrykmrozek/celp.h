@@ -742,8 +742,14 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_map_is_empty(map) ((map)->count == 0)
 
 /*returns the hashed bucket, and whether or not the key was found */
-#define _celp_map_find_k(map, k, hash, found) \
-    ({ \
+#define _celp_map_find_k(map, k, hash, found, out, err) \
+    do { \
+        *(err) = CELP_ERR_OK; \
+        *(out) = NULL; \
+        if ((map)->buckets == NULL) { \
+            *(err) = CELP_ERR_ALLOC; \
+            break; \
+        } \
         typeof((map)->buckets[0].head) _return = (map)->buckets[(hash)].head; \
         *(found) = false; \
         celp_ll_foreach(&(map)->buckets[(hash)], _bucket) {\
@@ -753,97 +759,107 @@ CELP_DEF void celp_log(celp_u8 level,
                 break; \
             } \
         } \
-        _return; \
-    })
+        *(out) = _return; \
+    } while(0)
 
-#define celp_map_insert(map, k, v) \
+#define celp_map_insert(map, k, v, err) \
     do { \
+        _celp_init((err), map_insert); \
+        \
         typeof((map)->buckets[0].head->data.key) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
-        typeof((map)->buckets[0].head) _bucket = \
-            _celp_map_find_k((map), _k, _h, &_found); \
+        typeof((map)->buckets[0].head) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
+        _celp_propogate((err), map_insert); \
         \
         if (_found) { \
             _bucket->data.value = (v); \
         } else { \
             typeof((map)->buckets[_h].head->data) _kv = \
                 { .key = (_k), .value = (v) }; \
-            celp_ll_add(&((map)->buckets[_h]), _kv); \
+            celp_ll_add(&((map)->buckets[_h]), _kv, (err)); \
             (map)->count++; \
         } \
+        _celp_stmt_end(map_insert); \
     } while(0)
 
 // assumes the value can be incremented
 // if the key isnt already in the map it assigns value 1
-#define celp_map_increment(map, k) \
+#define celp_map_increment(map, k, err) \
     do { \
+        _celp_init((err), map_increment); \
+        \
         typeof((map)->buckets[0].head->data.key) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
-        typeof((map)->buckets[0].head) _bucket = \
-            _celp_map_find_k((map), _k, _h, &_found); \
+        typeof((map)->buckets[0].head) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
+        _celp_propogate((err), map_increment); \
         \
         if (_found) { \
             _bucket->data.value++; \
         } else { \
             typeof((map)->buckets[_h].head->data) _kv = \
                 { .key = (_k), .value = 1 }; \
-            celp_ll_add(&((map)->buckets[_h]), _kv); \
+            celp_ll_add(&((map)->buckets[_h]), _kv, (err)); \
             (map)->count++; \
         } \
+        _celp_stmt_end(map_increment); \
     } while(0)
 
-#define celp_map_get(map, k, err) \
+#define celp_map_contains(map, k, err) \
     ({ \
-        typeof((map)->buckets[0].head->data.value) _return = (err); \
-        if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            typeof((map)->buckets[0].head->data.key) _k = (k); \
-            celp_u32 _h = _celp_map_get_hash((map), _k); \
-            bool _found = false; \
-            typeof((map)->buckets[0].head) _bucket = \
-                _celp_map_find_k((map), _k, _h, &_found); \
-            \
-            if (_found) { \
-                _return = _bucket->data.value; \
-            } \
-        } \
-        _return; \
+        _celp_init((err), map_contains); \
+        _celp_require((map)->capacity > 0, (err), CELP_ERR_OOB, map_contains); \
+        \
+        bool _found = false; \
+        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        celp_u32 _h = _celp_map_get_hash((map), _k); \
+        typeof((map)->buckets[0].head) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
+        _celp_propogate((err), map_contains); \
+        \
+        _celp_return(_found, map_contains); \
     })
 
-#define celp_map_contains(map, k) \
+#define celp_map_get(map, k, dval, err) \
     ({ \
+        _celp_init((err), map_get); \
+        \
         bool _found = false; \
-        if ((map)->buckets != NULL && (map)->capacity > 0) { \
-            typeof((map)->buckets[0].head->data.key) _k = (k); \
-            celp_u32 _h = _celp_map_get_hash((map), _k); \
-            typeof((map)->buckets[0].head) _bucket = \
-                _celp_map_find_k((map), _k, _h, &_found); \
+        typeof((dval)) _return = (dval); \
+        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        celp_u32 _h = _celp_map_get_hash((map), _k); \
+        typeof((map)->buckets[0].head) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
+        _celp_propogate((err), map_get); \
+        \
+        if (_found) { \
+            _return = _bucket->data.value; \
         } \
-        _found; \
+        _celp_return(_return,  map_get); \
     })
 
 #define celp_map_remove(map, k, err) \
     ({ \
-        typeof(err) _return = (err); \
-        if ((map)->count > 0) { \
-            if ((map)->buckets != NULL && (map)->capacity > 0) { \
-                typeof((map)->buckets[0].head->data.key) _k = (k); \
-                celp_u32 _h = _celp_map_get_hash((map), _k); \
-                bool _found = false; \
-                typeof((map)->buckets[0].head) _bucket = \
-                    _celp_map_find_k((map), _k, _h, &_found); \
-                if (_found) { \
-                    _return = _bucket->data.value; \
-                    typeof((map)->buckets[_h].head->data) _kv_zero = {0}; \
-                    typeof(*_bucket) _err = {_kv_zero, NULL, NULL}; \
-                    (void)celp_ll_remove_node(\
-                            &((map)->buckets[_h]), _bucket, &_err); \
-                    (map)->count--; \
-                } \
-            } \
+        _celp_init((err), map_remove); \
+        _celp_require((map)->count > 0, (err), CELP_ERR_OOB, map_remove); \
+        \
+        bool _found = false; \
+        typeof((map)->buckets[0].head->data.value) _return = {0}; \
+        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        celp_u32 _h = _celp_map_get_hash((map), _k); \
+        typeof((map)->buckets[0].head) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
+        _celp_propogate((err), map_remove); \
+        \
+        if (_found) { \
+            _return = _bucket->data.value; \
+            (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket, (err)); \
+            (map)->count--; \
         } \
-        _return; \
+        _celp_return(_return, map_remove); \
     })
 
 #define celp_map_destroy(map) \
