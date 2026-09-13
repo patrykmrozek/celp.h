@@ -25,40 +25,40 @@ CELP_TESTCASE(da_append)
 
 CELP_TESTCASE(da_last)
 {
-    int safe = -1;
-    int last = celp_da_last(&n, safe);
-    CELP_EXPECT_NEQ(last, safe);
+    celp_err_t err;
+    int last = celp_da_last(&n, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(n.items[n.count-1], last);
 }
 
 CELP_TESTCASE(da_pop)
 {
-    int safe = -1;
+    celp_err_t err;
     int old_count = n.count;
     int last_val = n.items[n.count-1];
-    int popped_val = celp_da_pop(&n, safe);
-    CELP_EXPECT_NEQ(popped_val, safe);
+    int popped_val = celp_da_pop(&n, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(last_val, popped_val);
     CELP_EXPECT_EQ(n.count, old_count-1);
 }
 
 CELP_TESTCASE(da_remove)
 {
-    int safe = -1;
+    celp_err_t err;
     int old_count = n.count;
     int first = n.items[0];
-    int removed = celp_da_remove(&n, 0, safe);
-    CELP_EXPECT_NEQ(removed, safe);
+    int removed = celp_da_remove(&n, 0, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(first, removed);
     CELP_EXPECT_EQ(n.count, old_count-1);
 }
 
 CELP_TESTCASE(da_remove_invalid)
 {
-    int safe = -1;
+    celp_err_t err;
     int invalid_idx = 999;
-    int removed = celp_da_remove(&n, invalid_idx, safe);
-    CELP_EXPECT_EQ(removed, safe);
+    int removed = celp_da_remove(&n, invalid_idx, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
 }
 
 CELP_TESTCASE(da_foreach)
@@ -97,16 +97,16 @@ CELP_TESTCASE(da_is_empty)
 
 CELP_TESTCASE(da_last_invalid)
 {
-    int safe = -1;
-    int last = celp_da_last(&n, safe);
-    CELP_EXPECT_EQ(last, safe);
+    celp_err_t err;
+    int last = celp_da_last(&n, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
 }
 
 CELP_TESTCASE(da_pop_invalid)
 {
-    int safe = -1;
-    int popped_val = celp_da_pop(&n, safe);
-    CELP_EXPECT_EQ(popped_val, safe);
+    celp_err_t err;
+    int popped_val = celp_da_pop(&n, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
 }
 
 
