@@ -117,14 +117,9 @@ typedef enum celp_err_s {
 
 /* macro definintion helpers */
 #define _celp_out_label(fname) celp_out_##fname
-#define _celp_expr_init(T, err, fname) \
+#define _celp_init(err, fname) \
         __label__ _celp_out_label(fname); \
         *(err) = CELP_ERR_OK; \
-        typeof(T) _return = (typeof(T)){0}; \
-
-#define _celp_stmt_init(err, fname) \
-        __label__ _celp_out_label(fname); \
-        *(err) = CELP_ERR_OK;
 
 #define _celp_goto_out(fname) \
     goto _celp_out_label(fname);
@@ -149,9 +144,9 @@ typedef enum celp_err_s {
         } \
     } while(0)
 
-#define _celp_return(fname) \
+#define _celp_return(val, fname) \
     _celp_out_label(fname): \
-        _return; \
+        (val);
 
 #define _celp_stmt_end(fname) \
     _celp_out_label(fname): \
@@ -357,37 +352,33 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_da_last(da, err) \
     ({ \
-        _celp_expr_init(*(da)->items, (err), da_last); \
-       _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_last); \
-       \
-        _return = (da)->items[(da)->count-1]; \
+        _celp_init((err), da_last); \
+        _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_last); \
         \
-        _celp_return(da_last); \
+        _celp_return((da)->items[(da)->count-1], da_last); \
      })
 
 #define celp_da_pop(da, err) \
     ({ \
-        _celp_expr_init(*(da)->items, (err), da_pop); \
-       _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_pop); \
-       \
-        _return = (da)->items[--(da)->count]; \
+        _celp_init((err), da_pop); \
+        _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_pop); \
         \
-        _celp_return(da_pop); \
+        _celp_return((da)->items[--(da)->count], da_pop); \
     })
 
 #define celp_da_remove(da, idx, err) \
     ({ \
-        _celp_expr_init(*(da)->items, (err), da_remove); \
+        _celp_init((err), da_remove); \
         _celp_require((idx) < (da)->count, (err), CELP_ERR_OOB, da_remove); \
         \
         typeof((da)->items[0]) _temp = (da)->items[(idx)]; \
         (da)->items[(idx)] = celp_da_last((da), (err)); \
         (da)->items[(da)->count-1] = _temp; \
         \
-        _return = celp_da_pop(da, (err)); \
+        typeof(*(da)->items) _return = celp_da_pop(da, (err)); \
         _celp_propogate((err), da_remove); \
         \
-        _celp_return(da_remove); \
+        _celp_return(_return, da_remove); \
     })
 
 // user provides some label (i) -> macro initializes it as a pointer to (da)->items
@@ -488,42 +479,34 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_get_first(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_get_first); \
+        _celp_init((err), ll_get_first); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_first); \
         \
-        _return = (ll)->head->next->data; \
-        \
-        _celp_return(ll_get_first); \
+        _celp_return((ll)->head->next->data, ll_get_first); \
     })
 
 #define celp_ll_get_first_node(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head, (err), ll_get_first_node); \
-       _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_first_node); \
-       \
-        _return = (ll)->head->next; \
+        _celp_init((err), ll_get_first_node); \
+        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_first_node); \
         \
-        _celp_return(ll_get_first_node); \
+        _celp_return((ll)->head->next, ll_get_first_node); \
     })
 
 #define celp_ll_get_last(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_get_last); \
+        _celp_init((err), ll_get_last); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_last); \
         \
-        _return = (ll)->tail->prev->data; \
-        \
-        _celp_return(ll_get_last); \
+        _celp_return((ll)->tail->prev->data, ll_get_last); \
     })
 
 #define celp_ll_get_last_node(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head, (err), ll_get_last_node); \
+        _celp_init((err), ll_get_last_node); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_last_node); \
         \
-        _return = (ll)->tail->prev; \
-        \
-        _celp_return(ll_get_last_node); \
+        _celp_return((ll)->tail->prev, ll_get_last_node); \
     })
 
 #define _celp_ll_get_node_at(ll, i, err, out) \
@@ -546,29 +529,29 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_get_at_index(ll, i, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_get_at_index); \
+        _celp_init((err), ll_get_at_index); \
         typeof((ll)->head) _node = {0}; \
         \
         _celp_ll_get_node_at((ll), (i), (err), &_node); \
         _celp_propogate((err), ll_get_at_index); \
-        _return = _node->data; \
         \
-        _celp_return(ll_get_at_index); \
+        _celp_return(_node->data, ll_get_at_index); \
      })
 
 #define celp_ll_get_at_index_node(ll, i, err) \
     ({ \
-        _celp_expr_init((ll)->head, (err), ll_get_at_index_node); \
+        _celp_init((err), ll_get_at_index_node); \
         \
-        _celp_ll_get_node_at((ll), (i), (err), &_return); \
+        typeof((ll)->head) _node; \
+        _celp_ll_get_node_at((ll), (i), (err), &_node); \
         _celp_propogate((err), ll_get_at_index_node); \
         \
-        _celp_return(ll_get_at_index_node); \
+        _celp_return(_node, ll_get_at_index_node); \
      })
 
 #define celp_ll_add_after(ll, x, n, err) \
     do { \
-        _celp_stmt_init((err), ll_add_after); \
+        _celp_init((err), ll_add_after); \
         _celp_require((n) != (ll)->tail, (err), CELP_ERR_OOB, ll_add_after); \
         \
         typeof((ll)->head) _node = _celp_ll_create_node((ll), (x), (n), (n)->next); \
@@ -581,14 +564,14 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_add_first(ll, x, err) \
     do { \
-        _celp_stmt_init((err), ll_add_first); \
+        _celp_init((err), ll_add_first); \
         celp_ll_add_after((ll), (x), (ll)->head, (err)); \
         _celp_stmt_end(ll_add_first); \
     } while(0)
 
 #define celp_ll_add_last(ll, x, err) \
     do { \
-        _celp_stmt_init((err), ll_add_last); \
+        _celp_init((err), ll_add_last); \
         celp_ll_add_after((ll), (x), (ll)->tail->prev, (err)); \
         _celp_stmt_end(ll_add_last); \
     } while(0)
@@ -597,57 +580,57 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_ll_remove_first(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_remove_first); \
+        _celp_init((err), ll_remove_first); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_first); \
         \
         typeof((ll)->head) _to_remove = (ll)->head->next; \
-        _return = _to_remove->data; \
+        typeof((ll)->head->data) _return = _to_remove->data; \
         (ll)->head->next->next->prev = (ll)->head; \
         (ll)->head->next = (ll)->head->next->next; \
         CELP_FREE(_to_remove); \
         (ll)->count--; \
         \
-        _celp_return(ll_remove_first); \
+        _celp_return(_return, ll_remove_first); \
     })
 
 #define celp_ll_remove_last(ll, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_remove_last); \
+        _celp_init((err), ll_remove_last); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_last); \
         \
         typeof((ll)->tail) _to_remove = (ll)->tail->prev; \
-        _return = _to_remove->data; \
+        typeof((ll)->head->data) _return = _to_remove->data; \
         (ll)->tail->prev->prev->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->tail->prev->prev; \
         CELP_FREE(_to_remove); \
         (ll)->count--; \
         \
-        _celp_return(ll_remove_last); \
+        _celp_return(_return, ll_remove_last); \
     })
 
 #define celp_ll_remove_at_index(ll, i, err) \
     ({ \
-        _celp_expr_init((ll)->head->data, (err), ll_remove_at_index); \
+        _celp_init((err), ll_remove_at_index); \
         _celp_require((i) >= 0 && (i) < (ll)->count && (ll)->count > 0, \
                       (err), CELP_ERR_OOB, ll_remove_at_index); \
         \
         typeof((ll)->head) _curr = celp_ll_get_at_index_node((ll), (i), (err));\
-        \
-        _return = _curr->data; \
+        typeof((ll)->head->data) _return = _curr->data; \
         _curr->next->prev = _curr->prev; \
         _curr->prev->next = _curr->next; \
         CELP_FREE(_curr); \
         (ll)->count--; \
         \
-        _celp_return(ll_remove_at_index); \
+        _celp_return(_return, ll_remove_at_index); \
     })
 
 #define celp_lln_exists(n) !((n)->next == NULL && (n)->prev == NULL)
 
 #define celp_ll_remove_node(ll, n, err) \
     ({ \
-        _celp_expr_init((ll)->head, (err), ll_remove_node); \
+        _celp_init((err), ll_remove_node); \
         _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_node); \
+        typeof((ll)->head) _return = {0}; \
         bool _found = false; \
         if (celp_lln_exists((n))) { \
             celp_ll_foreach((ll), _curr) { \
@@ -666,7 +649,7 @@ CELP_DEF void celp_log(celp_u8 level,
             CELP_ERROR("Failed to find and remove node"); \
         } \
         \
-        _celp_return(ll_remove_node); \
+        _celp_return(_return, ll_remove_node); \
     })
 
 #define celp_ll_free(ll) \
