@@ -7,12 +7,12 @@ celp_err_t error = CELP_ERR_OK;
 
 CELP_TEST_SETUP(map)
 {
-    celp_map_init(&map);
+    celp_map_init(&map, &error);
 }
 
 CELP_TEST_TEARDOWN(map)
 {
-    celp_map_destroy(&map);
+    celp_map_free(&map, &error);
 }
 
 CELP_TESTCASE(map_hash)

@@ -3,6 +3,7 @@
 
 celp_da(int);
 celp_da_t(int) n = {};
+celp_err_t err = CELP_ERR_OK;
 
 CELP_TEST_SETUP(da)
 {
@@ -11,21 +12,23 @@ CELP_TEST_SETUP(da)
 
 CELP_TEST_TEARDOWN(da)
 {
-    celp_da_free(&n);
+    celp_da_free(&n, &err);
 }
 
 CELP_TESTCASE(da_append)
 {
     int num_append = 10;
     for (uint32_t i = 0; i < num_append; i++) {
-        celp_da_append(&n, i);
+        err = CELP_ERR_OK;
+        celp_da_append(&n, i, &err);
+        CELP_EXPECT_EQ(err, CELP_ERR_OK);
     }
     CELP_EXPECT_EQ(n.count, num_append);
 }
 
 CELP_TESTCASE(da_last)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int last = celp_da_last(&n, &err);
     CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(n.items[n.count-1], last);
@@ -33,7 +36,7 @@ CELP_TESTCASE(da_last)
 
 CELP_TESTCASE(da_pop)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int old_count = n.count;
     int last_val = n.items[n.count-1];
     int popped_val = celp_da_pop(&n, &err);
@@ -44,7 +47,7 @@ CELP_TESTCASE(da_pop)
 
 CELP_TESTCASE(da_remove)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int old_count = n.count;
     int first = n.items[0];
     int removed = celp_da_remove(&n, 0, &err);
@@ -55,7 +58,7 @@ CELP_TESTCASE(da_remove)
 
 CELP_TESTCASE(da_remove_invalid)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int invalid_idx = 999;
     int removed = celp_da_remove(&n, invalid_idx, &err);
     CELP_EXPECT_EQ(err, CELP_ERR_OOB);
@@ -79,7 +82,9 @@ CELP_TESTCASE(da_reserve)
 {
     int old_cap = n.capacity;
     for (int i = 0; i < 300; i++) {
-        celp_da_append(&n, i);
+        err = CELP_ERR_OK;
+        celp_da_append(&n, i, &err);
+        CELP_EXPECT_EQ(err, CELP_ERR_OK);
     }
     CELP_EXPECT(n.capacity == 2*old_cap);
 }
@@ -97,14 +102,14 @@ CELP_TESTCASE(da_is_empty)
 
 CELP_TESTCASE(da_last_invalid)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int last = celp_da_last(&n, &err);
     CELP_EXPECT_EQ(err, CELP_ERR_OOB);
 }
 
 CELP_TESTCASE(da_pop_invalid)
 {
-    celp_err_t err;
+    err = CELP_ERR_OK;
     int popped_val = celp_da_pop(&n, &err);
     CELP_EXPECT_EQ(err, CELP_ERR_OOB);
 }

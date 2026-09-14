@@ -7,12 +7,12 @@ celp_err_t error;
 
 CELP_TEST_SETUP(ll)
 {
-    celp_ll_init(&n);
+    celp_ll_init(&n, &error);
 }
 
 CELP_TEST_TEARDOWN(ll)
 {
-    celp_ll_free(&n);
+    celp_ll_free(&n, &error);
 }
 
 CELP_TESTCASE(ll_get_first_empty)

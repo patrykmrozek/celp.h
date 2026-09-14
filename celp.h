@@ -260,20 +260,6 @@ CELP_DEF void celp_log(celp_u8 level,
  *  Under the hood, when celp_example(TYPE) is called, it dynamically generates
  *  and defines the structure for the specific type passed in, and can from
  *  then on be referenced by the same macro with the _t suffix.
- *
- *  Macro functions that are expected to return any value, that have a 
- *  possibility of failing, are given one more parameter called "err". This is
- *  done so that in the case of this function failing (e.g. invalid index, out
- *  of bounds,..) a user can check against the "err" value to make sure that 
- *  the function succeeded or not (if return == err, something went wrong). It
- *  was designed this way as, with generic types like this, it is difficult to
- *  find a general "invalid/failing value", which is why leaving the definition
- *  of this value to the user gives a much more flexible approach.
- *
- *  For example:
- *      int err = -1;
- *      int x = celp_example_return(&object, err);
- *      if (x == err) exit(1); //something went wrong..
  */
 
 
@@ -296,9 +282,9 @@ CELP_DEF void celp_log(celp_u8 level,
  *     celp_da_append(&dynamic, 3);
  *     celp_da_append(&dynamic, 4);
  *
- *     int err -1;
- *     int popped = celp_da_pop(&dyamic, err);
- *     if (popped == err) return;
+ *     celp_err_t err;
+ *     int popped = celp_da_pop(&dyamic, &err);
+ *     if (err != CELP_ERR_OK) return;
  *
  *     celp_da_foreach(&dynamic, item) {
  *         *item++;
@@ -329,8 +315,9 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_da_clear(da)    ((da)->count = 0)
 #define celp_da_is_empty(da) ((da)->count == 0)
 
-#define celp_da_reserve(da, expected_capacity) \
+#define celp_da_reserve(da, expected_capacity, err) \
     do {\
+        _celp_init((err), da_reserve); \
         if ((expected_capacity) > (da)->capacity) {\
             if ((da)->capacity == 0) {\
                 (da)->capacity = CELP_DA_INITIAL_CAPACITY;\
@@ -340,13 +327,15 @@ CELP_DEF void celp_log(celp_u8 level,
             }\
             (da)->items = CELP_REALLOC((da)->items, \
                                        (da)->capacity * sizeof((da)->items[0]));\
-            CELP_ASSERT((da)->items != NULL);\
+            _celp_require((da)->items != NULL, (err), CELP_ERR_ALLOC, da_reserve); \
+            \
+            _celp_stmt_end(da_reserve); \
         }\
     } while(0)
 
-#define celp_da_append(da, item) \
+#define celp_da_append(da, item, err) \
     do {\
-        celp_da_reserve(da, (da)->count + 1);\
+        celp_da_reserve(da, (da)->count + 1, (err));\
         (da)->items[(da)->count++] = (item);\
     } while(0)
 
@@ -389,11 +378,15 @@ CELP_DEF void celp_log(celp_u8 level,
          (i) < (da)->items + (da)->count; \
          (i)++)
 
-#define celp_da_free(da) \
+#define celp_da_free(da, err) \
     do { \
-        CELP_ASSERT((da)); \
+        _celp_init((err), da_free); \
+        _celp_require((da) != NULL && (da)->items != NULL, \
+                      (err), CELP_ERR_ALLOC, da_free); \
         CELP_FREE((da)->items); \
         celp_da_init(da); \
+        \
+        _celp_stmt_end(da_free); \
     } while(0)
 
 #define celp_da_info(da) \
@@ -410,23 +403,22 @@ CELP_DEF void celp_log(celp_u8 level,
  * prefix, while the node is accessed by the celp_lln prefix.
  *
  * Example:
+ *     celp_err_t err;
+ *
  *     celp_ll(int);
  *     celp_ll_t(int) linked;
  *     celp_ll_init(&linked);
- *     celp_ll_add(&linked, 5);
- *     celp_ll_add(&linked, 10);
  *
- *     int err = -1;
- *     int last = celp_ll_get_last(&linked, err);
- *     if (last == err) return;
+ *     celp_ll_add(&linked, 5,  &err);
+ *     celp_ll_add(&linked, 10, &err);
+ *
+ *     int last = celp_ll_get_last(&linked, &err);
  *
  *     celp_ll_foreach(&linked, _node) {
  *         _node->data++;
  *     }
  *
- *     celp_lln_t(int) err_node = CELP_LLN_SAFE(int, -1); 
- *     celp_lln_t(int) node = celp_ll_get_at_index_node(&linked, 1, err);
- *     if (node == err_node) return;
+ *     celp_lln_t(int) node = celp_ll_get_at_index_node(&linked, 1, &err);
  */
 #define _lln(T) lln_##T
 #define celp_lln_s(T) CELP_S(_lln(T))
@@ -449,10 +441,10 @@ CELP_DEF void celp_log(celp_u8 level,
         celp_usize count; \
     } celp_ll_t(T);
 
-#define _celp_ll_create_node(ll, x, p, n) \
+#define _celp_ll_create_node(ll, x, p, n, err) \
     ({ \
         typeof((ll)->head) _node = CELP_MALLOC(sizeof(*((ll)->head))); \
-        if (!_node) CELP_ERROR("node malloc failed"); \
+        if (!_node) *(err) = CELP_ERR_ALLOC; \
         _node->data = (x); \
         _node->prev = (p); \
         _node->next = (n); \
@@ -460,14 +452,22 @@ CELP_DEF void celp_log(celp_u8 level,
         _node; \
     })
 
-#define celp_ll_init(ll) \
+#define celp_ll_init(ll, err) \
     do { \
+        _celp_init((err), ll_init); \
+        \
         typeof(((ll)->head)->data) _x_null = {0}; \
-        (ll)->head = _celp_ll_create_node((ll), _x_null, NULL, NULL); \
-        (ll)->tail = _celp_ll_create_node((ll), _x_null, NULL, NULL); \
+        (ll)->head = _celp_ll_create_node((ll), _x_null, NULL, NULL, (err)); \
+        _celp_propogate((err), ll_init); \
+        \
+        (ll)->tail = _celp_ll_create_node((ll), _x_null, NULL, NULL, (err)); \
+        _celp_propogate((err), ll_init); \
+        \
         (ll)->head->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->head; \
         (ll)->count = 0; \
+        \
+        _celp_stmt_end(ll_init); \
     } while(0)
 
 #define celp_ll_is_empty(ll) ((ll)->count == 0)
@@ -554,7 +554,9 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_init((err), ll_add_after); \
         _celp_require((n) != (ll)->tail, (err), CELP_ERR_OOB, ll_add_after); \
         \
-        typeof((ll)->head) _node = _celp_ll_create_node((ll), (x), (n), (n)->next); \
+        typeof((ll)->head) _node = _celp_ll_create_node((ll), (x), (n), (n)->next, (err)); \
+        _celp_propogate((err), ll_add_after); \
+        \
         _node->prev->next = _node; \
         _node->next->prev = _node; \
         (ll)->count++; \
@@ -652,9 +654,11 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_return(_return, ll_remove_node); \
     })
 
-#define celp_ll_free(ll) \
+#define celp_ll_free(ll, err) \
     do { \
-        CELP_ASSERT((ll)); \
+        _celp_init((err), ll_free); \
+        _celp_require((ll) != NULL, (err), CELP_ERR_ALLOC, ll_free); \
+        \
         typeof((ll)->head) _curr = (ll)->head->next; \
         while (_curr != (ll)->tail) { \
             typeof((ll)->head) _next = _curr->next; \
@@ -666,6 +670,8 @@ CELP_DEF void celp_log(celp_u8 level,
         (ll)->head = NULL; \
         (ll)->tail = NULL; \
         (ll)->count = 0; \
+        \
+        _celp_stmt_end(ll_free); \
     } while(0)
 
 /* HashMap */
@@ -722,14 +728,19 @@ CELP_DEF void celp_log(celp_u8 level,
         (map)->capacity = 0; \
     } while(0)
 
-#define celp_map_init(map) \
+#define celp_map_init(map, err) \
     do { \
+        _celp_init((err), map_init); \
+        \
         _celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
+        _celp_require((map)->buckets != NULL, (err), CELP_ERR_ALLOC, map_init); \
+        \
         for (size_t _i = 0; _i < (map)->capacity; _i++) { \
-            celp_ll_init(&((map)->buckets[_i])); \
+            celp_ll_init(&((map)->buckets[_i]), (err)); \
         } \
+        _celp_stmt_end(map_init); \
     } while(0)
 
 #define _celp_map_get_hash(map, k) \
@@ -862,15 +873,19 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_return(_return, map_remove); \
     })
 
-#define celp_map_destroy(map) \
+#define celp_map_free(map, err) \
     do { \
-        if ((map)->buckets != NULL) { \
-            for (size_t _i = 0; _i < (map)->capacity; _i++) { \
-                celp_ll_free(&((map)->buckets[_i])); \
-            } \
-            CELP_FREE((map)->buckets); \
+        _celp_init((err), map_free); \
+        _celp_require((map) != NULL && (map)->buckets != NULL, \
+                      (err), CELP_ERR_ALLOC, map_free); \
+        \
+        for (size_t _i = 0; _i < (map)->capacity; _i++) { \
+            celp_ll_free(&((map)->buckets[_i]), (err)); \
         } \
+        CELP_FREE((map)->buckets); \
         _celp_map_clear((map)); \
+        \
+        _celp_stmt_end(map_free); \
     } while(0)
 
 #define celp_map_info(map) \
@@ -1258,7 +1273,7 @@ typedef struct celp_test_suite_s {
         _celp_test_suite_##s->setup = NULL; \
         _celp_test_suite_##s->teardown = NULL; \
         celp_err_t _celp_test_suite_##s##_err; \
-        celp_ll_init(&_celp_test_suite_##s->tests); \
+        celp_ll_init(&_celp_test_suite_##s->tests, &_celp_test_suite_##s##_err); \
         
 #define CELP_TEST_SUITE_ADD_SETUP(s, t) \
         _celp_test_suite_##s->setup = &(_celp_test_setup_##t);
@@ -1311,7 +1326,9 @@ typedef struct celp_test_suite_s {
              "%s", celp_test_fail_msg); \
 
 #define CELP_TEST_SUITE_DESTROY(s) \
-    celp_ll_free(&_celp_test_suite_##s->tests); \
+    celp_err_t _celp_test_suite_##s##_err; \
+    celp_ll_free(&_celp_test_suite_##s->tests, \
+                 &_celp_test_suite_##s##_err); \
     CELP_FREE(_celp_test_suite_##s); \
 
 #endif //CELP_TEST
