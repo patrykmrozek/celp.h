@@ -84,7 +84,7 @@
         typeof((a)) _tmp = (a); \
         (a) = (b); \
         (b) = _tmp; \
-    } while (0);
+    } while (0)
 
 #define _CELP_CAT(a, b) a##b
 #define CELP_CAT(a, b) _CELP_CAT(a, b)
@@ -131,15 +131,24 @@ typedef enum celp_err_s {
     (*(err) != CELP_ERR_OK)
 
 /* macro definintion helpers */
+#define _celp_clean_label(fname) celp_clean_##fname
 #define _celp_out_label(fname) celp_out_##fname
 
-#define _celp_init(err, fname) \
-     __label__ _celp_out_label(fname); \
+#define _celp_err_init(err) \
     celp_err_t *_celp_err_in = (err); \
     celp_err_t _celp_err_local = CELP_ERR_OK; \
     celp_err_t *_celp_err = (_celp_err_in) ? _celp_err_in : \
                                              &_celp_err_local; \
     _celp_err_clear(_celp_err); \
+
+#define _celp_init(err, fname) \
+     __label__ _celp_out_label(fname); \
+     _celp_err_init((err)); \
+
+#define _celp_init_clean(err, fname) \
+     __label__ _celp_clean_label(fname); \
+     __label__ _celp_out_label(fname); \
+     _celp_err_init((err)); \
 
 #define _celp_expr_init(return_t, err, fname) \
     _celp_init((err), fname); \
@@ -147,6 +156,16 @@ typedef enum celp_err_s {
 
 #define _celp_stmt_init(err, fname) \
    _celp_init((err), fname); 
+
+#define _celp_expr_init_clean(return_t, err, fname) \
+    _celp_init_clean((err), fname); \
+    return_t _celp_return = {0};
+
+#define _celp_stmt_init_clean(err, fname) \
+   _celp_init_clean((err), fname); 
+
+#define _celp_goto_clean(fname) \
+    goto _celp_clean_label(fname);
 
 #define _celp_goto_out(fname) \
     goto _celp_out_label(fname);
@@ -164,12 +183,36 @@ typedef enum celp_err_s {
         } \
     } while(0)
 
+#define _celp_fail_clean(err_code, fname) \
+    do { \
+        _celp_err_set(_celp_err, (err_code)); \
+        _celp_goto_clean(fname); \
+    } while(0)
+
+#define _celp_require_clean(cond, err_code, fname) \
+    do { \
+        if (!(cond)) { \
+            _celp_fail_clean((err_code), fname); \
+        } \
+    } while(0)
+
 #define _celp_propogate(fname) \
     do { \
         if (_celp_err_failed(_celp_err)) { \
             _celp_goto_out(fname); \
         } \
     } while(0)
+
+#define _celp_propogate_clean(fname) \
+    do { \
+        if (_celp_err_failed(_celp_err)) { \
+            _celp_goto_clean(fname); \
+        } \
+    } while(0)
+
+#define _celp_clean(fname) \
+    _celp_goto_out(fname); \
+    _celp_clean_label(fname):
 
 #define _celp_expr_return(fname) \
     _celp_out_label(fname): \
@@ -525,21 +568,34 @@ CELP_DEF void celp_log(celp_u8 level,
         _node; \
     })
 
+#define _celp_ll_reset(ll) \
+    do { \
+        (ll)->head = NULL; \
+        (ll)->tail = NULL; \
+        (ll)->count = 0; \
+    } while(0)
+
 #define _celp_ll_init(ll, err) \
     do { \
-        _celp_stmt_init((err), ll_init); \
+        _celp_stmt_init_clean((err), ll_init); \
         \
+        _celp_ll_reset((ll)); \
         _lln_data_t((ll)) _x_null = {0}; \
+        \
         (ll)->head = _celp_ll_create_node((ll), _x_null, NULL, NULL, _celp_err); \
-        _celp_propogate(ll_init); \
+        _celp_propogate_clean(ll_init); \
         \
         (ll)->tail = _celp_ll_create_node((ll), _x_null, NULL, NULL, _celp_err); \
-        _celp_propogate(ll_init); \
+        _celp_propogate_clean(ll_init); \
         \
         (ll)->head->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->head; \
-        (ll)->count = 0; \
         \
+        _celp_clean(ll_init) { \
+            CELP_FREE((ll)->head); \
+            CELP_FREE((ll)->tail); \
+            _celp_ll_reset((ll)); \
+        } \
         _celp_stmt_end(ll_init); \
     } while(0)
 
@@ -875,16 +931,25 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define _celp_map_init(map, err) \
     do { \
-        _celp_stmt_init((err), map_init); \
+        _celp_stmt_init_clean((err), map_init); \
         \
         _celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
-        _celp_require((map)->buckets != NULL, CELP_ERR_ALLOC, map_init); \
+        _celp_require_clean((map)->buckets != NULL, CELP_ERR_ALLOC, map_init); \
         \
-        for (size_t _i = 0; _i < (map)->capacity; _i++) { \
+        celp_usize _i = 0; \
+        for (_i = 0; _i < (map)->capacity; _i++) { \
             _celp_ll_init(&((map)->buckets[_i]), _celp_err); \
-            _celp_propogate(map_init); \
+            _celp_propogate_clean(map_init); \
+        } \
+        \
+        _celp_clean(map_init) { \
+            for (celp_usize _j = 0; _j < _i; _j++) { \
+                _celp_ll_free(&((map)->buckets[_j]), NULL); \
+            } \
+            CELP_FREE((map)->buckets); \
+            _celp_map_clear((map)); \
         } \
         _celp_stmt_end(map_init); \
     } while(0)
