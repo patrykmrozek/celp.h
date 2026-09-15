@@ -8,6 +8,7 @@
 - `celp_log` - Logging (or helpful macros `CELP_INFO/DEBUG/ERROR/TRACE`)
 - `CELP_TEST` - Unit Testing Framework
 - `CELP_MATH` - Linear Algebra (v2, v3, v4, m4)
+- `CELP_ERRORS` - Error handling
 - `CELP_STRIP_PREFIX` - Prefix Stripping (if you don't want to keep writing celp..)
 - Type aliases
 - Other useful utilities..
