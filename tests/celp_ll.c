@@ -1,3 +1,4 @@
+#define CELP_ERRORS
 #define CELP_TEST
 #include "../celp.h"
 
@@ -198,7 +199,7 @@ CELP_TESTCASE(ll_get_at_index_invalid)
     int idx = -1;
     error = CELP_ERR_OK;
     int data = celp_ll_get_at_index(&n, idx, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OK);
+    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
 }
 
 CELP_TESTCASE(ll_remove_at_index)
@@ -227,8 +228,7 @@ CELP_TESTCASE(ll_remove_at_index_invalid)
     int idx = -1;
     error = CELP_ERR_OK;
     int ret = celp_ll_remove_at_index(&n, idx, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OK);
-    CELP_EXPECT_EQ(ret, error);
+    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
 }
 
 CELP_TESTCASE(ll_remove_node)
@@ -241,7 +241,7 @@ CELP_TESTCASE(ll_remove_node)
     int count = n.count;
 
     error = CELP_ERR_OK;
-    lln_int_t *ret = celp_ll_remove_node(&n, node, &error);
+    celp_ll_remove_node(&n, node, &error);
     CELP_EXPECT_EQ(error, CELP_ERR_OK);
 
     lln_int_t *at_index = celp_ll_get_at_index_node(&n, 10, &error);
@@ -249,22 +249,14 @@ CELP_TESTCASE(ll_remove_node)
 
     CELP_EXPECT_EQ(n.count, count-1);
     CELP_EXPECT_NEQ(node, at_index);
-    CELP_EXPECT_NEQ(node_after->prev, ret);
 }
 
 CELP_TESTCASE(ll_remove_node_invalid)
 {
     lln_int_t invalid = {0, NULL, NULL};
     error = CELP_ERR_OK;
-    lln_int_t *ret = celp_ll_remove_node(&n, &invalid, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OK);
-
-    int buffer_len = 256;
-    char buffer[buffer_len];
-    char *name = "John";
-    celp_log(0,CELP_LOG_NONE, __FILE__, __FUNCTION__, __LINE__,
-            stdout, buffer, buffer_len, "[MY INFO] ",
-            "Hello my name is %s", name);
+    celp_ll_remove_node(&n, &invalid, &error);
+    CELP_EXPECT_NEQ(error, CELP_ERR_OK);
 } 
 
 CELP_TEST_SUITE_START(linked_list);
@@ -278,7 +270,6 @@ CELP_TEST_SUITE_START(linked_list);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_first_empty);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_last_empty);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_add);
-    /*
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_foreach);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_get_first_node);
@@ -293,7 +284,6 @@ CELP_TEST_SUITE_START(linked_list);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_at_index_invalid);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_node);
     CELP_TEST_SUITE_ADD_TEST(linked_list, ll_remove_node_invalid);
-    */
 }
 CELP_TEST_SUITE_END(linked_list);
 

@@ -1,3 +1,4 @@
+#define CELP_ERRORS
 #define CELP_TEST
 #include "../celp.h"
 
