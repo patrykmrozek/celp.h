@@ -115,42 +115,72 @@ typedef enum celp_err_s {
     CELP_ERR_ALLOC,
 } celp_err_t;
 
+#ifdef CELP_ERRORS
+    #define _celp_err_arg(err) (err)
+#else
+    #define _celp_err_arg(...) NULL
+#endif //CELP_ERRORS
+
+#define _celp_err_clear(err) \
+    (*(err) = CELP_ERR_OK)
+
+#define _celp_err_set(err, err_code) \
+    (*(err) = (err_code))
+
+#define _celp_err_failed(err) \
+    (*(err) != CELP_ERR_OK)
+
 /* macro definintion helpers */
 #define _celp_out_label(fname) celp_out_##fname
+
 #define _celp_init(err, fname) \
-        __label__ _celp_out_label(fname); \
-        *(err) = CELP_ERR_OK; \
+     __label__ _celp_out_label(fname); \
+    celp_err_t *_celp_err_in = (err); \
+    celp_err_t _celp_err_local = CELP_ERR_OK; \
+    celp_err_t *_celp_err = (_celp_err_in) ? _celp_err_in : \
+                                             &_celp_err_local; \
+    _celp_err_clear(_celp_err); \
+
+#define _celp_expr_init(return_t, err, fname) \
+    _celp_init((err), fname); \
+    return_t _celp_return = {0};
+
+#define _celp_stmt_init(err, fname) \
+   _celp_init((err), fname); 
 
 #define _celp_goto_out(fname) \
     goto _celp_out_label(fname);
 
-#define _celp_fail(err, code, fname) \
+#define _celp_fail(err_code, fname) \
     do { \
-        *(err) = (code); \
+        _celp_err_set(_celp_err, (err_code)); \
         _celp_goto_out(fname); \
     } while(0)
 
-#define _celp_require(cond, err, code, fname) \
+#define _celp_require(cond, err_code, fname) \
     do { \
         if (!(cond)) { \
-            _celp_fail((err), (code), fname); \
+            _celp_fail((err_code), fname); \
         } \
     } while(0)
 
-#define _celp_propogate(err, fname) \
+#define _celp_propogate(fname) \
     do { \
-        if (*(err) != CELP_ERR_OK) { \
+        if (_celp_err_failed(_celp_err)) { \
             _celp_goto_out(fname); \
         } \
     } while(0)
 
-#define _celp_return(val, fname) \
+#define _celp_expr_return(fname) \
     _celp_out_label(fname): \
-        (val);
+        _celp_return;
 
 #define _celp_stmt_end(fname) \
     _celp_out_label(fname): \
         ((void)0) \
+
+ 
+
 
 /* Logging */
 /*
@@ -262,8 +292,7 @@ CELP_DEF void celp_log(celp_u8 level,
  *  then on be referenced by the same macro with the _t suffix.
  */
 
-
-/* Dynamic Array */
+/* Dynamic Array Implementation */
 /*
  * Generic dynamic array implementation (celp_da). This one is relatively 
  * simple. The structure holds an array of items, a count describing how many 
@@ -305,89 +334,126 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define CELP_DA_INITIAL_CAPACITY 256
 
-#define celp_da_init(da) \
+#define _da_items_t(da) typeof((da)->items)
+#define _da_item_t(da)  typeof(*(da)->items)
+
+#define _celp_da_clear(da) \
     do { \
         (da)->items = NULL;\
         (da)->count = 0;\
         (da)->capacity = 0;\
     } while(0)
 
-#define celp_da_clear(da)    ((da)->count = 0)
-#define celp_da_is_empty(da) ((da)->count == 0)
-
-#define celp_da_reserve(da, expected_capacity, err) \
+#define _celp_da_reserve(da, expected_capacity, err) \
     do {\
-        _celp_init((err), da_reserve); \
-        if ((expected_capacity) > (da)->capacity) {\
-            if ((da)->capacity == 0) {\
-                (da)->capacity = CELP_DA_INITIAL_CAPACITY;\
-            }\
-            while ((da)->capacity < expected_capacity) {\
-                (da)->capacity *= 2;\
-            }\
-            (da)->items = CELP_REALLOC((da)->items, \
-                                       (da)->capacity * sizeof((da)->items[0]));\
-            _celp_require((da)->items != NULL, (err), CELP_ERR_ALLOC, da_reserve); \
-            \
-            _celp_stmt_end(da_reserve); \
-        }\
-    } while(0)
-
-#define celp_da_append(da, item, err) \
-    do {\
-        celp_da_reserve(da, (da)->count + 1, (err));\
-        (da)->items[(da)->count++] = (item);\
-    } while(0)
-
-#define celp_da_last(da, err) \
-    ({ \
-        _celp_init((err), da_last); \
-        _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_last); \
+        _celp_stmt_init((err), da_reserve); \
         \
-        _celp_return((da)->items[(da)->count-1], da_last); \
+        if ((expected_capacity) > (da)->capacity) {\
+            celp_usize _new_capacity = (da)->capacity; \
+            \
+            if (_new_capacity == 0) {\
+                _new_capacity = CELP_DA_INITIAL_CAPACITY;\
+            }\
+            while (_new_capacity < expected_capacity) {\
+                _new_capacity *= 2;\
+            }\
+            _da_items_t((da)) _new_items = \
+                CELP_REALLOC((da)->items, _new_capacity * sizeof((da)->items[0]));\
+            \
+            _celp_require(_new_items != NULL, CELP_ERR_ALLOC, da_reserve); \
+            \
+            (da)->items = _new_items; \
+            (da)->capacity = _new_capacity; \
+        }\
+        _celp_stmt_end(da_reserve); \
+    } while(0)
+
+#define _celp_da_append(da, item, err) \
+    do {\
+        _celp_stmt_init((err), da_append); \
+        \
+        _celp_da_reserve((da), (da)->count + 1, _celp_err);\
+        _celp_propogate(da_append); \
+        \
+        (da)->items[(da)->count++] = (item);\
+        \
+        _celp_stmt_end(da_append); \
+    } while(0)
+
+#define _celp_da_last(da, err) \
+    ({ \
+        _celp_expr_init(_da_item_t((da)), (err), da_last); \
+        _celp_require((da)->count > 0, CELP_ERR_OOB, da_last); \
+        \
+        _celp_return = (da)->items[(da)->count-1]; \
+        \
+        _celp_expr_return(da_last); \
      })
 
-#define celp_da_pop(da, err) \
+#define _celp_da_pop(da, err) \
     ({ \
-        _celp_init((err), da_pop); \
-        _celp_require((da)->count > 0, (err), CELP_ERR_OOB, da_pop); \
+        _celp_expr_init(_da_item_t((da)), (err), da_pop); \
+        _celp_require((da)->count > 0, CELP_ERR_OOB, da_pop); \
         \
-        _celp_return((da)->items[--(da)->count], da_pop); \
+        _celp_return = (da)->items[--(da)->count]; \
+        \
+        _celp_expr_return(da_pop); \
     })
 
-#define celp_da_remove(da, idx, err) \
+#define _celp_da_remove(da, idx, err) \
     ({ \
-        _celp_init((err), da_remove); \
-        _celp_require((idx) < (da)->count, (err), CELP_ERR_OOB, da_remove); \
+        _celp_expr_init(_da_item_t((da)), (err), da_remove); \
+        _celp_require((idx) < (da)->count, CELP_ERR_OOB, da_remove); \
         \
-        typeof((da)->items[0]) _temp = (da)->items[(idx)]; \
-        (da)->items[(idx)] = celp_da_last((da), (err)); \
+        _da_item_t((da)) _temp = (da)->items[(idx)]; \
+        (da)->items[(idx)] = _celp_da_last((da), _celp_err); \
+        _celp_propogate(da_remove); \
+        \
         (da)->items[(da)->count-1] = _temp; \
         \
-        typeof(*(da)->items) _return = celp_da_pop(da, (err)); \
-        _celp_propogate((err), da_remove); \
+        _celp_return = _celp_da_pop((da), _celp_err); \
+        _celp_propogate(da_remove); \
         \
-        _celp_return(_return, da_remove); \
+        _celp_expr_return(da_remove); \
     })
 
-// user provides some label (i) -> macro initializes it as a pointer to (da)->items
-// elements can be accessed by dereferencing (i)
-// to get index 0, suntract (i) from (da)->items
-#define celp_da_foreach(da, i) \
-    for (typeof(*(da)->items)* (i) = (da)->items; \
-         (i) < (da)->items + (da)->count; \
-         (i)++)
-
-#define celp_da_free(da, err) \
+#define _celp_da_free(da, err) \
     do { \
-        _celp_init((err), da_free); \
+        _celp_stmt_init((err), da_free); \
         _celp_require((da) != NULL && (da)->items != NULL, \
-                      (err), CELP_ERR_ALLOC, da_free); \
+                      CELP_ERR_ALLOC, da_free); \
         CELP_FREE((da)->items); \
-        celp_da_init(da); \
+        _celp_da_clear(da); \
         \
         _celp_stmt_end(da_free); \
     } while(0)
+
+
+/* Dynamic Array Public API */
+
+#define celp_da_init(da)     _celp_da_clear((da))
+#define celp_da_clear(da)    ((da)->count = 0)
+#define celp_da_is_empty(da) ((da)->count == 0)
+
+#define celp_da_append(da, item, ...) \
+    _celp_da_append((da), (item), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_last(da, ...) \
+    _celp_da_last((da), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_pop(da, ...) \
+    _celp_da_pop((da), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_remove(da, idx, ...) \
+    _celp_da_remove((da), (idx), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_foreach(da, i) \
+    for (_da_item_t((da))* (i) = (da)->items; \
+         (i) < (da)->items + (da)->count; \
+         (i)++)
+
+#define celp_da_free(da, ...) \
+    _celp_da_free((da), _celp_err_arg(__VA_ARGS__))
 
 #define celp_da_info(da) \
     do{ \
@@ -395,7 +461,7 @@ CELP_DEF void celp_log(celp_u8 level,
              (da), (da)->capacity, (da)->count); \
     } while(0)
 
-/* Linked List */
+/* Linked List Implementation */
 /*
  * Generic linked list implementation (celp_ll). The ll is a bit more
  * interesting, as with every definition, we actually need to define two types,
@@ -441,27 +507,34 @@ CELP_DEF void celp_log(celp_u8 level,
         celp_usize count; \
     } celp_ll_t(T);
 
+#define _lln_t(ll)      typeof((ll)->head)
+#define _lln_data_t(ll) typeof((ll)->head->data)
+
 #define _celp_ll_create_node(ll, x, p, n, err) \
     ({ \
-        typeof((ll)->head) _node = CELP_MALLOC(sizeof(*((ll)->head))); \
-        if (!_node) *(err) = CELP_ERR_ALLOC; \
-        _node->data = (x); \
-        _node->prev = (p); \
-        _node->next = (n); \
+        _celp_err_clear((err)); \
+        _lln_t((ll)) _node = CELP_MALLOC(sizeof(*((ll)->head))); \
+        if (!_node) {\
+            _celp_err_set((err), CELP_ERR_ALLOC); \
+        } else { \
+            _node->data = (x); \
+            _node->prev = (p); \
+            _node->next = (n); \
+        } \
         \
         _node; \
     })
 
-#define celp_ll_init(ll, err) \
+#define _celp_ll_init(ll, err) \
     do { \
-        _celp_init((err), ll_init); \
+        _celp_stmt_init((err), ll_init); \
         \
-        typeof(((ll)->head)->data) _x_null = {0}; \
-        (ll)->head = _celp_ll_create_node((ll), _x_null, NULL, NULL, (err)); \
-        _celp_propogate((err), ll_init); \
+        _lln_data_t((ll)) _x_null = {0}; \
+        (ll)->head = _celp_ll_create_node((ll), _x_null, NULL, NULL, _celp_err); \
+        _celp_propogate(ll_init); \
         \
-        (ll)->tail = _celp_ll_create_node((ll), _x_null, NULL, NULL, (err)); \
-        _celp_propogate((err), ll_init); \
+        (ll)->tail = _celp_ll_create_node((ll), _x_null, NULL, NULL, _celp_err); \
+        _celp_propogate(ll_init); \
         \
         (ll)->head->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->head; \
@@ -470,92 +543,101 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(ll_init); \
     } while(0)
 
-#define celp_ll_is_empty(ll) ((ll)->count == 0)
-
-#define celp_ll_foreach(ll, iter) \
-    for (typeof((ll)->head) iter = (ll)->head->next; \
+#define _celp_ll_foreach(ll, iter) \
+    for (_lln_t((ll)) iter = (ll)->head->next; \
         iter != (ll)->tail; \
         iter = iter->next)
 
-#define celp_ll_get_first(ll, err) \
+#define _celp_ll_get_first(ll, err) \
     ({ \
-        _celp_init((err), ll_get_first); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_first); \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_get_first); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_get_first); \
         \
-        _celp_return((ll)->head->next->data, ll_get_first); \
+        _celp_return = (ll)->head->next->data; \
+        \
+        _celp_expr_return(ll_get_first); \
     })
 
-#define celp_ll_get_first_node(ll, err) \
+#define _celp_ll_get_first_node(ll, err) \
     ({ \
-        _celp_init((err), ll_get_first_node); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_first_node); \
+        _celp_expr_init(_lln_t((ll)), (err), ll_get_first_node); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_get_first_node); \
         \
-        _celp_return((ll)->head->next, ll_get_first_node); \
+        _celp_return = (ll)->head->next; \
+        \
+        _celp_expr_return(ll_get_first_node); \
     })
 
-#define celp_ll_get_last(ll, err) \
+#define _celp_ll_get_last(ll, err) \
     ({ \
-        _celp_init((err), ll_get_last); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_last); \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_get_last); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_get_last); \
         \
-        _celp_return((ll)->tail->prev->data, ll_get_last); \
+        _celp_return = (ll)->tail->prev->data; \
+        \
+        _celp_expr_return(ll_get_last); \
     })
 
-#define celp_ll_get_last_node(ll, err) \
+#define _celp_ll_get_last_node(ll, err) \
     ({ \
-        _celp_init((err), ll_get_last_node); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_get_last_node); \
+        _celp_expr_init(_lln_t((ll)), (err), ll_get_last_node); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_get_last_node); \
         \
-        _celp_return((ll)->tail->prev, ll_get_last_node); \
+        _celp_return = (ll)->tail->prev; \
+        \
+        _celp_expr_return(ll_get_last_node); \
     })
 
 #define _celp_ll_get_node_at(ll, i, err, out) \
     do { \
         *(out) = NULL; \
-        *(err) = CELP_ERR_OK; \
+        _celp_err_clear((err)); \
         \
-        if ((i) >= (ll)->count) { \
-            *(err) = CELP_ERR_OOB; \
+        if ((i) >= (ll)->count || (i) < 0) { \
+            _celp_err_set((err), CELP_ERR_OOB); \
             break; \
         } \
-        typeof((ll)->head) _curr = (ll)->head->next; \
+        _lln_t((ll)) _curr = (ll)->head->next; \
         for (celp_usize _i = 0; _i < (i); _i++) { \
             _curr = _curr->next; \
         } \
         *(out) = _curr; \
      } while(0)
 
-#define CELP_LLN_SAFE(T, val) &(celp_lln_t(T)){(val), NULL, NULL}
-
-#define celp_ll_get_at_index(ll, i, err) \
+#define _celp_ll_get_at_index(ll, i, err) \
     ({ \
-        _celp_init((err), ll_get_at_index); \
-        typeof((ll)->head) _node = {0}; \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_get_at_index); \
+        _lln_t((ll)) _node = NULL; \
         \
-        _celp_ll_get_node_at((ll), (i), (err), &_node); \
-        _celp_propogate((err), ll_get_at_index); \
+        _celp_ll_get_node_at((ll), (i), _celp_err, &_node); \
+        _celp_propogate(ll_get_at_index); \
         \
-        _celp_return(_node->data, ll_get_at_index); \
+        _celp_return = _node->data; \
+        \
+        _celp_expr_return(ll_get_at_index); \
      })
 
-#define celp_ll_get_at_index_node(ll, i, err) \
+#define _celp_ll_get_at_index_node(ll, i, err) \
     ({ \
-        _celp_init((err), ll_get_at_index_node); \
+        _celp_expr_init(_lln_t((ll)), (err), ll_get_at_index_node); \
         \
-        typeof((ll)->head) _node; \
-        _celp_ll_get_node_at((ll), (i), (err), &_node); \
-        _celp_propogate((err), ll_get_at_index_node); \
+        _lln_t((ll)) _node = NULL; \
+        _celp_ll_get_node_at((ll), (i), _celp_err, &_node); \
+        _celp_propogate(ll_get_at_index_node); \
         \
-        _celp_return(_node, ll_get_at_index_node); \
+        _celp_return = _node; \
+        \
+        _celp_expr_return(ll_get_at_index_node); \
      })
 
-#define celp_ll_add_after(ll, x, n, err) \
+#define _celp_ll_add_after(ll, x, n, err) \
     do { \
-        _celp_init((err), ll_add_after); \
-        _celp_require((n) != (ll)->tail, (err), CELP_ERR_OOB, ll_add_after); \
+        _celp_stmt_init((err), ll_add_after); \
+        _celp_require((n) != (ll)->tail, CELP_ERR_OOB, ll_add_after); \
         \
-        typeof((ll)->head) _node = _celp_ll_create_node((ll), (x), (n), (n)->next, (err)); \
-        _celp_propogate((err), ll_add_after); \
+        _lln_t((ll)) _node = \
+            _celp_ll_create_node((ll), (x), (n), (n)->next, _celp_err); \
+        _celp_propogate(ll_add_after); \
         \
         _node->prev->next = _node; \
         _node->next->prev = _node; \
@@ -564,104 +646,107 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(ll_add_after); \
     } while(0)
 
-#define celp_ll_add_first(ll, x, err) \
+#define _celp_ll_add_first(ll, x, err) \
     do { \
-        _celp_init((err), ll_add_first); \
-        celp_ll_add_after((ll), (x), (ll)->head, (err)); \
+        _celp_stmt_init((err), ll_add_first); \
+        \
+        _celp_ll_add_after((ll), (x), (ll)->head, _celp_err); \
+        _celp_propogate(ll_add_first); \
+        \
         _celp_stmt_end(ll_add_first); \
     } while(0)
 
-#define celp_ll_add_last(ll, x, err) \
+#define _celp_ll_add_last(ll, x, err) \
     do { \
-        _celp_init((err), ll_add_last); \
-        celp_ll_add_after((ll), (x), (ll)->tail->prev, (err)); \
+        _celp_stmt_init((err), ll_add_last); \
+        \
+        _celp_ll_add_after((ll), (x), (ll)->tail->prev, _celp_err); \
+        _celp_propogate(ll_add_last); \
+        \
         _celp_stmt_end(ll_add_last); \
     } while(0)
 
-#define celp_ll_add celp_ll_add_last
-
-#define celp_ll_remove_first(ll, err) \
+#define _celp_ll_remove_first(ll, err) \
     ({ \
-        _celp_init((err), ll_remove_first); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_first); \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_remove_first); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_remove_first); \
         \
-        typeof((ll)->head) _to_remove = (ll)->head->next; \
-        typeof((ll)->head->data) _return = _to_remove->data; \
+        _lln_t((ll)) _to_remove = (ll)->head->next; \
+        _celp_return = _to_remove->data; \
         (ll)->head->next->next->prev = (ll)->head; \
         (ll)->head->next = (ll)->head->next->next; \
         CELP_FREE(_to_remove); \
         (ll)->count--; \
         \
-        _celp_return(_return, ll_remove_first); \
+        _celp_expr_return(ll_remove_first); \
     })
 
-#define celp_ll_remove_last(ll, err) \
+#define _celp_ll_remove_last(ll, err) \
     ({ \
-        _celp_init((err), ll_remove_last); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_last); \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_remove_last); \
+        _celp_require((ll)->count > 0, CELP_ERR_OOB, ll_remove_last); \
         \
         typeof((ll)->tail) _to_remove = (ll)->tail->prev; \
-        typeof((ll)->head->data) _return = _to_remove->data; \
+        _celp_return = _to_remove->data; \
         (ll)->tail->prev->prev->next = (ll)->tail; \
         (ll)->tail->prev = (ll)->tail->prev->prev; \
         CELP_FREE(_to_remove); \
         (ll)->count--; \
         \
-        _celp_return(_return, ll_remove_last); \
+        _celp_expr_return(ll_remove_last); \
     })
 
-#define celp_ll_remove_at_index(ll, i, err) \
+#define _celp_ll_remove_at_index(ll, i, err) \
     ({ \
-        _celp_init((err), ll_remove_at_index); \
+        _celp_expr_init(_lln_data_t((ll)), (err), ll_remove_at_index); \
         _celp_require((i) >= 0 && (i) < (ll)->count && (ll)->count > 0, \
-                      (err), CELP_ERR_OOB, ll_remove_at_index); \
+                      CELP_ERR_OOB, ll_remove_at_index); \
         \
-        typeof((ll)->head) _curr = celp_ll_get_at_index_node((ll), (i), (err));\
-        typeof((ll)->head->data) _return = _curr->data; \
+        _lln_t((ll)) _curr = _celp_ll_get_at_index_node((ll), (i), _celp_err);\
+        _celp_propogate(ll_remove_at_index); \
+        \
+        _celp_return = _curr->data; \
         _curr->next->prev = _curr->prev; \
         _curr->prev->next = _curr->next; \
         CELP_FREE(_curr); \
         (ll)->count--; \
         \
-        _celp_return(_return, ll_remove_at_index); \
+        _celp_expr_return(ll_remove_at_index); \
     })
 
-#define celp_lln_exists(n) !((n)->next == NULL && (n)->prev == NULL)
+#define celp_lln_exists(n) ((n) != NULL && \
+                          !((n)->next == NULL && (n)->prev == NULL))
 
-#define celp_ll_remove_node(ll, n, err) \
-    ({ \
-        _celp_init((err), ll_remove_node); \
-        _celp_require((ll)->count > 0, (err), CELP_ERR_OOB, ll_remove_node); \
-        typeof((ll)->head) _return = {0}; \
+#define _celp_ll_remove_node(ll, n, err) \
+    do { \
+        _celp_stmt_init((err), ll_remove_node); \
+        _celp_require((ll)->count > 0 && celp_lln_exists((n)), \
+                      CELP_ERR_OOB, ll_remove_node); \
+        \
         bool _found = false; \
-        if (celp_lln_exists((n))) { \
-            celp_ll_foreach((ll), _curr) { \
-                if (_curr == (n)) { \
-                    _curr->next->prev = _curr->prev; \
-                    _curr->prev->next = _curr->next; \
-                    _return = _curr; \
-                    CELP_FREE(_curr); \
-                    (ll)->count--; \
-                    _found = true; \
-                    break; \
-                } \
+        celp_ll_foreach((ll), _curr) { \
+            if (_curr == (n)) { \
+                _curr->next->prev = _curr->prev; \
+                _curr->prev->next = _curr->next; \
+                CELP_FREE(_curr); \
+                (ll)->count--; \
+                _found = true; \
+                break; \
             } \
         } \
-        if (!_found) { \
-            CELP_ERROR("Failed to find and remove node"); \
-        } \
+        _celp_require(_found, CELP_ERR_OOB, ll_remove_node); \
         \
-        _celp_return(_return, ll_remove_node); \
-    })
+        _celp_stmt_end(ll_remove_node); \
+    } while(0)
 
-#define celp_ll_free(ll, err) \
+#define _celp_ll_free(ll, err) \
     do { \
-        _celp_init((err), ll_free); \
-        _celp_require((ll) != NULL, (err), CELP_ERR_ALLOC, ll_free); \
+        _celp_stmt_init((err), ll_free); \
+        _celp_require((ll) != NULL, CELP_ERR_ALLOC, ll_free); \
         \
-        typeof((ll)->head) _curr = (ll)->head->next; \
+        _lln_t((ll)) _curr = (ll)->head->next; \
         while (_curr != (ll)->tail) { \
-            typeof((ll)->head) _next = _curr->next; \
+            _lln_t((ll)) _next = _curr->next; \
             CELP_FREE(_curr); \
             _curr = _next; \
         } \
@@ -674,7 +759,61 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(ll_free); \
     } while(0)
 
-/* HashMap */
+
+/* Linked List Public API */
+
+#define celp_ll_init(ll, ...) \
+    _celp_ll_init((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_is_empty(ll) ((ll)->count == 0)
+#define celp_ll_foreach _celp_ll_foreach
+
+#define celp_ll_get_first(ll, ...) \
+    _celp_ll_get_first((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_get_first_node(ll, ...) \
+    _celp_ll_get_first_node((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_get_last(ll, ...) \
+    _celp_ll_get_last((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_get_last_node(ll, ...) \
+    _celp_ll_get_last_node((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_get_at_index(ll, i, ...) \
+    _celp_ll_get_at_index((ll), (i), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_get_at_index_node(ll, i, ...) \
+    _celp_ll_get_at_index_node((ll), (i), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_add_after(ll, x, n, ...) \
+    _celp_ll_add_after((ll), (x), (n), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_add_first(ll, x, ...) \
+    _celp_ll_add_first((ll), (x), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_add_last(ll, x, ...) \
+    _celp_ll_add_last((ll), (x), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_add celp_ll_add_last
+
+#define celp_ll_remove_first(ll, ...) \
+    _celp_ll_remove_first((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_remove_last(ll, ...) \
+    _celp_ll_remove_last((ll), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_remove_at_index(ll, i, ...) \
+    _celp_ll_remove_at_index((ll), (i), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_remove_node(ll, n, ...) \
+    _celp_ll_remove_node((ll), (n), _celp_err_arg(__VA_ARGS__))
+
+#define celp_ll_free(ll, ...) \
+    _celp_ll_free((ll), _celp_err_arg(__VA_ARGS__))
+
+
+/* HashMap Implementation */
 /*
  * Generic hash map implementation (celp_map). The map is made up of a few 
  * components:
@@ -721,6 +860,12 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define CELP_MAP_INITIAL_CAPACITY 64
 
+#define _map_bucket_t(map)      typeof(*(map)->buckets) //ll
+#define _map_bucket_node_t(map) typeof((map)->buckets[0].head) //lln
+#define _map_kv_t(map)          typeof((map)->buckets[_h].head->data)
+#define _map_k_t(map)           typeof((map)->buckets[0].head->data.key)
+#define _map_v_t(map)           typeof((map)->buckets[0].head->data.value)
+
 #define _celp_map_clear(map) \
     do {\
         (map)->buckets = NULL; \
@@ -728,17 +873,18 @@ CELP_DEF void celp_log(celp_u8 level,
         (map)->capacity = 0; \
     } while(0)
 
-#define celp_map_init(map, err) \
+#define _celp_map_init(map, err) \
     do { \
-        _celp_init((err), map_init); \
+        _celp_stmt_init((err), map_init); \
         \
         _celp_map_clear((map)); \
         (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
         (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
-        _celp_require((map)->buckets != NULL, (err), CELP_ERR_ALLOC, map_init); \
+        _celp_require((map)->buckets != NULL, CELP_ERR_ALLOC, map_init); \
         \
         for (size_t _i = 0; _i < (map)->capacity; _i++) { \
-            celp_ll_init(&((map)->buckets[_i]), (err)); \
+            _celp_ll_init(&((map)->buckets[_i]), _celp_err); \
+            _celp_propogate(map_init); \
         } \
         _celp_stmt_end(map_init); \
     } while(0)
@@ -750,20 +896,18 @@ CELP_DEF void celp_log(celp_u8 level,
         _h; \
      })
 
-#define celp_map_is_empty(map) ((map)->count == 0)
-
 /*returns the hashed bucket, and whether or not the key was found */
 #define _celp_map_find_k(map, k, hash, found, out, err) \
     do { \
-        *(err) = CELP_ERR_OK; \
+        _celp_err_clear((err)); \
         *(out) = NULL; \
         if ((map)->buckets == NULL) { \
-            *(err) = CELP_ERR_ALLOC; \
+            _celp_err_set((err), CELP_ERR_ALLOC); \
             break; \
         } \
-        typeof((map)->buckets[0].head) _return = (map)->buckets[(hash)].head; \
+        _map_bucket_node_t((map)) _return = (map)->buckets[(hash)].head; \
         *(found) = false; \
-        celp_ll_foreach(&(map)->buckets[(hash)], _bucket) {\
+        _celp_ll_foreach(&(map)->buckets[(hash)], _bucket) {\
             if (CELP_COMP(_bucket->data.key, (k)) == 0) { \
                 _return = _bucket; \
                 *(found) = true; \
@@ -773,23 +917,26 @@ CELP_DEF void celp_log(celp_u8 level,
         *(out) = _return; \
     } while(0)
 
-#define celp_map_insert(map, k, v, err) \
+#define _celp_map_insert(map, k, v, err) \
     do { \
-        _celp_init((err), map_insert); \
+        _celp_stmt_init((err), map_insert); \
         \
-        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
-        typeof((map)->buckets[0].head) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
-        _celp_propogate((err), map_insert); \
+        _map_bucket_node_t((map)) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _celp_propogate(map_insert); \
         \
         if (_found) { \
             _bucket->data.value = (v); \
         } else { \
-            typeof((map)->buckets[_h].head->data) _kv = \
+            _map_kv_t((map)) _kv = \
                 { .key = (_k), .value = (v) }; \
-            celp_ll_add(&((map)->buckets[_h]), _kv, (err)); \
+            \
+            _celp_ll_add_last(&((map)->buckets[_h]), _kv, _celp_err); \
+            _celp_propogate(map_insert); \
+            \
             (map)->count++; \
         } \
         _celp_stmt_end(map_insert); \
@@ -797,96 +944,133 @@ CELP_DEF void celp_log(celp_u8 level,
 
 // assumes the value can be incremented
 // if the key isnt already in the map it assigns value 1
-#define celp_map_increment(map, k, err) \
+#define _celp_map_increment(map, k, err) \
     do { \
-        _celp_init((err), map_increment); \
+        _celp_stmt_init((err), map_increment); \
         \
-        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
-        typeof((map)->buckets[0].head) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
-        _celp_propogate((err), map_increment); \
+        _map_bucket_node_t((map)) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _celp_propogate(map_increment); \
         \
         if (_found) { \
             _bucket->data.value++; \
         } else { \
             typeof((map)->buckets[_h].head->data) _kv = \
                 { .key = (_k), .value = 1 }; \
-            celp_ll_add(&((map)->buckets[_h]), _kv, (err)); \
+            \
+            _celp_ll_add_last(&((map)->buckets[_h]), _kv, _celp_err); \
+            _celp_propogate(map_increment); \
+            \
             (map)->count++; \
         } \
         _celp_stmt_end(map_increment); \
     } while(0)
 
-#define celp_map_contains(map, k, err) \
+#define _celp_map_contains(map, k, err) \
     ({ \
-        _celp_init((err), map_contains); \
-        _celp_require((map)->capacity > 0, (err), CELP_ERR_OOB, map_contains); \
+        _celp_expr_init(bool, (err), map_contains); \
+        _celp_require((map)->capacity > 0, CELP_ERR_OOB, map_contains); \
         \
-        bool _found = false; \
-        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        typeof((map)->buckets[0].head) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
-        _celp_propogate((err), map_contains); \
+        _map_bucket_node_t((map)) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_celp_return, &_bucket, _celp_err); \
+        _celp_propogate(map_contains); \
         \
-        _celp_return(_found, map_contains); \
+        _celp_expr_return(map_contains); \
     })
 
-#define celp_map_get(map, k, dval, err) \
+#define _celp_map_get(map, k, dval, err) \
     ({ \
-        _celp_init((err), map_get); \
+        _celp_expr_init(typeof((dval)), (err), map_get); \
         \
         bool _found = false; \
-        typeof((dval)) _return = (dval); \
-        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        typeof((map)->buckets[0].head) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
-        _celp_propogate((err), map_get); \
+        _map_bucket_node_t((map)) _bucket; \
+        \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _celp_propogate(map_get); \
         \
         if (_found) { \
-            _return = _bucket->data.value; \
+            _celp_return = _bucket->data.value; \
+        } else { \
+            _celp_return = (dval); \
         } \
-        _celp_return(_return,  map_get); \
+        _celp_expr_return( map_get); \
     })
 
-#define celp_map_remove(map, k, err) \
+#define _celp_map_remove(map, k, err) \
     ({ \
-        _celp_init((err), map_remove); \
-        _celp_require((map)->count > 0, (err), CELP_ERR_OOB, map_remove); \
+        _celp_expr_init(_map_v_t((map)), (err), map_remove); \
+        _celp_require((map)->count > 0, CELP_ERR_OOB, map_remove); \
         \
         bool _found = false; \
-        typeof((map)->buckets[0].head->data.value) _return = {0}; \
-        typeof((map)->buckets[0].head->data.key) _k = (k); \
+        _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        typeof((map)->buckets[0].head) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, (err)); \
-        _celp_propogate((err), map_remove); \
+        _map_bucket_node_t((map)) _bucket; \
+        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _celp_propogate(map_remove); \
         \
         if (_found) { \
-            _return = _bucket->data.value; \
-            (void)celp_ll_remove_node(&((map)->buckets[_h]), _bucket, (err)); \
+            _celp_return = _bucket->data.value; \
+            _celp_ll_remove_node(&((map)->buckets[_h]), _bucket, _celp_err); \
+            _celp_propogate(map_remove); \
             (map)->count--; \
         } \
-        _celp_return(_return, map_remove); \
+        _celp_expr_return(map_remove); \
     })
 
-#define celp_map_free(map, err) \
+#define _celp_map_free(map, err) \
     do { \
-        _celp_init((err), map_free); \
+        _celp_stmt_init((err), map_free); \
         _celp_require((map) != NULL && (map)->buckets != NULL, \
-                      (err), CELP_ERR_ALLOC, map_free); \
+                      CELP_ERR_ALLOC, map_free); \
         \
         for (size_t _i = 0; _i < (map)->capacity; _i++) { \
-            celp_ll_free(&((map)->buckets[_i]), (err)); \
+            _celp_ll_free(&((map)->buckets[_i]), _celp_err); \
+            _celp_propogate(map_free); \
         } \
         CELP_FREE((map)->buckets); \
         _celp_map_clear((map)); \
         \
         _celp_stmt_end(map_free); \
     } while(0)
+
+#define celp_map_info(map) \
+    do { \
+        CELP_INFO("Map at: %p, Capacity: %zu, Count: %zu", \
+             (map), (map)->capacity, (map)->count); \
+    } while(0)
+
+
+/* HashMap Public API */
+
+#define celp_map_is_empty(map) ((map)->count == 0)
+
+#define celp_map_init(map, ...) \
+    _celp_map_init((map), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_insert(map, k, v, ...) \
+    _celp_map_insert((map), (k), (v), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_increment(map, k, ...) \
+    _celp_map_increment((map), (k), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_contains(map, k, ...) \
+    _celp_map_contains((map), (k), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_get(map, k, dval, ...) \
+    _celp_map_get((map), (k), (dval), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_remove(map, k, ...) \
+    _celp_map_remove((map), (k), _celp_err_arg(__VA_ARGS__))
+
+#define celp_map_free(map, ...) \
+    _celp_map_free((map), _celp_err_arg(__VA_ARGS__))
 
 #define celp_map_info(map) \
     do { \
@@ -1298,7 +1482,7 @@ typedef struct celp_test_suite_s {
         _celp_test_suite_##s##_func(); \
     if (_celp_test_suite_##s->setup) \
         _celp_test_suite_##s->setup(); \
-    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
         celp_test_result = CELP_TEST_RESULT_NONE; \
         _celp_test->data.testcase(); \
         celp_test_runs++; \
@@ -1310,7 +1494,7 @@ typedef struct celp_test_suite_s {
 #define CELP_TEST_SUITE_REPORT(s) \
     celp_log(0, CELP_LOG_INFO, \
              "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
-    celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
         celp_log(0, CELP_LOG_INFO, \
                 "\t[TESTCASE] ", "%s %s", _celp_test->data.name, \
                 (_celp_test->data.result==CELP_TEST_RESULT_FAIL) ? \
@@ -1488,7 +1672,6 @@ end:
     #define da_init                 celp_da_init
     #define da_clear                celp_da_clear
     #define da_is_empty             celp_da_is_empty
-    #define da_reserve              celp_da_reserve
     #define da_append               celp_da_append
     #define da_last                 celp_da_last
     #define da_pop                  celp_da_pop
@@ -1513,7 +1696,6 @@ end:
     #define ll_remove_node          celp_ll_remove_node
     #define ll_print_int            celp_ll_print_int
     #define ll_foreach              celp_ll_foreach
-    #define ll_foreach_until_node   celp_ll_foreach_until_node
     #define ll_free                 celp_ll_free
     #define ll_info                 celp_ll_info
     //celp_map
