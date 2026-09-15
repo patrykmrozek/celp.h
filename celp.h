@@ -8,6 +8,7 @@
  *  celp_map - generic hashmap implementation
  *  CELP_MATH - generic linear algebra
  *  CELP_TEST - a lightweight unit testing framework
+ *  CELP_ERRORS - error handling
  *
  * Additional Features:
  *  CELP_STRIP_PREFIX - if defined before you include celp, it strips every
@@ -134,6 +135,18 @@ typedef enum celp_err_s {
     CELP_ERR_ALLOC,
 } celp_err_t;
 
+CELP_DEF_SI const char *
+celp_err_to_str(celp_err_t err)
+{
+    switch(err) {
+        case CELP_ERR_OK:    return "CELP_ERR_OK"; 
+        case CELP_ERR_TYPE:  return "CELP_ERR_TYPE"; 
+        case CELP_ERR_OOB:   return "CELP_ERR_OOB"; 
+        case CELP_ERR_ALLOC: return "CELP_ERR_ALLOC"; 
+        default:             return "CELP_ERR_UNKNOWN";
+    }
+}
+
 typedef struct celp_err_info_s {
     celp_err_t err_code;
     const char *file;
@@ -172,8 +185,8 @@ celp_last_err(void)
 CELP_DEF_SI void
 celp_last_err_print(void)
 {
-    printf("%d - %s:%s:%zu\n",
-            _celp_last_err.err_code,
+    printf("%s - %s:%s:%zu\n",
+            celp_err_to_str(_celp_last_err.err_code),
             _celp_last_err.file,
             _celp_last_err.func,
             _celp_last_err.line);
