@@ -11,12 +11,24 @@
  *  CELP_ERRORS - error handling
  *
  * Additional Features:
+ *
  *  CELP_STRIP_PREFIX - if defined before you include celp, it strips every
  *  macro, function, type of the word "celp". An extra thing you can do with
  *  this is, say you strip celp_log() of it's prefix, which leaves you with
  *  "log()", this wil surely clash with an existing log function, and so you 
  *  have the ability of "undefining" the stripped version for specific names
  *  like this.
+ *  
+ *  optional error handling - all generic data type macros have the option to 
+ *  either take in a celp_err_t as the last arg or not (if CELP_ERRORS is
+ *  defined). This is possible by implementing all of the internal macros with 
+ *  errors assumed to be present, and declaring the public version with a 
+ *  variadic final parameter in the place of the error. If errors are enabled,
+ *  the argument will be read as the error and error handling will proceed as
+ *  normal, but if nothing is passed in here, this final argument is internally
+ *  set to NULL, and within the _init macro helper, if the error is null, a
+ *  local error is used, which allows for error handling to persist internally,
+ *  and only report to _celp_last_err instead.
  */
 
 #ifndef _CELP_H
@@ -108,7 +120,7 @@
     })
 
 
-/* Errors */
+/* celp errors */
 /*
  * almost every macro defined later on has a possibility of failure, so we need
  * a way to track and catch errors. I made the explicit error functionality 
@@ -221,7 +233,26 @@ celp_last_err_print(void)
         _celp_err_set_last((err_code), __FILE__, #fname, __LINE__); \
     } while(0)
 
-/* macro definintion helpers */
+/* celp macro definintion helpers */
+/*
+ * These helpers are to aid the implementation and design of the macros.
+ * Some helpers are split into two categories, statement and expression, to 
+ * deal with their corresponding macro types.
+ *
+ * _init helpers deal with defining and initializing necessary labels, errors,
+ * etc..
+ *
+ * *_clean helpers deal with macros that require cleanup after an error occurs
+ * (for example any init macro that allocs, but later some error occurs)
+ *
+ * Expressions initialize a return value under the hood "_celp_return", and
+ * "returns" said value when _celp_expr_return is called. This is done to
+ * enforce declaring this return value before any error handling is done.
+ *
+ * _celp_stmt_end exixts only so that all of our error handling helpers like 
+ * _require or _propogate etc.. don't break, since they all refer to the out
+ * label, though macros can't actually return anything obviously.
+ */
 #define _celp_clean_label(fname) celp_clean_##fname
 #define _celp_out_label(fname) celp_out_##fname
 
@@ -313,7 +344,7 @@ celp_last_err_print(void)
     _celp_out_label(fname): \
         ((void)0) \
 
-/* Logging */
+/* celp logging */
 /*
  * celp_log() is designed to be a detailed logger, giving the user absolute 
  * control. Logging can be enabled by adding one or more of the 
@@ -408,7 +439,7 @@ CELP_DEF void celp_log(celp_u8 level,
 #define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", \
                                            fmt, ##__VA_ARGS__)
 
-/* Generic Abstract Data Types */
+/* generic data types and macros */
 /*
  * The following are definitions for various generic abstract data types. The 
  * convention for defining, instantiating and using these is as follows:
@@ -416,14 +447,14 @@ CELP_DEF void celp_log(celp_u8 level,
  *     celp_example_t(TYPE) object;
  *     celp_example_init(&object);
  *     celp_example_operation(&object);
- *     celp_example_destroy(&object);
+ *     celp_example_free(&object);
  *
  *  Under the hood, when celp_example(TYPE) is called, it dynamically generates
  *  and defines the structure for the specific type passed in, and can from
  *  then on be referenced by the same macro with the _t suffix.
  */
 
-/* Dynamic Array Implementation */
+/* celp dynamic array */
 /*
  * Generic dynamic array implementation (celp_da). This one is relatively 
  * simple. The structure holds an array of items, a count describing how many 
@@ -559,9 +590,7 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(da_free); \
     } while(0)
 
-
-/* Dynamic Array Public API */
-
+/* <<<<<<<< celp dynamic array public api >>>>>>>> */
 #define celp_da_init(da)     _celp_da_clear((da))
 #define celp_da_clear(da)    ((da)->count = 0)
 #define celp_da_is_empty(da) ((da)->count == 0)
@@ -592,7 +621,7 @@ CELP_DEF void celp_log(celp_u8 level,
              (da), (da)->capacity, (da)->count); \
     } while(0)
 
-/* Linked List Implementation */
+/* celp linked list implementation */
 /*
  * Generic linked list implementation (celp_ll). The ll is a bit more
  * interesting, as with every definition, we actually need to define two types,
@@ -903,9 +932,7 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(ll_free); \
     } while(0)
 
-
-/* Linked List Public API */
-
+/* <<<<<<<< celp linked list public api >>>>>>>> */
 #define celp_ll_init(ll, ...) \
     _celp_ll_init((ll), _celp_err_arg(__VA_ARGS__))
 
@@ -957,7 +984,7 @@ CELP_DEF void celp_log(celp_u8 level,
     _celp_ll_free((ll), _celp_err_arg(__VA_ARGS__))
 
 
-/* HashMap Implementation */
+/* celp hash map implementation */
 /*
  * Generic hash map implementation (celp_map). The map is made up of a few 
  * components:
@@ -1199,9 +1226,7 @@ CELP_DEF void celp_log(celp_u8 level,
              (map), (map)->capacity, (map)->count); \
     } while(0)
 
-
-/* HashMap Public API */
-
+/* <<<<<<<< celp hash map public api >>>>>>>> */
 #define celp_map_is_empty(map) ((map)->count == 0)
 
 #define celp_map_init(map, ...) \
@@ -1230,7 +1255,6 @@ CELP_DEF void celp_log(celp_u8 level,
         CELP_INFO("Map at: %p, Capacity: %zu, Count: %zu", \
              (map), (map)->capacity, (map)->count); \
     } while(0)
-
 
 //math macros
 #ifdef CELP_MATH
@@ -1748,6 +1772,8 @@ celp_log(celp_u8 level,
             #else
                 return;
             #endif //CELP_LOG_MODE_TRACE
+        case CELP_LOG_NONE:
+                goto prepend;
     }
 
 prepend:
