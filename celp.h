@@ -107,13 +107,77 @@
     })
 
 
-/* errors */
+/* Errors */
+/*
+ * almost every macro defined later on has a possibility of failure, so we need
+ * a way to track and catch errors. I made the explicit error functionality 
+ * optional. To enable errors, you define CELP_ERRORS before you include this 
+ * file. What this does is, for every macro that can fail, you must pass in an 
+ * extra argument "err", which is a *celp_err_t, then this err is updated if any 
+ * errors are encountered through calling said macro. Otherwise, if you don't
+ * define CELP_ERRORS, this paramrter doesn't exist, and so you don't have to
+ * pass it in at all, though, the error handling persists under the hood.
+ *
+ * Aside from explicit error handling within each macro, there is also 
+ * _celp_last_err, which records the last error that occured, along with where.
+ * This can be accessed by the helper functions celp_last_err*() to get the err
+ * or print etc..
+ *
+ * CELP_ERRORS is designed for when failures actually matter, so you can handle
+ * them, and _celp_last_err is designed for diagnostics, they should not be
+ * thought to replace one another, but rather are best used in tandem.
+ */
 typedef enum celp_err_s {
     CELP_ERR_OK,
     CELP_ERR_TYPE,
     CELP_ERR_OOB,
     CELP_ERR_ALLOC,
 } celp_err_t;
+
+typedef struct celp_err_info_s {
+    celp_err_t err_code;
+    const char *file;
+    const char *func;
+    celp_usize line;
+} celp_err_info_t;
+
+static celp_err_info_t _celp_last_err = {
+    .err_code = CELP_ERR_OK,
+    .file = "",
+    .func = "",
+    .line = 0,
+};
+
+CELP_DEF_SI void 
+celp_last_err_clear(void)
+{
+    _celp_last_err.err_code = CELP_ERR_OK;
+    _celp_last_err.file = "";
+    _celp_last_err.func = "";
+    _celp_last_err.line = 0;
+}
+
+CELP_DEF_SI celp_err_info_t 
+celp_last_err_info(void)
+{
+    return _celp_last_err;
+}
+
+CELP_DEF_SI celp_err_t 
+celp_last_err(void)
+{
+    return _celp_last_err.err_code;
+}
+
+CELP_DEF_SI void
+celp_last_err_print(void)
+{
+    printf("%d - %s:%s:%zu\n",
+            _celp_last_err.err_code,
+            _celp_last_err.file,
+            _celp_last_err.func,
+            _celp_last_err.line);
+}
 
 #ifdef CELP_ERRORS
     #define _celp_err_arg(err) (err)
@@ -129,6 +193,20 @@ typedef enum celp_err_s {
 
 #define _celp_err_failed(err) \
     (*(err) != CELP_ERR_OK)
+
+#define _celp_err_set_last(_code, _file, _func, _line) \
+    do { \
+        _celp_last_err.err_code = (_code); \
+        _celp_last_err.file = (_file); \
+        _celp_last_err.func = (_func); \
+        _celp_last_err.line = (_line); \
+    } while(0)
+
+#define _celp_err_raise(err, err_code, fname) \
+    do { \
+        _celp_err_set((err), (err_code)); \
+        _celp_err_set_last((err_code), __FILE__, #fname, __LINE__); \
+    } while(0)
 
 /* macro definintion helpers */
 #define _celp_clean_label(fname) celp_clean_##fname
@@ -172,7 +250,7 @@ typedef enum celp_err_s {
 
 #define _celp_fail(err_code, fname) \
     do { \
-        _celp_err_set(_celp_err, (err_code)); \
+        _celp_err_raise(_celp_err, (err_code), fname); \
         _celp_goto_out(fname); \
     } while(0)
 
@@ -185,7 +263,7 @@ typedef enum celp_err_s {
 
 #define _celp_fail_clean(err_code, fname) \
     do { \
-        _celp_err_set(_celp_err, (err_code)); \
+        _celp_err_raise(_celp_err, (err_code), fname); \
         _celp_goto_clean(fname); \
     } while(0)
 
@@ -221,9 +299,6 @@ typedef enum celp_err_s {
 #define _celp_stmt_end(fname) \
     _celp_out_label(fname): \
         ((void)0) \
-
- 
-
 
 /* Logging */
 /*
@@ -558,7 +633,7 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_err_clear((err)); \
         _lln_t((ll)) _node = CELP_MALLOC(sizeof(*((ll)->head))); \
         if (!_node) {\
-            _celp_err_set((err), CELP_ERR_ALLOC); \
+            _celp_err_raise((err), CELP_ERR_ALLOC, ll_create_node); \
         } else { \
             _node->data = (x); \
             _node->prev = (p); \
@@ -649,8 +724,8 @@ CELP_DEF void celp_log(celp_u8 level,
         *(out) = NULL; \
         _celp_err_clear((err)); \
         \
-        if ((i) >= (ll)->count || (i) < 0) { \
-            _celp_err_set((err), CELP_ERR_OOB); \
+        if ((i) >= (ll)->count) { \
+            _celp_err_raise((err), CELP_ERR_OOB, ll_get_node_at); \
             break; \
         } \
         _lln_t((ll)) _curr = (ll)->head->next; \
@@ -967,7 +1042,7 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_err_clear((err)); \
         *(out) = NULL; \
         if ((map)->buckets == NULL) { \
-            _celp_err_set((err), CELP_ERR_ALLOC); \
+            _celp_err_raise((err), CELP_ERR_ALLOC, map_find_k); \
             break; \
         } \
         _map_bucket_node_t((map)) _return = (map)->buckets[(hash)].head; \
