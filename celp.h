@@ -1569,6 +1569,43 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #endif //CELP_MATH
 
+/* celp string */
+celp_da(char);
+typedef struct celp_str_s {
+    celp_da_t(char) buf;
+} celp_str_t;
+
+#define celp_str_count(str) ((str).buf.count)
+#define celp_str_items(str) ((str).buf.items)
+
+CELP_DEF_SI bool 
+_celp_str_eq_str(celp_str_t a, celp_str_t b)
+{
+    return (celp_str_count(a) == celp_str_count(b) &&
+            memcmp(celp_str_items(a), celp_str_items(b), 
+                   celp_str_count(a)) == 0);
+}
+
+CELP_DEF_SI bool 
+_celp_str_eq_cstr(celp_str_t a, const char *b)
+{
+    celp_usize b_len = strlen(b);
+    return (celp_str_count(a) == b_len &&
+            memcmp(celp_str_items(a), b, b_len) == 0);
+}
+
+#define celp_str_eq(a, b) \
+    _Generic((b), \
+        celp_str_t:   _celp_str_eq_str, \
+        const char *: _celp_str_eq_cstr, \
+        char *:       _celp_str_eq_cstr \
+    )((a), (b))
+
+
+CELP_DEF celp_str_t celp_str(const char *chars);
+CELP_DEF void celp_str_append(celp_str_t *str, const char *chars);
+CELP_DEF void celp_str_free(celp_str_t *str);
+
 /* Testing */
 #ifdef CELP_TEST
 
@@ -1794,6 +1831,36 @@ end:
     return;
 }
 
+/* strings */
+CELP_DEF celp_str_t
+celp_str(const char *chars)
+{
+    celp_str_t str;
+    celp_da_init(&str.buf);
+    celp_usize str_len = strlen(chars);
+
+    _celp_da_reserve(&str.buf, str_len + 1, NULL);
+    memcpy(str.buf.items, chars, str_len + 1);
+    str.buf.count = str_len;
+
+    return str;
+}
+
+CELP_DEF void 
+celp_str_append(celp_str_t *str, const char *chars)
+{
+    celp_usize str_len = strlen(chars);
+    _celp_da_reserve(&str->buf, str_len + str->buf.count + 1, NULL);
+    memcpy(str->buf.items + str->buf.count, chars, str_len + 1);
+    str->buf.count += str_len;
+}
+
+CELP_DEF void 
+celp_str_free(celp_str_t *str)
+{
+    celp_da_free(&str->buf);
+}
+
 #endif //CELP_IMPLEMENTATION
 
 //shamelessly ripped from mr tsoding
@@ -1817,25 +1884,9 @@ end:
     #define SWAP                    CELP_SWAP
     #define CAT                     CELP_CAT
     #define HASH                    CELP_HASH  
-
-#ifdef CELP_TEST
-    #define EXPECT                  CELP_EXPECT
-    #define EXPECT_EQ               CELP_EXPECT_EQ
-    #define EXPECT_NEQ              CELP_EXPECT_NEQ
-    #define TESTCASE                CELP_TESTCASE 
-    #define TEST_SETUP              CELP_TEST_SETUP 
-    #define TEST_TEARDOWN           CELP_TEST_TEARDOWN
-    #define TEST_SUITE_START        CELP_TEST_SUITE_START
-    #define TEST_SUITE_ADD_TEARDOWN CELP_TEST_SUITE_ADD_TEARDOWN
-    #define TEST_SUITE_ADD_SETUP    CELP_TEST_SUITE_ADD_SETUP
-    #define TEST_SUITE_ADD_TEST     CELP_TEST_SUITE_ADD_TEST
-    #define TEST_SUITE_END          CELP_TEST_SUITE_END
-    #define TEST_SUITE_RUN          CELP_TEST_SUITE_RUN
-    #define TEST_SUITE_REPORT       CELP_TEST_SUITE_REPORT
-    #define TEST_SUITE_DESTROY      CELP_TEST_SUITE_DESTROY
-#endif //CELP_TEST
-
-    //CELP_LOG
+    //celp_errors
+    
+    //celp_log
     #define log                     celp_log
     #define LOG_INFO                CELP_LOG_INFO
     #define LOG_DEBUG               CELP_LOG_DEBUG
@@ -1892,6 +1943,23 @@ end:
     #define map_free                celp_map_free
     #define map_info                celp_map_info
 
+#ifdef CELP_TEST
+    #define EXPECT                  CELP_EXPECT
+    #define EXPECT_EQ               CELP_EXPECT_EQ
+    #define EXPECT_NEQ              CELP_EXPECT_NEQ
+    #define TESTCASE                CELP_TESTCASE 
+    #define TEST_SETUP              CELP_TEST_SETUP 
+    #define TEST_TEARDOWN           CELP_TEST_TEARDOWN
+    #define TEST_SUITE_START        CELP_TEST_SUITE_START
+    #define TEST_SUITE_ADD_TEARDOWN CELP_TEST_SUITE_ADD_TEARDOWN
+    #define TEST_SUITE_ADD_SETUP    CELP_TEST_SUITE_ADD_SETUP
+    #define TEST_SUITE_ADD_TEST     CELP_TEST_SUITE_ADD_TEST
+    #define TEST_SUITE_END          CELP_TEST_SUITE_END
+    #define TEST_SUITE_RUN          CELP_TEST_SUITE_RUN
+    #define TEST_SUITE_REPORT       CELP_TEST_SUITE_REPORT
+    #define TEST_SUITE_DESTROY      CELP_TEST_SUITE_DESTROY
+#endif //CELP_TEST
+
 #ifdef CELP_MATH 
     //v2
     #define v2                      celp_v2
@@ -1941,6 +2009,7 @@ end:
     #define v3_trans                celp_v3_trans
     #define v4_scale                celp_v4_scale 
     #define v4_scalev               celp_v4_scalev
+
 #endif //CELP_MATH
        
 #endif //CELP_STRIP_PREFIX

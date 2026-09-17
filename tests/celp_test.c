@@ -6,6 +6,7 @@ extern void test_celp_ll();
 extern void test_celp_ll_noerror();
 extern void test_celp_map();
 extern void test_celp_math();
+extern void test_celp_str();
 
 int main()
 {
@@ -13,6 +14,7 @@ int main()
     test_celp_ll();
     test_celp_ll_noerror();
     test_celp_map();
+    test_celp_str();
     //test_celp_math();
     return 0;
 }
