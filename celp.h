@@ -1274,6 +1274,205 @@ CELP_DEF void celp_log(celp_u8 level,
              (map), (map)->capacity, (map)->count); \
     } while(0)
 
+
+/* celp string */
+celp_da(char);
+typedef da_char_t celp_str_t;
+
+#define celp_str_count(str) ((str)->count)
+#define celp_str_items(str) ((str)->items)
+
+CELP_DEF_SI bool 
+_celp_str_eq_raw(const char *a, celp_usize a_count,
+                 const char *b, celp_usize b_count)
+{
+    return a_count == b_count && memcmp(a, b, a_count) == 0;
+}
+
+CELP_DEF_SI bool 
+_celp_str_eq_str(const celp_str_t *a, const celp_str_t *b)
+{
+    return _celp_str_eq_raw(a->items, a->count, b->items, b->count);
+}
+
+CELP_DEF_SI bool 
+_celp_str_eq_cstr(const celp_str_t *a, const char *b)
+{
+    return _celp_str_eq_raw(a->items, a->count, b, strlen(b));
+}
+
+#define celp_str_eq(a, b) \
+    _Generic((b), \
+        celp_str_t:   _celp_str_eq_str, \
+        const char *: _celp_str_eq_cstr, \
+        char *:       _celp_str_eq_cstr \
+    )((a), (b))
+
+CELP_DEF celp_str_t celp_str(const char *chars);
+CELP_DEF void celp_str_append_n(celp_str_t *str, const char *c, celp_usize n);
+CELP_DEF void celp_str_append(celp_str_t *str, const char *c);
+#define celp_str_free(str)           celp_da_free((str))
+
+/* celp string view */
+typedef struct celp_strv_s {
+    char *items;
+    celp_usize count;
+} celp_strv_t;
+
+CELP_DEF_SI bool 
+_celp_strv_eq_strv(const celp_strv_t a, const celp_strv_t b)
+{
+    return _celp_str_eq_raw(a.items, a.count, b.items, b.count);
+}
+
+CELP_DEF_SI bool 
+_celp_strv_eq_cstr(const celp_strv_t a, const char *b)
+{
+    return _celp_str_eq_raw(a.items, a.count, b, strlen(b));
+}
+
+#define celp_strv_eq(a, b) \
+    _Generic((b), \
+        celp_strv_t:  _celp_strv_eq_strv, \
+        const char *: _celp_strv_eq_cstr, \
+        char *:       _celp_strv_eq_cstr \
+    )((a), (b))
+
+CELP_DEF celp_strv_t celp_strv_cstr_n(const char *c, celp_usize n);
+CELP_DEF celp_strv_t celp_strv_cstr(const char *c);
+CELP_DEF celp_strv_t celp_strv(celp_str_t *str);
+CELP_DEF celp_strv_t celp_strv_n(celp_str_t *str, celp_usize n);
+CELP_DEF celp_strv_t celp_strv_slice(celp_str_t *str,
+                                     celp_usize start,
+                                     celp_usize n);
+CELP_DEF void celp_strv_print(celp_strv_t view);
+
+/* Testing */
+#ifdef CELP_TEST
+
+#define CELP_TEST_FAIL_MSG_LEN 4096
+static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
+
+#define CELP_EXPECT(cond) do { \
+    celp_test_assertions++; \
+    if (!(cond)) { \
+        celp_test_fails++; \
+        celp_test_result = CELP_TEST_RESULT_FAIL; \
+        /*
+        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                 "%s:%s:%d (%s)\n", \
+                 __FILE__, __FUNCTION__, __LINE__, #cond); \
+        */ \
+        celp_log(0, _CELP_LOG_ERROR, \
+                 __FILE__, __FUNCTION__, __LINE__, \
+                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
+                "[FAILURE] ", "(%s)", #cond); \
+    } else { celp_test_passes++; } \
+} while(0)
+#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
+#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
+
+typedef enum celp_test_result_e {
+    CELP_TEST_RESULT_PASS,
+    CELP_TEST_RESULT_FAIL,
+    CELP_TEST_RESULT_NONE,
+} celp_test_result_t;
+
+static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
+static celp_u32 celp_test_runs = 0;
+static celp_u32 celp_test_passes = 0;
+static celp_u32 celp_test_fails = 0;
+static celp_u32 celp_test_assertions = 0;
+
+typedef struct celp_testcase_s {
+    char *name;
+    void (*testcase)(void);
+    celp_test_result_t result;
+} celp_testcase_t;
+
+celp_ll(celp_testcase_t);
+typedef struct celp_test_suite_s {
+    //struct celp_test_suite_s *suites;
+    char *name;
+    void (*setup)(void);
+    void (*teardown)(void);
+    celp_ll_t(celp_testcase_t) tests;
+} celp_test_suite_t;
+
+#define CELP_TESTCASE(t)      void _celp_testcase_##t()
+#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s()
+#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t()
+
+#define CELP_TEST_SUITE_START(s) \
+    CELP_DEF_SI celp_test_suite_t \
+    *_celp_test_suite_##s##_func() { \
+        celp_test_suite_t *_celp_test_suite_##s = \
+            CELP_MALLOC(sizeof(celp_test_suite_t)); \
+        _celp_test_suite_##s->name = #s; \
+        _celp_test_suite_##s->setup = NULL; \
+        _celp_test_suite_##s->teardown = NULL; \
+        celp_err_t _celp_test_suite_##s##_err; \
+        celp_ll_init(&_celp_test_suite_##s->tests, &_celp_test_suite_##s##_err); \
+        
+#define CELP_TEST_SUITE_ADD_SETUP(s, t) \
+        _celp_test_suite_##s->setup = &(_celp_test_setup_##t);
+
+#define CELP_TEST_SUITE_ADD_TEARDOWN(s, t) \
+        _celp_test_suite_##s->teardown = &(_celp_test_teardown_##t);
+
+#define CELP_TEST_SUITE_ADD_TEST(s, t) \
+        celp_testcase_t _##t; \
+        _##t.name = #t; \
+        _##t.testcase = &_celp_testcase_##t; \
+        _##t.result = CELP_TEST_RESULT_NONE; \
+        celp_ll_add(&_celp_test_suite_##s->tests, _##t, \
+                    &_celp_test_suite_##s##_err);
+
+#define CELP_TEST_SUITE_END(s) \
+        return _celp_test_suite_##s; \
+    }
+
+#define CELP_TEST_SUITE_RUN(s) \
+    celp_test_suite_t *_celp_test_suite_##s = \
+        _celp_test_suite_##s##_func(); \
+    if (_celp_test_suite_##s->setup) \
+        _celp_test_suite_##s->setup(); \
+    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+        celp_test_result = CELP_TEST_RESULT_NONE; \
+        _celp_test->data.testcase(); \
+        celp_test_runs++; \
+        _celp_test->data.result = celp_test_result; \
+    } \
+    if (_celp_test_suite_##s->teardown) \
+        _celp_test_suite_##s->teardown(); \
+
+#define CELP_TEST_SUITE_REPORT(s) \
+    celp_log(0, CELP_LOG_INFO, \
+             "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
+    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
+        celp_log(0, CELP_LOG_INFO, \
+                "\t[TESTCASE] ", "%s %s", _celp_test->data.name, \
+                (_celp_test->data.result==CELP_TEST_RESULT_FAIL) ? \
+                "[FAIL]" : "[PASS]"); \
+    } \
+    celp_log(0, CELP_LOG_INFO, \
+            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d" \
+            " - PASSED: %d - FAILED: %d", \
+            celp_test_runs, celp_test_assertions, \
+            celp_test_passes, celp_test_fails); \
+    celp_log(0, CELP_LOG_INFO, \
+             (celp_test_fails > 0) ? "[FAILURE] " : "", \
+             "%s", celp_test_fail_msg); \
+
+#define CELP_TEST_SUITE_DESTROY(s) \
+    celp_err_t _celp_test_suite_##s##_err; \
+    celp_ll_free(&_celp_test_suite_##s->tests, \
+                 &_celp_test_suite_##s##_err); \
+    CELP_FREE(_celp_test_suite_##s); \
+
+#endif //CELP_TEST
+
+
 //math macros
 #ifdef CELP_MATH
 
@@ -1587,183 +1786,6 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #endif //CELP_MATH
 
-/* celp string */
-celp_da(char);
-#define celp_str_t da_char_t
-
-#define celp_str_count(str) ((str)->count)
-#define celp_str_items(str) ((str)->items)
-
-CELP_DEF_SI bool 
-_celp_str_eq_str(const celp_str_t *a, const celp_str_t *b)
-{
-    return (celp_str_count(a) == celp_str_count(b) &&
-            memcmp(celp_str_items(a), celp_str_items(b), 
-                   celp_str_count(a)) == 0);
-}
-
-CELP_DEF_SI bool 
-_celp_str_eq_cstr(const celp_str_t *a, const char *b)
-{
-    celp_usize b_len = strlen(b);
-    return (celp_str_count(a) == b_len &&
-            memcmp(celp_str_items(a), b, b_len) == 0);
-}
-
-#define celp_str_eq(a, b) \
-    _Generic((b), \
-        celp_str_t:   _celp_str_eq_str, \
-        const char *: _celp_str_eq_cstr, \
-        char *:       _celp_str_eq_cstr \
-    )((a), (b))
-
-CELP_DEF celp_str_t celp_str(const char *chars);
-CELP_DEF void celp_str_append_n(celp_str_t *str, const char *c, celp_usize n);
-CELP_DEF void celp_str_append(celp_str_t *str, const char *c);
-#define celp_str_free(str)           celp_da_free((str))
-
-/* celp string view */
-typedef struct celp_str_view_s {
-    char *items;
-    celp_usize count;
-} celp_str_view_t;
-
-CELP_DEF_SI bool 
-celp_str_view_eq(const celp_str_view_t a, const celp_str_view_t b)
-{
-    return (celp_str_count(&a) == celp_str_count(&b) &&
-            memcmp(a.items, b.items, a.count));
-}
-
-CELP_DEF celp_str_view_t celp_str_view(celp_str_t *str);
-CELP_DEF celp_str_view_t celp_str_view_n(celp_str_t *str, celp_usize n);
-CELP_DEF void celp_str_view_print(celp_str_view_t view);
-
-/* Testing */
-#ifdef CELP_TEST
-
-#define CELP_TEST_FAIL_MSG_LEN 4096
-static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
-
-#define CELP_EXPECT(cond) do { \
-    celp_test_assertions++; \
-    if (!(cond)) { \
-        celp_test_fails++; \
-        celp_test_result = CELP_TEST_RESULT_FAIL; \
-        /*
-        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                 "%s:%s:%d (%s)\n", \
-                 __FILE__, __FUNCTION__, __LINE__, #cond); \
-        */ \
-        celp_log(0, _CELP_LOG_ERROR, \
-                 __FILE__, __FUNCTION__, __LINE__, \
-                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                "[FAILURE] ", "(%s)", #cond); \
-    } else { celp_test_passes++; } \
-} while(0)
-#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
-#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
-
-typedef enum celp_test_result_e {
-    CELP_TEST_RESULT_PASS,
-    CELP_TEST_RESULT_FAIL,
-    CELP_TEST_RESULT_NONE,
-} celp_test_result_t;
-
-static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
-static celp_u32 celp_test_runs = 0;
-static celp_u32 celp_test_passes = 0;
-static celp_u32 celp_test_fails = 0;
-static celp_u32 celp_test_assertions = 0;
-
-typedef struct celp_testcase_s {
-    char *name;
-    void (*testcase)(void);
-    celp_test_result_t result;
-} celp_testcase_t;
-
-celp_ll(celp_testcase_t);
-typedef struct celp_test_suite_s {
-    //struct celp_test_suite_s *suites;
-    char *name;
-    void (*setup)(void);
-    void (*teardown)(void);
-    celp_ll_t(celp_testcase_t) tests;
-} celp_test_suite_t;
-
-#define CELP_TESTCASE(t)      void _celp_testcase_##t()
-#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s()
-#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t()
-
-#define CELP_TEST_SUITE_START(s) \
-    CELP_DEF_SI celp_test_suite_t \
-    *_celp_test_suite_##s##_func() { \
-        celp_test_suite_t *_celp_test_suite_##s = \
-            CELP_MALLOC(sizeof(celp_test_suite_t)); \
-        _celp_test_suite_##s->name = #s; \
-        _celp_test_suite_##s->setup = NULL; \
-        _celp_test_suite_##s->teardown = NULL; \
-        celp_err_t _celp_test_suite_##s##_err; \
-        celp_ll_init(&_celp_test_suite_##s->tests, &_celp_test_suite_##s##_err); \
-        
-#define CELP_TEST_SUITE_ADD_SETUP(s, t) \
-        _celp_test_suite_##s->setup = &(_celp_test_setup_##t);
-
-#define CELP_TEST_SUITE_ADD_TEARDOWN(s, t) \
-        _celp_test_suite_##s->teardown = &(_celp_test_teardown_##t);
-
-#define CELP_TEST_SUITE_ADD_TEST(s, t) \
-        celp_testcase_t _##t; \
-        _##t.name = #t; \
-        _##t.testcase = &_celp_testcase_##t; \
-        _##t.result = CELP_TEST_RESULT_NONE; \
-        celp_ll_add(&_celp_test_suite_##s->tests, _##t, \
-                    &_celp_test_suite_##s##_err);
-
-#define CELP_TEST_SUITE_END(s) \
-        return _celp_test_suite_##s; \
-    }
-
-#define CELP_TEST_SUITE_RUN(s) \
-    celp_test_suite_t *_celp_test_suite_##s = \
-        _celp_test_suite_##s##_func(); \
-    if (_celp_test_suite_##s->setup) \
-        _celp_test_suite_##s->setup(); \
-    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
-        celp_test_result = CELP_TEST_RESULT_NONE; \
-        _celp_test->data.testcase(); \
-        celp_test_runs++; \
-        _celp_test->data.result = celp_test_result; \
-    } \
-    if (_celp_test_suite_##s->teardown) \
-        _celp_test_suite_##s->teardown(); \
-
-#define CELP_TEST_SUITE_REPORT(s) \
-    celp_log(0, CELP_LOG_INFO, \
-             "[TEST_SUITE] ", "%s", _celp_test_suite_##s->name); \
-    _celp_ll_foreach(&_celp_test_suite_##s->tests, _celp_test) { \
-        celp_log(0, CELP_LOG_INFO, \
-                "\t[TESTCASE] ", "%s %s", _celp_test->data.name, \
-                (_celp_test->data.result==CELP_TEST_RESULT_FAIL) ? \
-                "[FAIL]" : "[PASS]"); \
-    } \
-    celp_log(0, CELP_LOG_INFO, \
-            "[REPORT] ", "RUNS: %d - ASSERTIONS: %d" \
-            " - PASSED: %d - FAILED: %d", \
-            celp_test_runs, celp_test_assertions, \
-            celp_test_passes, celp_test_fails); \
-    celp_log(0, CELP_LOG_INFO, \
-             (celp_test_fails > 0) ? "[FAILURE] " : "", \
-             "%s", celp_test_fail_msg); \
-
-#define CELP_TEST_SUITE_DESTROY(s) \
-    celp_err_t _celp_test_suite_##s##_err; \
-    celp_ll_free(&_celp_test_suite_##s->tests, \
-                 &_celp_test_suite_##s##_err); \
-    CELP_FREE(_celp_test_suite_##s); \
-
-#endif //CELP_TEST
-
 #ifdef CELP_IMPLEMENTATION
 
 // can't apply usual STRIP_PREFIX logic to these flags
@@ -1894,20 +1916,42 @@ celp_str_append(celp_str_t *str, const char *c)
     celp_str_append_n(str, c, strlen(c));
 }
 
-CELP_DEF celp_str_view_t 
-celp_str_view(celp_str_t *str)
+CELP_DEF celp_strv_t 
+celp_strv_cstr_n(const char *c, celp_usize n)
 {
-    return (celp_str_view_t){str->items, str->count};
+    celp_strv_t view;
+    view.items = c;
+    view.count = n;
+
+    return view;
 }
 
-CELP_DEF celp_str_view_t 
-celp_str_view_n(celp_str_t *str, celp_usize n)
+CELP_DEF celp_strv_t 
+celp_strv_cstr(const char *c)
 {
-    return (celp_str_view_t){str->items, n};
+    return celp_strv_cstr_n(c, strlen(c));
+}
+
+CELP_DEF celp_strv_t 
+celp_strv(celp_str_t *str)
+{
+    return (celp_strv_t){str->items, str->count};
+}
+
+CELP_DEF celp_strv_t 
+celp_strv_n(celp_str_t *str, celp_usize n)
+{
+    return (celp_strv_t){str->items, n};
+}
+
+CELP_DEF celp_strv_t 
+celp_strv_slice(celp_str_t *str, celp_usize start, celp_usize n)
+{
+    return (celp_strv_t){str->items + start, n};
 }
 
 CELP_DEF void 
-celp_str_view_print(celp_str_view_t view)
+celp_strv_print(celp_strv_t view)
 {
     printf("%.*s\n", (int)view.count, view.items);
 }

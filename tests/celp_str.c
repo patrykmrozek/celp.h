@@ -14,7 +14,7 @@ CELP_TEST_TEARDOWN(str)
     celp_str_free(&str);
 }
 
-CELP_TESTCASE(str_create)
+CELP_TESTCASE(str)
 {
     bool str_eq = celp_str_eq(&str, hello);
     CELP_EXPECT(str_eq);
@@ -38,30 +38,49 @@ CELP_TESTCASE(str_append)
     CELP_EXPECT_EQ(celp_da_last(&str, NULL), *append);
 }
 
-CELP_TESTCASE(str_view_create)
+CELP_TESTCASE(strv)
 {
-    celp_str_view_t view = celp_str_view(&str);
-    // celp_str_view_print(view);
+    celp_strv_t view = celp_strv(&str);
+    CELP_EXPECT_EQ(str.count, view.count);
     CELP_EXPECT_EQ(str.items, view.items);
 }
 
-CELP_TESTCASE(str_view_n)
+CELP_TESTCASE(strv_cstr_n)
+{
+    const char *cstr = "hello";
+    celp_strv_t view = celp_strv_cstr(cstr);
+    CELP_EXPECT_EQ(view.items, cstr);
+}
+
+CELP_TESTCASE(strv_n)
 {
     celp_usize n = 5;
-    celp_str_view_t view = celp_str_view_n(&str, n);
-    // celp_str_view_print(view);
+    celp_strv_t view = celp_strv_n(&str, n);
+    //celp_strv_print(view);
     CELP_EXPECT_EQ(view.count, n);
+    CELP_EXPECT(celp_strv_eq(view, "hello"));
+}
+
+CELP_TESTCASE(strv_slice)
+{
+    celp_usize n = 5;
+    celp_strv_t view = celp_strv_slice(&str, 6, n);
+    //celp_strv_print(view);
+    CELP_EXPECT_EQ(view.count, n);
+    CELP_EXPECT(celp_strv_eq(view, "world"));
 }
 
 CELP_TEST_SUITE_START(string)
 {
     CELP_TEST_SUITE_ADD_SETUP(string, str);
     CELP_TEST_SUITE_ADD_TEARDOWN(string, str);
-    CELP_TEST_SUITE_ADD_TEST(string, str_create);
+    CELP_TEST_SUITE_ADD_TEST(string, str);
     CELP_TEST_SUITE_ADD_TEST(string, str_append_n);
     CELP_TEST_SUITE_ADD_TEST(string, str_append);
-    CELP_TEST_SUITE_ADD_TEST(string, str_view_create);
-    CELP_TEST_SUITE_ADD_TEST(string, str_view_n);
+    CELP_TEST_SUITE_ADD_TEST(string, strv_cstr_n);
+    CELP_TEST_SUITE_ADD_TEST(string, strv);
+    CELP_TEST_SUITE_ADD_TEST(string, strv_n);
+    CELP_TEST_SUITE_ADD_TEST(string, strv_slice);
 }
 CELP_TEST_SUITE_END(string);
 
