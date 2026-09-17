@@ -1622,6 +1622,23 @@ CELP_DEF void celp_str_append_n(celp_str_t *str, const char *c, celp_usize n);
 CELP_DEF void celp_str_append(celp_str_t *str, const char *c);
 #define celp_str_free(str)           celp_da_free((str))
 
+/* celp string view */
+typedef struct celp_str_view_s {
+    char *items;
+    celp_usize count;
+} celp_str_view_t;
+
+CELP_DEF_SI bool 
+celp_str_view_eq(const celp_str_view_t a, const celp_str_view_t b)
+{
+    return (celp_str_count(&a) == celp_str_count(&b) &&
+            memcmp(a.items, b.items, a.count));
+}
+
+CELP_DEF celp_str_view_t celp_str_view(celp_str_t *str);
+CELP_DEF celp_str_view_t celp_str_view_n(celp_str_t *str, celp_usize n);
+CELP_DEF void celp_str_view_print(celp_str_view_t view);
+
 /* Testing */
 #ifdef CELP_TEST
 
@@ -1875,6 +1892,24 @@ CELP_DEF void
 celp_str_append(celp_str_t *str, const char *c)
 {
     celp_str_append_n(str, c, strlen(c));
+}
+
+CELP_DEF celp_str_view_t 
+celp_str_view(celp_str_t *str)
+{
+    return (celp_str_view_t){str->items, str->count};
+}
+
+CELP_DEF celp_str_view_t 
+celp_str_view_n(celp_str_t *str, celp_usize n)
+{
+    return (celp_str_view_t){str->items, n};
+}
+
+CELP_DEF void 
+celp_str_view_print(celp_str_view_t view)
+{
+    printf("%.*s\n", (int)view.count, view.items);
 }
 
 #endif //CELP_IMPLEMENTATION

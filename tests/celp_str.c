@@ -23,7 +23,7 @@ CELP_TESTCASE(str_create)
 CELP_TESTCASE(str_append_n)
 {
     celp_usize old_count = str.count;
-    const char *append_n = "testing";
+    const char *append_n = " testing";
     celp_usize len = strlen(append_n);
     celp_str_append_n(&str, append_n, len);
     CELP_EXPECT_EQ(str.count, old_count + len);
@@ -38,6 +38,21 @@ CELP_TESTCASE(str_append)
     CELP_EXPECT_EQ(celp_da_last(&str, NULL), *append);
 }
 
+CELP_TESTCASE(str_view_create)
+{
+    celp_str_view_t view = celp_str_view(&str);
+    // celp_str_view_print(view);
+    CELP_EXPECT_EQ(str.items, view.items);
+}
+
+CELP_TESTCASE(str_view_n)
+{
+    celp_usize n = 5;
+    celp_str_view_t view = celp_str_view_n(&str, n);
+    // celp_str_view_print(view);
+    CELP_EXPECT_EQ(view.count, n);
+}
+
 CELP_TEST_SUITE_START(string)
 {
     CELP_TEST_SUITE_ADD_SETUP(string, str);
@@ -45,6 +60,8 @@ CELP_TEST_SUITE_START(string)
     CELP_TEST_SUITE_ADD_TEST(string, str_create);
     CELP_TEST_SUITE_ADD_TEST(string, str_append_n);
     CELP_TEST_SUITE_ADD_TEST(string, str_append);
+    CELP_TEST_SUITE_ADD_TEST(string, str_view_create);
+    CELP_TEST_SUITE_ADD_TEST(string, str_view_n);
 }
 CELP_TEST_SUITE_END(string);
 
