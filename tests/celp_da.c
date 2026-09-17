@@ -27,6 +27,17 @@ CELP_TESTCASE(da_append)
     CELP_EXPECT_EQ(n.count, num_append);
 }
 
+CELP_TESTCASE(da_append_many)
+{
+    err = CELP_ERR_OK;
+    celp_usize old_count = n.count;
+    const int size = 5;
+    int nums[size] = {1, 2, 3, 4, 5};
+    celp_da_append_many(&n, nums, size, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
+    CELP_EXPECT_EQ(old_count+size, n.count);
+}
+
 CELP_TESTCASE(da_last)
 {
     err = CELP_ERR_OK;
@@ -122,6 +133,7 @@ CELP_TEST_SUITE_START(dynamic_array);
     CELP_TEST_SUITE_ADD_TEARDOWN(dynamic_array, da);
 
     CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_append);
+    CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_append_many);
     CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_pop);
     CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_last);
     CELP_TEST_SUITE_ADD_TEST(dynamic_array, da_remove);

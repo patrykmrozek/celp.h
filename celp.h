@@ -542,6 +542,20 @@ CELP_DEF void celp_log(celp_u8 level,
         _celp_stmt_end(da_append); \
     } while(0)
 
+#define _celp_da_append_many(da, new_items, new_items_count, err); \
+    do { \
+        _celp_stmt_init((err), da_append_many); \
+        \
+        _celp_da_reserve((da), (da)->count + (new_items_count), _celp_err); \
+        _celp_propogate(da_append_many); \
+        \
+        memcpy((da)->items + (da)->count, (new_items), \
+               (new_items_count)*sizeof(*(da)->items)); \
+        (da)->count += (new_items_count); \
+        \
+        _celp_stmt_end(da_append_many); \
+    } while(0);
+
 #define _celp_da_last(da, err) \
     ({ \
         _celp_expr_init(_da_item_t((da)), (err), da_last); \
@@ -597,6 +611,9 @@ CELP_DEF void celp_log(celp_u8 level,
 
 #define celp_da_append(da, item, ...) \
     _celp_da_append((da), (item), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_append_many(da, new_items, new_items_count, ...); \
+    _celp_da_append_many(da, new_items, new_items_count, _celp_err_arg(__VA_ARGS__))
 
 #define celp_da_last(da, ...) \
     _celp_da_last((da), _celp_err_arg(__VA_ARGS__))
@@ -1575,11 +1592,11 @@ typedef struct celp_str_s {
     celp_da_t(char) buf;
 } celp_str_t;
 
-#define celp_str_count(str) ((str).buf.count)
-#define celp_str_items(str) ((str).buf.items)
+#define celp_str_count(str) ((str)->buf.count)
+#define celp_str_items(str) ((str)->buf.items)
 
 CELP_DEF_SI bool 
-_celp_str_eq_str(celp_str_t a, celp_str_t b)
+_celp_str_eq_str(celp_str_t *a, celp_str_t *b)
 {
     return (celp_str_count(a) == celp_str_count(b) &&
             memcmp(celp_str_items(a), celp_str_items(b), 
@@ -1587,7 +1604,7 @@ _celp_str_eq_str(celp_str_t a, celp_str_t b)
 }
 
 CELP_DEF_SI bool 
-_celp_str_eq_cstr(celp_str_t a, const char *b)
+_celp_str_eq_cstr(celp_str_t *a, const char *b)
 {
     celp_usize b_len = strlen(b);
     return (celp_str_count(a) == b_len &&
@@ -1840,7 +1857,7 @@ celp_str(const char *chars)
     celp_usize str_len = strlen(chars);
 
     _celp_da_reserve(&str.buf, str_len + 1, NULL);
-    memcpy(str.buf.items, chars, str_len + 1);
+    memcpy(str.buf.items, chars, str_len + 1); /*chars[str_len] = '\0'*/
     str.buf.count = str_len;
 
     return str;
@@ -1903,6 +1920,7 @@ celp_str_free(celp_str_t *str)
     #define da_clear                celp_da_clear
     #define da_is_empty             celp_da_is_empty
     #define da_append               celp_da_append
+    #define da_append_many          celp_da_append_many
     #define da_last                 celp_da_last
     #define da_pop                  celp_da_pop
     #define da_remove               celp_da_remove
