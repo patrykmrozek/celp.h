@@ -1002,6 +1002,31 @@ CELP_DEF void celp_log(celp_u8 level,
     _celp_ll_free((ll), _celp_err_arg(__VA_ARGS__))
 
 
+/* celp linked list (using links) */
+
+typedef struct celp_link_s {
+    struct celp_link_s *prev;
+    struct celp_link_s *next;
+} celp_link_t;
+
+typedef struct celp_links_s {
+    celp_link_t head;
+    celp_link_t tail;
+    celp_usize count;
+} celp_links_t;
+
+#define celp_link_part_of(link, T, member) \
+    ((T *)((char *)(link) - offsetof(T, member)))
+
+CELP_DEF void celp_links_init(celp_links_t *links);
+CELP_DEF void celp_links_add(celp_links_t *links, celp_link_t *link);
+CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
+
+#define celp_links_foreach(links, iter) \
+    for (celp_link_t *(iter) = (links)->head.next; \
+         (iter) != &(links)->tail; \
+         (iter) = (iter)->next)
+
 /* celp hash map implementation */
 /*
  * Generic hash map implementation (celp_map). The map is made up of a few 
@@ -1787,6 +1812,36 @@ typedef struct celp_test_suite_s {
 #endif //CELP_MATH
 
 #ifdef CELP_IMPLEMENTATION
+
+CELP_DEF void 
+celp_links_init(celp_links_t *links)
+{
+    links->head.prev = NULL;
+    links->head.next = &links->tail;
+    links->tail.next = NULL;
+    links->tail.prev = &links->head;
+    links->count = 0;
+}
+
+CELP_DEF void 
+celp_links_add(celp_links_t *links, celp_link_t *link)
+{
+    link->prev = links->tail.prev;
+    link->next = &links->tail;
+    links->tail.prev->next = link;
+    links->tail.prev = link;
+    links->count++;
+}
+
+CELP_DEF void 
+celp_links_unlink(celp_links_t *links, celp_link_t *link)
+{
+    link->prev->next = link->next;
+    link->next->prev = link->prev;
+    link->next = NULL;
+    link->prev = NULL;
+    links->count--;
+}
 
 // can't apply usual STRIP_PREFIX logic to these flags
 // since theyre passed in through stdin theyre technically
