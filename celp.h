@@ -1304,9 +1304,6 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
 celp_da(char);
 typedef da_char_t celp_str_t;
 
-#define celp_str_count(str) ((str)->count)
-#define celp_str_items(str) ((str)->items)
-
 CELP_DEF_SI bool 
 _celp_str_eq_raw(const char *a, celp_usize a_count,
                  const char *b, celp_usize b_count)
@@ -2081,6 +2078,14 @@ celp_strv_print(celp_strv_t view)
     #define ll_foreach              celp_ll_foreach
     #define ll_free                 celp_ll_free
     #define ll_info                 celp_ll_info
+    //celp_links
+    #define link_t                  celp_link_t
+    #define link_part_of            celp_link_part_of
+    #define links_t                 celp_links_t
+    #define links_init              celp_links_init
+    #define links_add               celp_links_add
+    #define links_unlink            celp_links_unlink
+    #define lniks_foreach           celp_links_foreach
     //celp_map
     #define kv                      celp_kv
     #define kv_t                    celp_kv_t
@@ -2095,6 +2100,22 @@ celp_strv_print(celp_strv_t view)
     #define map_remove              celp_map_remove
     #define map_free                celp_map_free
     #define map_info                celp_map_info
+    //celp_str
+    #define str_t                   celp_str_t
+    #define str_eq                  celp_str_eq 
+    #define str                     celp_str 
+    #define str_append_n            celp_str_append_n
+    #define str_append              celp_str_append
+    #define str_free                celp_str_free 
+    //celp_strv
+    #define strv_t                  celp_strv_t 
+    #define strv_eq                 celp_strv_eq
+    #define strv_cstr_n             celp_strv_cstr_n
+    #define strv_cstr               celp_strv_cstr
+    #define strv_n                  celp_strv_n 
+    #define strv                    celp_strv 
+    #define strv_slice              celp_strv_slice
+    #define strv_print              celp_strv_print
 
 #ifdef CELP_TEST
     #define EXPECT                  CELP_EXPECT
