@@ -1337,7 +1337,7 @@ CELP_DEF void celp_str_append(celp_str_t *str, const char *c);
 
 /* celp string view */
 typedef struct celp_strv_s {
-    char *items;
+    const char *items;
     celp_usize count;
 } celp_strv_t;
 
@@ -1362,9 +1362,9 @@ _celp_strv_eq_cstr(const celp_strv_t a, const char *b)
 
 CELP_DEF celp_strv_t celp_strv_cstr_n(const char *c, celp_usize n);
 CELP_DEF celp_strv_t celp_strv_cstr(const char *c);
-CELP_DEF celp_strv_t celp_strv(celp_str_t *str);
-CELP_DEF celp_strv_t celp_strv_n(celp_str_t *str, celp_usize n);
-CELP_DEF celp_strv_t celp_strv_slice(celp_str_t *str,
+CELP_DEF celp_strv_t celp_strv(const celp_str_t *str);
+CELP_DEF celp_strv_t celp_strv_n(const celp_str_t *str, celp_usize n);
+CELP_DEF celp_strv_t celp_strv_slice(const celp_str_t *str,
                                      celp_usize start,
                                      celp_usize n);
 CELP_DEF void celp_strv_print(celp_strv_t view);
@@ -1973,11 +1973,10 @@ celp_str_append(celp_str_t *str, const char *c)
 CELP_DEF celp_strv_t 
 celp_strv_cstr_n(const char *c, celp_usize n)
 {
-    celp_strv_t view;
-    view.items = c;
-    view.count = n;
-
-    return view;
+    return (celp_strv_t) {
+        .items = c,
+        .count = n,
+    };
 }
 
 CELP_DEF celp_strv_t 
@@ -1987,25 +1986,25 @@ celp_strv_cstr(const char *c)
 }
 
 CELP_DEF celp_strv_t 
-celp_strv(celp_str_t *str)
+celp_strv_n(const celp_str_t *str, celp_usize n)
 {
-    return (celp_strv_t){str->items, str->count};
+    return celp_strv_cstr_n(str->items, n);
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_n(celp_str_t *str, celp_usize n)
+celp_strv(const celp_str_t *str)
 {
-    return (celp_strv_t){str->items, n};
+    return celp_strv_n(str, str->count);
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_slice(celp_str_t *str, celp_usize start, celp_usize n)
+celp_strv_slice(const celp_str_t *str, celp_usize start, celp_usize n)
 {
-    return (celp_strv_t){str->items + start, n};
+    return celp_strv_cstr_n(str->items + start, n);
 }
 
 CELP_DEF void 
-celp_strv_print(celp_strv_t view)
+celp_strv_print(const celp_strv_t view)
 {
     printf("%.*s\n", (int)view.count, view.items);
 }
