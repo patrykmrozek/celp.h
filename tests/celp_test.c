@@ -8,6 +8,7 @@ extern void test_celp_map();
 extern void test_celp_math();
 extern void test_celp_str();
 extern void test_celp_links();
+extern void test_celp_arena();
 
 int main()
 {
@@ -17,6 +18,7 @@ int main()
     test_celp_map();
     test_celp_str();
     test_celp_links();
+    test_celp_arena();
     //test_celp_math();
     return 0;
 }

@@ -9,6 +9,7 @@ $(OUT_TEST):
 		tests/celp_map.c \
 		tests/celp_str.c \
 		tests/celp_links.c \
+		tests/celp_arena.c \
 		tests/celp_math.c \
 		-o $(OUT_TEST)
 

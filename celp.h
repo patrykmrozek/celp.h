@@ -356,6 +356,23 @@ celp_last_err_print(void)
     _celp_out_label(fname): \
         ((void)0) \
 
+/* celp arena allocator */
+typedef struct celp_arena_s {
+    void *buffer;
+    celp_usize offset;
+    celp_usize capacity;
+} celp_arena_t;
+
+CELP_DEF celp_arena_t *celp_arena_create(celp_usize size);
+CELP_DEF void celp_arena_free(celp_arena_t *arena);
+CELP_DEF void *celp_arena_alloc(celp_arena_t *arena, celp_usize size);
+
+CELP_DEF_SI void
+celp_arena_reset(celp_arena_t *arena)
+{
+    arena->offset = sizeof(celp_arena_t);
+}
+
 /* celp logging */
 /*
  * celp_log() is designed to be a detailed logger, giving the user absolute 
@@ -1394,7 +1411,7 @@ static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
         celp_log(0, _CELP_LOG_ERROR, \
                  __FILE__, __FUNCTION__, __LINE__, \
                  NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                "[FAILURE] ", "(%s)", #cond); \
+                "[FAILURE] ", "(%s)\n", #cond); \
     } \
 } while(0)
 #define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
@@ -1910,6 +1927,49 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 
 #ifdef CELP_IMPLEMENTATION
 
+/* celp arena*/
+CELP_DEF celp_arena_t*
+celp_arena_create(celp_usize size)
+{
+    celp_usize bsize = sizeof(celp_arena_t) + size; /*first block is our struct*/
+    celp_arena_t *arena = malloc(bsize);
+    arena->buffer = (celp_u8 *)arena + sizeof(celp_arena_t);
+    arena->capacity = size;
+    arena->offset = 0;
+    return arena;
+}
+
+CELP_DEF void
+celp_arena_free(celp_arena_t *arena)
+{
+    free(arena);
+}
+
+CELP_DEF_SI celp_usize 
+_celp_arena_align(celp_usize val, celp_usize align)
+{
+    /*
+     * sort of larped this one up.. anyhow, esentially, align-1 produces a
+     * binary with last 3 digits as 1: xxxxx111, then this can be used to 
+     * NOT against the val + the NOT calculation, to round up to the
+     * nearest multiple of 8, since all multiples of 8 in binary end with
+     * xxxxx000..
+     */
+    return (val + align - 1) & ~(align - 1);
+}
+
+#define CELP_ARENA_ALIGN 8
+
+CELP_DEF void*
+celp_arena_alloc(celp_arena_t *arena, celp_usize size)
+{
+    celp_usize offset = _celp_arena_align(arena->offset, CELP_ARENA_ALIGN);
+    void *ret = (celp_u8 *)arena->buffer + offset;
+    arena->offset += size;
+    return ret;
+}
+
+/* celp links */
 CELP_DEF void 
 celp_links_init(celp_links_t *links)
 {
