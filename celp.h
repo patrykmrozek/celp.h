@@ -1517,6 +1517,8 @@ celp_time_now(void)
 
 typedef struct celp_profile_s {
     const char *name;
+    struct celp_profile_s *parent;
+
     celp_time_t last;
     celp_time_t elapsed;
     /*
@@ -1527,19 +1529,50 @@ typedef struct celp_profile_s {
     */
 } celp_profile_t;
 
-#define CELP_PROFILE_START(p) \
+typedef celp_profile_t* celp_profile_p_t;
+celp_da(celp_profile_p_t);
+#define celp_profiler_t celp_da_t(celp_profile_p_t)
+static celp_profiler_t celp_profiler;
+
+#define CELP_PROFILE_PARENT(par) \
+    (&_celp_profile_##par)
+
+#define CELP_PROFILE_START(p, par) \
     static celp_profile_t _celp_profile_##p = { \
         .name = #p, \
+        .parent = (par), \
     }; \
     _celp_profile_##p.last = celp_time_now(); \
-
+    _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL); \
 
 #define CELP_PROFILE_END(p) \
     _celp_profile_##p.elapsed = celp_time_now() - _celp_profile_##p.last; \
 
+#define _CELP_PROFILE_MAX_TABS 16
+
+CELP_DEF_SI void
+_celp_profile_report(celp_profile_t *profile, celp_u8 depth)
+{
+    char tab_buf[_CELP_PROFILE_MAX_TABS];
+    memset(tab_buf, '\t', depth);
+    tab_buf[depth] = '\0';
+
+    celp_log(0, CELP_LOG_INFO, "", "%s[PROFILE] %s \n\t%sElapsed: %f\n",
+             tab_buf, profile->name, tab_buf, CELP_TIME_MS(profile->elapsed));
+
+    celp_da_foreach(&celp_profiler, p) {
+        celp_profile_t *child = *p;
+        if (child->parent == profile) {
+            _celp_profile_report(child, depth+1);
+        }
+    }
+}
+
 #define CELP_PROFILE_REPORT(p) \
-    celp_log(0, CELP_LOG_INFO, "[PROFILE] ", "%s\n\tElapsed: %f", \
-             _celp_profile_##p.name, CELP_TIME_SEC(_celp_profile_##p.elapsed));
+    _celp_profile_report(&_celp_profile_##p, 0)
+
+#define CELP_PROFILE_FREE() \
+    celp_da_free(&celp_profiler, NULL);
 
 #endif //CELP_PROFILE
 
