@@ -73,7 +73,7 @@ CELP_TESTCASE(da_remove_invalid)
     err = CELP_ERR_OK;
     int invalid_idx = 999;
     int removed = celp_da_remove(&n, invalid_idx, &err);
-    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(err, CELP_ERR_ARG);
 }
 
 CELP_TESTCASE(da_foreach)
@@ -116,14 +116,14 @@ CELP_TESTCASE(da_last_invalid)
 {
     err = CELP_ERR_OK;
     int last = celp_da_last(&n, &err);
-    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(err, CELP_ERR_EMPTY);
 }
 
 CELP_TESTCASE(da_pop_invalid)
 {
     err = CELP_ERR_OK;
     int popped_val = celp_da_pop(&n, &err);
-    CELP_EXPECT_EQ(err, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(err, CELP_ERR_EMPTY);
 }
 
 

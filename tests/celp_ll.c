@@ -20,34 +20,34 @@ CELP_TESTCASE(ll_get_first_empty)
 {
     error = CELP_ERR_OK;
     (void)celp_ll_get_first(&n, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(error, CELP_ERR_EMPTY);
 }
 
 CELP_TESTCASE(ll_get_last_empty)
 {
     error = CELP_ERR_OK;
     (void)celp_ll_get_last(&n, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(error, CELP_ERR_EMPTY);
 }
 CELP_TESTCASE(ll_get_first_node_empty)
 {
     error = CELP_ERR_OK;
     (void)celp_ll_get_first_node(&n, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(error, CELP_ERR_EMPTY);
 }
 
 CELP_TESTCASE(ll_remove_first_empty)
 {
     error = CELP_ERR_OK;
     (void)celp_ll_remove_first(&n, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(error, CELP_ERR_EMPTY);
 }
 
 CELP_TESTCASE(ll_remove_last_empty)
 {
     error = CELP_ERR_OK;
     (void)celp_ll_remove_last(&n, &error);
-    CELP_EXPECT_EQ(error, CELP_ERR_OOB);
+    CELP_EXPECT_EQ(error, CELP_ERR_EMPTY);
 }
 
 CELP_TESTCASE(ll_add)
