@@ -1031,7 +1031,7 @@ CELP_DEF void celp_log(celp_u8 level,
     _celp_ll_free((ll), _celp_err_arg(__VA_ARGS__))
 
 
-/* celp linked list (using links) */
+/* celp links */
 
 typedef struct celp_link_s {
     struct celp_link_s *prev;
@@ -1931,22 +1931,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #ifdef CELP_IMPLEMENTATION
 
 /* celp arena*/
-CELP_DEF celp_arena_t*
-celp_arena_create(celp_usize size)
-{
-    celp_usize bsize = sizeof(celp_arena_t) + size; /*first block is our struct*/
-    celp_arena_t *arena = malloc(bsize);
-    arena->buffer = (celp_u8 *)arena + sizeof(celp_arena_t);
-    arena->capacity = size;
-    arena->offset = 0;
-    return arena;
-}
-
-CELP_DEF void
-celp_arena_free(celp_arena_t *arena)
-{
-    free(arena);
-}
+#define CELP_ARENA_ALIGN 8
 
 CELP_DEF_SI celp_usize 
 _celp_arena_align(celp_usize val, celp_usize align)
@@ -1961,7 +1946,23 @@ _celp_arena_align(celp_usize val, celp_usize align)
     return (val + align - 1) & ~(align - 1);
 }
 
-#define CELP_ARENA_ALIGN 8
+CELP_DEF celp_arena_t*
+celp_arena_create(celp_usize size)
+{
+    celp_usize align = _celp_arena_align(sizeof(celp_arena_t), CELP_ARENA_ALIGN);
+    celp_usize bsize =  align + size;
+    celp_arena_t *arena = malloc(bsize);
+    arena->buffer = (celp_u8 *)arena + align;
+    arena->capacity = size;
+    arena->offset = 0;
+    return arena;
+}
+
+CELP_DEF void
+celp_arena_free(celp_arena_t *arena)
+{
+    free(arena);
+}
 
 CELP_DEF void*
 celp_arena_alloc(celp_arena_t *arena, celp_usize size)
