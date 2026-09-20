@@ -8,9 +8,11 @@
  *  celp_links - intrusive linked list implementation
  *  celp_map - generic hashmap implementation
  *  celp_str/strv - string/string-view implementation
- *  CELP_MATH - generic linear algebra
  *  CELP_TEST - a lightweight unit testing framework
+ *  CELP_PROFILE - a lightweight profiling framework
+ *  CELP_MATH - generic linear algebra
  *  CELP_ERRORS - error handling
+ *  celp_time - simple time utility
  *
  * Additional Features:
  *
@@ -1520,6 +1522,7 @@ celp_time_now(void)
            (celp_time_t)ts.tv_nsec;
 }
 
+/* profiling */
 #ifdef CELP_PROFILE
 
 typedef struct celp_profile_s {

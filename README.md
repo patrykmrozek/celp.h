@@ -4,18 +4,22 @@
 ### Features
 - `celp_da` - Dynamic Array
 - `celp_ll` - Linked List
+- `celp_links` - Intrusive Linked List
 - `celp_map` - HashMap
+- `celp_str/celp_strv` - String/StringView
 - `celp_log` - Logging (or helpful macros `CELP_INFO/DEBUG/ERROR/TRACE`)
-- `CELP_TEST` - Unit Testing Framework
+- `CELP_TEST` - Lightweight Unit Testing Framework
+- `CELP_PROFILE` - Lightweight Profiling Framework
 - `CELP_MATH` - Linear Algebra (v2, v3, v4, m4)
 - `CELP_ERRORS` - Error handling
+- `celp_time` - time
 - `CELP_STRIP_PREFIX` - Prefix Stripping (if you don't want to keep writing celp..)
 - Type aliases
 - Other useful utilities..
 
 ### Usage
 ```C
-#define CELP_TEST/CELP_MATH (if needed)
+#define CELP_TEST/CELP_PROFILE/CELP_MATH (if needed)
 #define CELP_STRIP_PREFIX (optional)
 #define CELP_ERRORS (recommended)
 #define CELP_IMPLEMENTATION (define only once)
