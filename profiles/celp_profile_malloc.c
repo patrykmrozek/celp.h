@@ -4,10 +4,9 @@
 int celp_profile_malloc(const celp_usize iterations,
                         const celp_u8 block_size)
 {
-    void **pointers = malloc(iterations * block_size);
-
     CELP_PROFILE_START(malloc, NULL);
     {
+        void **pointers = malloc(iterations * block_size);
         CELP_PROFILE_START(malloc_alloc, CELP_PROFILE_PARENT(malloc));
         {
             for (int i = 0; i < iterations; i++) {
@@ -26,7 +25,6 @@ int celp_profile_malloc(const celp_usize iterations,
             }
         }
         CELP_PROFILE_END(malloc_free);
-        CELP_PROFILE_COUNT(malloc);
     }
     CELP_PROFILE_END(malloc);
     CELP_PROFILE_REPORT(malloc);

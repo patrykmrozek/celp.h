@@ -1574,8 +1574,11 @@ static celp_profiler_t celp_profiler;
     _celp_profile_##p.stats.count++
 
 #define CELP_PROFILE_END(p) \
-    _celp_profile_##p.stats.elapsed = celp_time_now() - _celp_profile_##p.stats.last; \
-    _celp_profile_##p.stats.avg = _celp_profile_##p.stats.elapsed / _celp_profile_##p.stats.count; \
+    do { \
+        _celp_profile_##p.stats.elapsed = celp_time_now() - _celp_profile_##p.stats.last; \
+        _celp_profile_##p.stats.avg = (_celp_profile_##p.stats.count > 0) ? \
+            _celp_profile_##p.stats.elapsed / _celp_profile_##p.stats.count : 0; \
+    } while(0)
 
 #define _CELP_PROFILE_MAX_TABS 16
 
