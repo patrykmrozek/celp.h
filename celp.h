@@ -5,7 +5,9 @@
  *  celp_log - comprehensive and detailed logger
  *  celp_da - generic dynamic array implementation
  *  celp_ll - generic doubly linked list implementation
+ *  celp_links - intrusive linked list implementation
  *  celp_map - generic hashmap implementation
+ *  celp_str/strv - string/string-view implementation
  *  CELP_MATH - generic linear algebra
  *  CELP_TEST - a lightweight unit testing framework
  *  CELP_ERRORS - error handling
@@ -1378,18 +1380,12 @@ static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
 #define CELP_EXPECT(cond) do { \
     celp_test_assertions++; \
     if (!(cond)) { \
-        celp_test_fails++; \
         celp_test_result = CELP_TEST_RESULT_FAIL; \
-        /*
-        snprintf(celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                 "%s:%s:%d (%s)\n", \
-                 __FILE__, __FUNCTION__, __LINE__, #cond); \
-        */ \
         celp_log(0, _CELP_LOG_ERROR, \
                  __FILE__, __FUNCTION__, __LINE__, \
                  NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
                 "[FAILURE] ", "(%s)", #cond); \
-    } else { celp_test_passes++; } \
+    } \
 } while(0)
 #define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
 #define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
@@ -1466,6 +1462,8 @@ typedef struct celp_test_suite_s {
         _celp_test->testcase(); \
         celp_test_runs++; \
         _celp_test->result = celp_test_result; \
+        (_celp_test->result==CELP_TEST_RESULT_FAIL) ? \
+            celp_test_fails++ : celp_test_passes++; \
     } \
     if (_celp_test_suite_##s->teardown) \
         _celp_test_suite_##s->teardown(); \
