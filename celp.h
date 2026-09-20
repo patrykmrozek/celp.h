@@ -1498,7 +1498,7 @@ typedef struct celp_test_suite_s {
 // celp time
 #define celp_time_t celp_u64
 
-#define CELP_TIME_SEC(t) ((celp_f64)(t) / 1000000000.0) 
+#define CELP_TIME_S(t)   ((celp_f64)(t) / 1000000000.0) 
 #define CELP_TIME_MS(t)  ((celp_f64)(t) / 1000000.0) 
 #define CELP_TIME_US(t)  ((celp_f64)(t) / 1000.0) 
 
@@ -1519,14 +1519,12 @@ typedef struct celp_profile_s {
     const char *name;
     struct celp_profile_s *parent;
 
-    celp_time_t last;
-    celp_time_t elapsed;
-    /*
-    celp_usize calls;
-    celp_time_t avg;
-    celp_time_t min;
-    celp_time_t max;
-    */
+    struct {
+        celp_time_t last;
+        celp_time_t elapsed;
+        celp_usize  count;
+        celp_time_t avg;
+    } stats;
 } celp_profile_t;
 
 typedef celp_profile_t* celp_profile_p_t;
@@ -1542,23 +1540,34 @@ static celp_profiler_t celp_profiler;
         .name = #p, \
         .parent = (par), \
     }; \
-    _celp_profile_##p.last = celp_time_now(); \
+    _celp_profile_##p.stats.last = celp_time_now(); \
     _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL); \
 
+#define CELP_PROFILE_COUNT(p) \
+    _celp_profile_##p.stats.count++
+
 #define CELP_PROFILE_END(p) \
-    _celp_profile_##p.elapsed = celp_time_now() - _celp_profile_##p.last; \
+    _celp_profile_##p.stats.elapsed = celp_time_now() - _celp_profile_##p.stats.last; \
+    _celp_profile_##p.stats.avg = _celp_profile_##p.stats.elapsed / _celp_profile_##p.stats.count; \
 
 #define _CELP_PROFILE_MAX_TABS 16
 
 CELP_DEF_SI void
 _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 {
-    char tab_buf[_CELP_PROFILE_MAX_TABS];
-    memset(tab_buf, '\t', depth);
-    tab_buf[depth] = '\0';
+    char tab[_CELP_PROFILE_MAX_TABS];
+    memset(tab, '\t', depth);
+    tab[depth] = '\0';
 
-    celp_log(0, CELP_LOG_INFO, "", "%s[PROFILE] %s \n\t%sElapsed: %f\n",
-             tab_buf, profile->name, tab_buf, CELP_TIME_MS(profile->elapsed));
+    celp_log(0, CELP_LOG_INFO, "", 
+            "%s[PROFILE] %s "
+            "\n\t%sElapsed: %fs"
+            "\n\t%sCount: %zu"
+            "\n\t%sAvg: %fms\n",
+             tab, profile->name,
+             tab, CELP_TIME_S(profile->stats.elapsed),
+             tab, profile->stats.count,
+             tab, CELP_TIME_MS(profile->stats.avg));
 
     celp_da_foreach(&celp_profiler, p) {
         celp_profile_t *child = *p;
