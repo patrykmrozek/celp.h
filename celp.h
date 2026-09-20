@@ -76,6 +76,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 #define celp_f32   float
 #define celp_f64   double
@@ -1494,6 +1495,53 @@ typedef struct celp_test_suite_s {
 
 #endif //CELP_TEST
 
+// celp time
+#define celp_time_t celp_u64
+
+#define CELP_TIME_SEC(t) ((celp_f64)(t) / 1000000000.0) 
+#define CELP_TIME_MS(t)  ((celp_f64)(t) / 1000000.0) 
+#define CELP_TIME_US(t)  ((celp_f64)(t) / 1000.0) 
+
+CELP_DEF_SI celp_time_t
+celp_time_now(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    //returns nanosec
+    return (celp_time_t)ts.tv_sec * 1000000000ULL + 
+           (celp_time_t)ts.tv_nsec;
+}
+
+#ifdef CELP_PROFILE
+
+typedef struct celp_profile_s {
+    const char *name;
+    celp_time_t last;
+    celp_time_t elapsed;
+    /*
+    celp_usize calls;
+    celp_time_t avg;
+    celp_time_t min;
+    celp_time_t max;
+    */
+} celp_profile_t;
+
+#define CELP_PROFILE_START(p) \
+    static celp_profile_t _celp_profile_##p = { \
+        .name = #p, \
+    }; \
+    _celp_profile_##p.last = celp_time_now(); \
+
+
+#define CELP_PROFILE_END(p) \
+    _celp_profile_##p.elapsed = celp_time_now() - _celp_profile_##p.last; \
+
+#define CELP_PROFILE_REPORT(p) \
+    celp_log(0, CELP_LOG_INFO, "[PROFILE] ", "%s\n\tElapsed: %f", \
+             _celp_profile_##p.name, CELP_TIME_SEC(_celp_profile_##p.elapsed));
+
+#endif //CELP_PROFILE
 
 //math macros
 #ifdef CELP_MATH
