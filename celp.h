@@ -104,6 +104,9 @@
         (b) = _tmp; \
     } while (0)
 
+#define CELP_MAX(a, b) ((a > b) ? a : b)
+#define CELP_MIN(a, b) ((a < b) ? a : b)
+
 #define _CELP_CAT(a, b) a##b
 #define CELP_CAT(a, b) _CELP_CAT(a, b)
 
@@ -355,23 +358,6 @@ celp_last_err_print(void)
 #define _celp_stmt_end(fname) \
     _celp_out_label(fname): \
         ((void)0) \
-
-/* celp arena allocator */
-typedef struct celp_arena_s {
-    void *buffer;
-    celp_usize offset;
-    celp_usize capacity;
-} celp_arena_t;
-
-CELP_DEF celp_arena_t *celp_arena_create(celp_usize size);
-CELP_DEF void celp_arena_free(celp_arena_t *arena);
-CELP_DEF void *celp_arena_alloc(celp_arena_t *arena, celp_usize size);
-
-CELP_DEF_SI void
-celp_arena_reset(celp_arena_t *arena)
-{
-    arena->offset = sizeof(celp_arena_t);
-}
 
 /* celp logging */
 /*
@@ -1398,6 +1384,34 @@ CELP_DEF celp_strv_t celp_strv_slice(const celp_str_t *str,
                                      celp_usize n);
 CELP_DEF void celp_strv_print(celp_strv_t view);
 
+/* celp arena allocator */
+typedef struct celp_region_s {
+    void *buffer;
+    celp_usize offset;
+    celp_usize capacity;
+    celp_link_t link;
+} celp_region_t;
+
+typedef celp_links_t celp_arena_t;
+
+CELP_DEF celp_arena_t *celp_arena_create(celp_usize size);
+CELP_DEF void celp_arena_free(celp_arena_t *arena);
+CELP_DEF void *celp_arena_alloc(celp_arena_t *arena, celp_usize size);
+
+#define CELP_REGION_FIND(a) \
+    (celp_link_part_of((a)->tail.prev, celp_region_t, link))
+
+CELP_DEF_SI void
+celp_arena_reset(celp_arena_t *arena)
+{
+    celp_links_foreach(arena, rlink) {
+        celp_region_t *region = celp_link_part_of(rlink,
+                                                  celp_region_t,
+                                                  link);
+        region->offset = 0;
+    }
+}
+
 /* Testing */
 #ifdef CELP_TEST
 
@@ -1931,10 +1945,10 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #ifdef CELP_IMPLEMENTATION
 
 /* celp arena*/
-#define CELP_ARENA_ALIGN 8
+#define CELP_REGION_ALIGN 8
 
 CELP_DEF_SI celp_usize 
-_celp_arena_align(celp_usize val, celp_usize align)
+_celp_region_align(celp_usize val, celp_usize align)
 {
     /*
      * sort of larped this one up.. anyhow, esentially, align-1 produces a
@@ -1946,30 +1960,62 @@ _celp_arena_align(celp_usize val, celp_usize align)
     return (val + align - 1) & ~(align - 1);
 }
 
+CELP_DEF_SI celp_region_t*
+_celp_region_create(celp_usize size)
+{
+    celp_usize header = _celp_region_align(sizeof(celp_region_t), CELP_REGION_ALIGN);
+    celp_region_t *region = malloc(header + size);
+
+    region->buffer = (celp_u8 *)region + header;
+    region->capacity = size;
+    region->offset = 0;
+
+    return region;
+}
+
 CELP_DEF celp_arena_t*
 celp_arena_create(celp_usize size)
 {
-    celp_usize align = _celp_arena_align(sizeof(celp_arena_t), CELP_ARENA_ALIGN);
-    celp_usize bsize =  align + size;
-    celp_arena_t *arena = malloc(bsize);
-    arena->buffer = (celp_u8 *)arena + align;
-    arena->capacity = size;
-    arena->offset = 0;
+    celp_arena_t *arena = malloc(sizeof(celp_arena_t)); 
+    celp_region_t *region = _celp_region_create(size);
+    celp_links_init(arena);
+    celp_links_add(arena, &region->link);
+
     return arena;
 }
 
 CELP_DEF void
 celp_arena_free(celp_arena_t *arena)
 {
-    free(arena);
+    celp_link_t *link = arena->head.next;
+
+    while(link != &arena->tail) {
+        celp_link_t *next = link->next;
+        celp_region_t *region = celp_link_part_of(link,
+                                                  celp_region_t,
+                                                  link);
+        CELP_FREE(region);
+        
+        link = next;
+    }
+    CELP_FREE(arena);
 }
 
 CELP_DEF void*
 celp_arena_alloc(celp_arena_t *arena, celp_usize size)
 {
-    celp_usize offset = _celp_arena_align(arena->offset, CELP_ARENA_ALIGN);
-    void *ret = (celp_u8 *)arena->buffer + offset;
-    arena->offset += size;
+    celp_region_t *region = CELP_REGION_FIND(arena);
+    celp_usize offset = _celp_region_align(region->offset, CELP_REGION_ALIGN);
+
+    if (offset > region->capacity || size > region->capacity - offset) {
+        celp_usize cap = CELP_MAX(region->capacity, size);
+        region = _celp_region_create(cap);
+        region->offset = 0;
+        celp_links_add(arena, &region->link);
+    }
+    void *ret = (celp_u8 *)region->buffer + offset;
+    region->offset = size + offset;
+
     return ret;
 }
 
