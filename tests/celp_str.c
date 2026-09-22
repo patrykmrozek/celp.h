@@ -1,17 +1,19 @@
+#define CELP_ERRORS
 #define CELP_TEST
 #include "../celp.h"
 
+static celp_err_t err = CELP_ERR_OK;
 const char *hello = "hello world";
 celp_str_t str;
 
 CELP_TEST_SETUP(str)
 {
-    str = celp_str(hello);
+    str = celp_str(hello, &err);
 }
 
 CELP_TEST_TEARDOWN(str)
 {
-    celp_str_free(&str);
+    celp_str_free(&str, &err);
 }
 
 CELP_TESTCASE(str)
@@ -22,20 +24,33 @@ CELP_TESTCASE(str)
 
 CELP_TESTCASE(str_append_n)
 {
+    err = CELP_ERR_OK;
     celp_usize old_count = str.count;
     const char *append_n = " testing";
     celp_usize len = strlen(append_n);
-    celp_str_append_n(&str, append_n, len);
+    celp_str_append_n(&str, append_n, len, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(str.count, old_count + len);
 }
 
 CELP_TESTCASE(str_append)
 {
+    err = CELP_ERR_OK;
     celp_usize old_count = str.count;
     const char *append = "!";
-    celp_str_append(&str, append);
+    celp_str_append(&str, append, &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
     CELP_EXPECT_EQ(str.count, old_count + 1);
     CELP_EXPECT_EQ(celp_da_last(&str, NULL), *append);
+}
+
+
+CELP_TESTCASE(str_file)
+{
+    err = CELP_ERR_OK;
+    celp_str_t fstr = celp_str_file("test.txt", &err);
+    CELP_EXPECT_EQ(err, CELP_ERR_OK);
+    // celp_strv_print(celp_strv(&fstr));
 }
 
 CELP_TESTCASE(strv)
@@ -77,6 +92,7 @@ CELP_TEST_SUITE_START(string)
     CELP_TEST_SUITE_ADD_TEST(string, str);
     CELP_TEST_SUITE_ADD_TEST(string, str_append_n);
     CELP_TEST_SUITE_ADD_TEST(string, str_append);
+    CELP_TEST_SUITE_ADD_TEST(string, str_file);
     CELP_TEST_SUITE_ADD_TEST(string, strv_cstr_n);
     CELP_TEST_SUITE_ADD_TEST(string, strv);
     CELP_TEST_SUITE_ADD_TEST(string, strv_n);

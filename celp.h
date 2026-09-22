@@ -8,6 +8,7 @@
  *  celp_links - intrusive linked list implementation
  *  celp_map - generic hashmap implementation
  *  celp_str/strv - string/string-view implementation
+ *  celp_arena - arena allocator
  *  CELP_TEST - a lightweight unit testing framework
  *  CELP_PROFILE - a lightweight profiling framework
  *  CELP_MATH - generic linear algebra
@@ -92,6 +93,7 @@
 #define celp_i64   int64_t
 #define celp_usize size_t
 #define celp_isize ssize_t
+#define celp_charp char*
 
 /* Misc */
 #define CELP_COMP(a, b) \
@@ -127,6 +129,23 @@
         _hash; \
     })
 
+// celp time
+#define celp_time_t celp_u64
+
+#define CELP_TIME_S(t)   ((celp_f64)(t) / 1000000000.0) 
+#define CELP_TIME_MS(t)  ((celp_f64)(t) / 1000000.0) 
+#define CELP_TIME_US(t)  ((celp_f64)(t) / 1000.0) 
+
+CELP_DEF_SI celp_time_t
+celp_time_now(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    //returns nanosec
+    return (celp_time_t)ts.tv_sec * 1000000000ULL + 
+           (celp_time_t)ts.tv_nsec;
+}
 
 /* celp errors */
 /*
@@ -156,10 +175,15 @@ typedef enum celp_err_s {
     CELP_ERR_EMPTY,
     CELP_ERR_ARG,
     CELP_ERR_MISSING,
-    CELP_ERR_UNKNOWN
+    CELP_ERR_UNKNOWN,
+
+    CELP_ERR_FOPEN,
+    CELP_ERR_FSEEK,
+    CELP_ERR_FTELL,
+    CELP_ERR_FREAD,
 } celp_err_t;
 
-CELP_DEF_SI const char *
+CELP_DEF_SI const celp_charp 
 celp_err_to_str(celp_err_t err)
 {
     switch(err) {
@@ -170,14 +194,18 @@ celp_err_to_str(celp_err_t err)
         case CELP_ERR_EMPTY:   return "CELP_ERR_EMPTY"; 
         case CELP_ERR_ARG:     return "CELP_ERR_ARG"; 
         case CELP_ERR_MISSING: return "CELP_ERR_MISSING"; 
+        case CELP_ERR_FOPEN:   return "CELP_ERR_FOPEN"; 
+        case CELP_ERR_FSEEK:   return "CELP_ERR_FSEEK"; 
+        case CELP_ERR_FTELL:   return "CELP_ERR_FTELL"; 
+        case CELP_ERR_FREAD:   return "CELP_ERR_FREAD"; 
         default:               return "CELP_ERR_UNKNOWN";
     }
 }
 
 typedef struct celp_err_info_s {
     celp_err_t err_code;
-    const char *file;
-    const char *func;
+    const celp_charp file;
+    const celp_charp func;
     celp_usize line;
 } celp_err_info_t;
 
@@ -355,6 +383,12 @@ celp_last_err_print(void)
     _celp_out_label(fname): \
         _celp_return;
 
+/* func return */
+#define _celp_expr_returnf(fname) \
+    _celp_out_label(fname): \
+        return _celp_return;
+
+
 #define _celp_stmt_end(fname) \
     _celp_out_label(fname): \
         ((void)0) \
@@ -373,13 +407,13 @@ celp_last_err_print(void)
  *celp_log(celp_u8 level,         - log level, the lower the level, the higher
                                     the priority
            celp_log_t log,        - log type
-           const char *file,      - __FILE__
-           const char *function,  - __FUNCTION__
+           const celp_charp file,      - __FILE__
+           const celp_charp function,  - __FUNCTION__
            celp_u32 line,         - __LINE__
            FILE *out,             - which output to write to (e.g stdout,..)
-           char *buff,            - which buffer to write to
+           celp_charp buff,            - which buffer to write to
            celp_u32 bufflen,      - size of said buffer
-           const char *tag,       - log tag (e.g "[ERROR] ") - gets prepended
+           const celp_charp tag,       - log tag (e.g "[ERROR] ") - gets prepended
            const char* fmt_string,- format string ("x: %f, y: %f")
            ...);                  - variadic arguments to fill the fmt_string
  *
@@ -406,7 +440,7 @@ celp_last_err_print(void)
  *
  * And finally an example using the function wihtout any wrappers:
  *
- *     char *name = "John";
+ *     celp_charp name = "John";
  *     celp_u32 buffer_len = 256;
  *     char buffer[buffer_len];
  *     celp_log(0, CELP_LOG_NONE, __FILE__, __FUNCTION__, __LINE__,
@@ -435,13 +469,13 @@ typedef enum celp_log_e {
 
 CELP_DEF void celp_log(celp_u8 level,
                        celp_log_t log,
-                       const char *file,
-                       const char *function,
+                       const celp_charp file,
+                       const celp_charp function,
                        celp_u32 line,
                        FILE *out,
-                       char *buff,
+                       celp_charp buff,
                        celp_u32 bufflen,
-                       const char *tag,
+                       const celp_charp tag,
                        const char* fmt_string,
                        ...);
 
@@ -1031,7 +1065,7 @@ typedef struct celp_links_s {
 } celp_links_t;
 
 #define celp_link_part_of(link, T, member) \
-    ((T *)((char *)(link) - offsetof(T, member)))
+    ((T *)((celp_charp)(link) - offsetof(T, member)))
 
 CELP_DEF void celp_links_init(celp_links_t *links);
 CELP_DEF void celp_links_add(celp_links_t *links, celp_link_t *link);
@@ -1320,8 +1354,8 @@ celp_da(char);
 typedef da_char_t celp_str_t;
 
 CELP_DEF_SI bool 
-_celp_str_eq_raw(const char *a, celp_usize a_count,
-                 const char *b, celp_usize b_count)
+_celp_str_eq_raw(const celp_charp a, celp_usize a_count,
+                 const celp_charp b, celp_usize b_count)
 {
     return a_count == b_count && memcmp(a, b, a_count) == 0;
 }
@@ -1333,26 +1367,46 @@ _celp_str_eq_str(const celp_str_t *a, const celp_str_t *b)
 }
 
 CELP_DEF_SI bool 
-_celp_str_eq_cstr(const celp_str_t *a, const char *b)
+_celp_str_eq_cstr(const celp_str_t *a, const celp_charp b)
 {
     return _celp_str_eq_raw(a->items, a->count, b, strlen(b));
 }
 
 #define celp_str_eq(a, b) \
     _Generic((b), \
-        celp_str_t:   _celp_str_eq_str, \
-        const char *: _celp_str_eq_cstr, \
-        char *:       _celp_str_eq_cstr \
+        celp_str_t:       _celp_str_eq_str, \
+        const celp_charp: _celp_str_eq_cstr, \
+        celp_charp :      _celp_str_eq_cstr \
     )((a), (b))
 
-CELP_DEF celp_str_t celp_str(const char *chars);
-CELP_DEF void celp_str_append_n(celp_str_t *str, const char *c, celp_usize n);
-CELP_DEF void celp_str_append(celp_str_t *str, const char *c);
-#define celp_str_free(str)           celp_da_free((str))
+CELP_DEF celp_str_t _celp_str(const celp_charp chars, celp_err_t *err);
+#define celp_str(chars, ...) \
+    _celp_str((chars), _celp_err_arg(__VA_ARGS__))
+
+#define celp_str_init(str) celp_da_init((str))
+
+CELP_DEF void _celp_str_append_n(celp_str_t *str,
+                                 const celp_charp c,
+                                 celp_usize n,
+                                 celp_err_t *err);
+#define celp_str_append_n(str, c, n, ...) \
+    _celp_str_append_n((str), (c), (n), _celp_err_arg(__VA_ARGS__))
+
+CELP_DEF void _celp_str_append(celp_str_t *str,
+                               const celp_charp c,
+                               celp_err_t *err);
+#define celp_str_append(str, c, ...) \
+    _celp_str_append((str), (c), _celp_err_arg(__VA_ARGS__))
+
+CELP_DEF celp_str_t _celp_str_file(const celp_charp path, celp_err_t *err);
+#define celp_str_file(path, ...) \
+    _celp_str_file((path), _celp_err_arg(__VA_ARGS__))
+
+#define celp_str_free(str, err) celp_da_free((str), (err))
 
 /* celp string view */
 typedef struct celp_strv_s {
-    const char *items;
+    const celp_charp items;
     celp_usize count;
 } celp_strv_t;
 
@@ -1363,20 +1417,20 @@ _celp_strv_eq_strv(const celp_strv_t a, const celp_strv_t b)
 }
 
 CELP_DEF_SI bool 
-_celp_strv_eq_cstr(const celp_strv_t a, const char *b)
+_celp_strv_eq_cstr(const celp_strv_t a, const celp_charp b)
 {
     return _celp_str_eq_raw(a.items, a.count, b, strlen(b));
 }
 
 #define celp_strv_eq(a, b) \
     _Generic((b), \
-        celp_strv_t:  _celp_strv_eq_strv, \
-        const char *: _celp_strv_eq_cstr, \
-        char *:       _celp_strv_eq_cstr \
+        celp_strv_t:      _celp_strv_eq_strv, \
+        const celp_charp: _celp_strv_eq_cstr, \
+        celp_charp :      _celp_strv_eq_cstr \
     )((a), (b))
 
-CELP_DEF celp_strv_t celp_strv_cstr_n(const char *c, celp_usize n);
-CELP_DEF celp_strv_t celp_strv_cstr(const char *c);
+CELP_DEF celp_strv_t celp_strv_cstr_n(const celp_charp c, celp_usize n);
+CELP_DEF celp_strv_t celp_strv_cstr(const celp_charp c);
 CELP_DEF celp_strv_t celp_strv(const celp_str_t *str);
 CELP_DEF celp_strv_t celp_strv_n(const celp_str_t *str, celp_usize n);
 CELP_DEF celp_strv_t celp_strv_slice(const celp_str_t *str,
@@ -1405,9 +1459,7 @@ CELP_DEF_SI void
 celp_arena_reset(celp_arena_t *arena)
 {
     celp_links_foreach(arena, rlink) {
-        celp_region_t *region = celp_link_part_of(rlink,
-                                                  celp_region_t,
-                                                  link);
+        celp_region_t *region = celp_link_part_of(rlink, celp_region_t, link);
         region->offset = 0;
     }
 }
@@ -1444,7 +1496,7 @@ static celp_u32 celp_test_fails = 0;
 static celp_u32 celp_test_assertions = 0;
 
 typedef struct celp_testcase_s {
-    char *name;
+    celp_charp name;
     void (*testcase)(void);
     celp_test_result_t result;
     celp_link_t link;
@@ -1452,7 +1504,7 @@ typedef struct celp_testcase_s {
 
 typedef struct celp_test_suite_s {
     //struct celp_test_suite_s *suites;
-    char *name;
+    celp_charp name;
     void (*setup)(void);
     void (*teardown)(void);
     celp_links_t tests;
@@ -1534,30 +1586,12 @@ typedef struct celp_test_suite_s {
     CELP_FREE(_celp_test_suite_##s); \
 
 #endif //CELP_TEST
-
-// celp time
-#define celp_time_t celp_u64
-
-#define CELP_TIME_S(t)   ((celp_f64)(t) / 1000000000.0) 
-#define CELP_TIME_MS(t)  ((celp_f64)(t) / 1000000.0) 
-#define CELP_TIME_US(t)  ((celp_f64)(t) / 1000.0) 
-
-CELP_DEF_SI celp_time_t
-celp_time_now(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    //returns nanosec
-    return (celp_time_t)ts.tv_sec * 1000000000ULL + 
-           (celp_time_t)ts.tv_nsec;
-}
-
+       //
 /* profiling */
 #ifdef CELP_PROFILE
 
 typedef struct celp_profile_s {
-    const char *name;
+    const celp_charp name;
     struct celp_profile_s *parent;
 
     struct {
@@ -1582,7 +1616,7 @@ static celp_profiler_t celp_profiler;
         .parent = (par), \
     }; \
     _celp_profile_##p.stats.last = celp_time_now(); \
-    _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL); \
+    _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL);
 
 #define CELP_PROFILE_COUNT(p) \
     _celp_profile_##p.stats.count++
@@ -1964,7 +1998,7 @@ CELP_DEF_SI celp_region_t*
 _celp_region_create(celp_usize size)
 {
     celp_usize header = _celp_region_align(sizeof(celp_region_t), CELP_REGION_ALIGN);
-    celp_region_t *region = malloc(header + size);
+    celp_region_t *region = CELP_MALLOC(header + size);
 
     region->buffer = (celp_u8 *)region + header;
     region->capacity = size;
@@ -1976,7 +2010,7 @@ _celp_region_create(celp_usize size)
 CELP_DEF celp_arena_t*
 celp_arena_create(celp_usize size)
 {
-    celp_arena_t *arena = malloc(sizeof(celp_arena_t)); 
+    celp_arena_t *arena = CELP_MALLOC(sizeof(celp_arena_t)); 
     celp_region_t *region = _celp_region_create(size);
     celp_links_init(arena);
     celp_links_add(arena, &region->link);
@@ -1991,11 +2025,8 @@ celp_arena_free(celp_arena_t *arena)
 
     while(link != &arena->tail) {
         celp_link_t *next = link->next;
-        celp_region_t *region = celp_link_part_of(link,
-                                                  celp_region_t,
-                                                  link);
+        celp_region_t *region = celp_link_part_of(link, celp_region_t, link);
         CELP_FREE(region);
-        
         link = next;
     }
     CELP_FREE(arena);
@@ -2088,13 +2119,13 @@ celp_links_unlink(celp_links_t *links, celp_link_t *link)
 CELP_DEF void 
 celp_log(celp_u8 level,
          celp_log_t log,
-         const char *file,
-         const char *function,
+         const celp_charp file,
+         const celp_charp function,
          celp_u32 line,
          FILE *out, 
-         char *buff, /* optional if you want to log to a buffer */
+         celp_charp buff, /* optional if you want to log to a buffer */
          celp_u32 bufflen,
-         const char *tag,
+         const celp_charp tag,
          const char* fmt_string,
          ...)
 {
@@ -2149,37 +2180,108 @@ end:
 }
 
 /* strings */
+
 CELP_DEF celp_str_t
-celp_str(const char *chars)
+_celp_str(const celp_charp chars, celp_err_t *err)
 {
+    _celp_expr_init(celp_str_t, err, str);
+
     celp_str_t str;
     celp_da_init(&str);
     celp_usize str_len = strlen(chars);
 
-    _celp_da_reserve(&str, str_len + 1, NULL);
+    _celp_da_reserve(&str, str_len + 1, _celp_err);
+    _celp_propogate(str);
+
     memcpy(str.items, chars, str_len + 1); /*chars[str_len] = '\0'*/
     str.count = str_len;
 
-    return str;
+    _celp_return = str;
+
+    _celp_expr_returnf(str);
 }
 
 
 CELP_DEF void 
-celp_str_append_n(celp_str_t *str, const char *c, celp_usize n)
+_celp_str_append_n(celp_str_t *str,
+                   const celp_charp c,
+                   celp_usize n,
+                   celp_err_t *err)
 {
-    celp_da_append_n(str, c, n, NULL);
+    _celp_stmt_init(err, str_append_n);
+
+    celp_da_append_n(str, c, n, _celp_err);
+    _celp_propogate(str_append_n);
+
     _celp_da_reserve(str, str->count + 1, NULL);
+    _celp_propogate(str_append_n);
+
     str->items[str->count] = '\0';
+
+    _celp_stmt_end(str_append_n);
 }
 
 CELP_DEF void 
-celp_str_append(celp_str_t *str, const char *c)
+_celp_str_append(celp_str_t *str,
+                 const celp_charp c,
+                 celp_err_t *err)
 {
+    _celp_stmt_init(err, str_append);
+
     celp_str_append_n(str, c, strlen(c));
+    _celp_propogate(str_append);
+
+    _celp_stmt_end(str_append);
+}
+
+CELP_DEF celp_str_t 
+_celp_str_file(const celp_charp path, celp_err_t *err)
+{
+    _celp_expr_init_clean(celp_str_t, err, str_file);
+
+    celp_str_t str;
+    FILE *f = fopen(path, "rb");
+    _celp_require(f != NULL, CELP_ERR_FOPEN, str_file);
+
+    _celp_require_clean(fseek(f, 0, SEEK_END) == 0,
+                        CELP_ERR_FSEEK,
+                        str_file);
+
+    celp_usize fsize = (celp_usize)ftell(f);
+    _celp_require_clean(fsize > 0,
+                        CELP_ERR_FTELL,
+                        str_file);
+
+    _celp_require_clean(fseek(f, 0, SEEK_SET) == 0,
+                        CELP_ERR_FSEEK,
+                        str_file);
+
+    celp_str_init(&str);
+    _celp_da_reserve(&str, fsize + 1, _celp_err);
+    _celp_propogate(str_file);
+
+    str.count = fread(str.items, 1, fsize, f);
+    _celp_require_clean(str.count < fsize,
+                        CELP_ERR_FREAD,
+                        str_file);
+
+    str.items[str.count] = '\0';
+
+    fclose(f);
+    f = NULL;
+
+    _celp_return = str;
+
+    _celp_clean(str_file) {
+        if (f != NULL) fclose(f);
+        if (str.count > 0) _celp_da_free(&str, _celp_err);
+    }
+
+    _celp_expr_returnf(str_file);
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_cstr_n(const char *c, celp_usize n)
+celp_strv_cstr_n(const celp_charp c, celp_usize n)
 {
     return (celp_strv_t) {
         .items = c,
@@ -2188,7 +2290,7 @@ celp_strv_cstr_n(const char *c, celp_usize n)
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_cstr(const char *c)
+celp_strv_cstr(const celp_charp c)
 {
     return celp_strv_cstr_n(c, strlen(c));
 }
@@ -2235,13 +2337,12 @@ celp_strv_print(const celp_strv_t view)
     #define i64                     celp_i64
     #define usize                   celp_usize 
     #define isize                   celp_isize
+    #define charp                   celp_charp
     //MISC
     #define COMP                    CELP_COMP 
     #define SWAP                    CELP_SWAP
     #define CAT                     CELP_CAT
     #define HASH                    CELP_HASH  
-    //celp_errors
-    
     //celp_log
     #define log                     celp_log
     #define LOG_INFO                CELP_LOG_INFO

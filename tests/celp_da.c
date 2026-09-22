@@ -4,7 +4,7 @@
 
 celp_da(int);
 celp_da_t(int) n = {};
-celp_err_t err = CELP_ERR_OK;
+static celp_err_t err = CELP_ERR_OK;
 
 CELP_TEST_SETUP(da)
 {
