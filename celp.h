@@ -12,7 +12,6 @@
  *  CELP_TEST - a lightweight unit testing framework
  *  CELP_PROFILE - a lightweight profiling framework
  *  CELP_MATH - generic linear algebra
- *  CELP_ERRORS - error handling
  *  celp_time - simple time utility
  *
  * Additional Features:
@@ -25,15 +24,15 @@
  *  like this.
  *  
  *  optional error handling - all generic data type macros have the option to 
- *  either take in a celp_err_t as the last arg or not (if CELP_ERRORS is
- *  defined). This is possible by implementing all of the internal macros with 
- *  errors assumed to be present, and declaring the public version with a 
- *  variadic final parameter in the place of the error. If errors are enabled,
- *  the argument will be read as the error and error handling will proceed as
- *  normal, but if nothing is passed in here, this final argument is internally
- *  set to NULL, and within the _init macro helper, if the error is null, a
- *  local error is used, which allows for error handling to persist internally,
- *  and only report to _celp_last_err instead.
+ *  either take in a celp_err_t as the last arg or not. This is possible by 
+ *  implementing all of the internal macros with  errors assumed to be present,
+ *  and declaring the public version with a variadic optional final parameter
+ *  in the place of the error. If errors are enabled, the argument will be read 
+ *  as the error and error handling will proceed as normal, but if nothing is 
+ *  passed in here, this final argument is internally set to NULL, and within
+ *  the _init macro helper, if the error is null, a local error is used, which 
+ *  allows for error handling to persist internally, and only report to 
+ *  _celp_last_err instead.
  */
 
 #ifndef _CELP_H
@@ -151,21 +150,16 @@ celp_time_now(void)
 /*
  * almost every macro defined later on has a possibility of failure, so we need
  * a way to track and catch errors. I made the explicit error functionality 
- * optional. To enable errors, you define CELP_ERRORS before you include this 
- * file. What this does is, for every macro that can fail, you must pass in an 
- * extra argument "err", which is a *celp_err_t, then this err is updated if any 
- * errors are encountered through calling said macro. Otherwise, if you don't
- * define CELP_ERRORS, this paramrter doesn't exist, and so you don't have to
- * pass it in at all, though, the error handling persists under the hood.
+ * optional. Errors are optional, for every macro that can fail, you can pass 
+ * in an extra argument "err", which is a *celp_err_t, then this err is updated
+ * if any errors are encountered through calling said macro. Otherwise, if you
+ * don't pass this arg in, the error handling persists under the hood, and still
+ * reports to celp_err_last.
  *
  * Aside from explicit error handling within each macro, there is also 
  * _celp_last_err, which records the last error that occured, along with where.
  * This can be accessed by the helper functions celp_last_err*() to get the err
  * or print etc..
- *
- * CELP_ERRORS is designed for when failures actually matter, so you can handle
- * them, and _celp_last_err is designed for diagnostics, they should not be
- * thought to replace one another, but rather are best used in tandem.
  */
 typedef enum celp_err_s {
     CELP_ERR_OK,
@@ -247,11 +241,10 @@ celp_last_err_print(void)
             _celp_last_err.line);
 }
 
-#ifdef CELP_ERRORS
-    #define _celp_err_arg(err) (err)
-#else
-    #define _celp_err_arg(...) NULL
-#endif //CELP_ERRORS
+#define _celp_err_arg(...) \
+    _celp_err_arg_impl(__VA_OPT__(__VA_ARGS__,) NULL)
+
+#define _celp_err_arg_impl(err, ...) (err)
 
 #define _celp_err_clear(err) \
     (*(err) = CELP_ERR_OK)
@@ -1448,9 +1441,17 @@ typedef struct celp_region_s {
 
 typedef celp_links_t celp_arena_t;
 
-CELP_DEF celp_arena_t *celp_arena_create(celp_usize size);
+CELP_DEF celp_arena_t *_celp_arena_create(celp_usize size, celp_err_t *err);
+#define celp_arena_create(s, ...) \
+    _celp_arena_create((s), _celp_err_arg(__VA_ARGS__))
+
 CELP_DEF void celp_arena_free(celp_arena_t *arena);
-CELP_DEF void *celp_arena_alloc(celp_arena_t *arena, celp_usize size);
+
+CELP_DEF void *_celp_arena_alloc(celp_arena_t *arena,
+                                 celp_usize size,
+                                 celp_err_t *err);
+#define celp_arena_alloc(arena, s, ...) \
+    _celp_arena_alloc((arena), (s), _celp_err_arg(__VA_ARGS__))
 
 #define CELP_REGION_FIND(a) \
     (celp_link_part_of((a)->tail.prev, celp_region_t, link))
@@ -1995,27 +1996,44 @@ _celp_region_align(celp_usize val, celp_usize align)
 }
 
 CELP_DEF_SI celp_region_t*
-_celp_region_create(celp_usize size)
+_celp_region_create(celp_usize size, celp_err_t *err)
 {
+    _celp_expr_init(celp_region_t*, err, region_create);
+
     celp_usize header = _celp_region_align(sizeof(celp_region_t), CELP_REGION_ALIGN);
     celp_region_t *region = CELP_MALLOC(header + size);
+    _celp_require(region != NULL, CELP_ERR_ALLOC, region_create);
 
     region->buffer = (celp_u8 *)region + header;
     region->capacity = size;
     region->offset = 0;
 
-    return region;
+    _celp_return = region;
+    _celp_expr_returnf(region_create);
 }
 
+
 CELP_DEF celp_arena_t*
-celp_arena_create(celp_usize size)
+_celp_arena_create(celp_usize size, celp_err_t *err)
 {
+    _celp_expr_init_clean(celp_arena_t*, err, arena_create);
+
     celp_arena_t *arena = CELP_MALLOC(sizeof(celp_arena_t)); 
-    celp_region_t *region = _celp_region_create(size);
+    _celp_require(arena != NULL, CELP_ERR_ALLOC, arena_create);
+
+    celp_region_t *region = _celp_region_create(size, _celp_err);
+    _celp_propogate_clean(arena_create);
+
     celp_links_init(arena);
     celp_links_add(arena, &region->link);
 
-    return arena;
+    _celp_return = arena;
+
+    _celp_clean(arena_create) {
+        if (arena != NULL) free(arena);
+    }
+
+    _celp_expr_returnf(arena_create);
 }
 
 CELP_DEF void
@@ -2033,21 +2051,26 @@ celp_arena_free(celp_arena_t *arena)
 }
 
 CELP_DEF void*
-celp_arena_alloc(celp_arena_t *arena, celp_usize size)
+_celp_arena_alloc(celp_arena_t *arena, celp_usize size, celp_err_t *err)
 {
+    _celp_expr_init(void*, err, arena_alloc);
+
     celp_region_t *region = CELP_REGION_FIND(arena);
     celp_usize offset = _celp_region_align(region->offset, CELP_REGION_ALIGN);
 
     if (offset > region->capacity || size > region->capacity - offset) {
         celp_usize cap = CELP_MAX(region->capacity, size);
-        region = _celp_region_create(cap);
+        region = _celp_region_create(cap, _celp_err);
+        _celp_propogate(arena_alloc);
+
         region->offset = 0;
         celp_links_add(arena, &region->link);
     }
     void *ret = (celp_u8 *)region->buffer + offset;
     region->offset = size + offset;
 
-    return ret;
+    _celp_return = ret;
+    _celp_expr_returnf(arena_alloc);
 }
 
 /* celp links */

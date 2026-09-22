@@ -8,10 +8,10 @@
 - `celp_map` - HashMap
 - `celp_str/celp_strv` - String/StringView
 - `celp_log` - Logging (or helpful macros `CELP_INFO/DEBUG/ERROR/TRACE`)
+- `celp_arena` - Arena Allocator
 - `CELP_TEST` - Lightweight Unit Testing Framework
 - `CELP_PROFILE` - Lightweight Profiling Framework
 - `CELP_MATH` - Linear Algebra (v2, v3, v4, m4)
-- `CELP_ERRORS` - Error handling
 - `celp_time` - time
 - `CELP_STRIP_PREFIX` - Prefix Stripping (if you don't want to keep writing celp..)
 - Type aliases
