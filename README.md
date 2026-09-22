@@ -21,7 +21,6 @@
 ```C
 #define CELP_TEST/CELP_PROFILE/CELP_MATH (if needed)
 #define CELP_STRIP_PREFIX (optional)
-#define CELP_ERRORS (recommended)
 #define CELP_IMPLEMENTATION (define only once)
 #include "celp.h"
 ...
