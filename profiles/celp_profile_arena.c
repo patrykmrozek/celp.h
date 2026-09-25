@@ -10,7 +10,7 @@ int celp_profile_arena(const celp_usize iterations,
         CELP_PROFILE_START(arena_alloc, CELP_PROFILE_PARENT(arena));
         {
             for (int i = 0; i < iterations; i++) {
-                celp_arena_alloc(arena, sizeof(celp_u8));
+                (void)celp_arena_alloc(arena, sizeof(celp_u8));
                 CELP_PROFILE_COUNT(arena_alloc);
             }
         }

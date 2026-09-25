@@ -92,7 +92,8 @@
 #define celp_i64   int64_t
 #define celp_usize size_t
 #define celp_isize ssize_t
-#define celp_charp char*
+typedef char* celp_charp;
+typedef const char* celp_ccharp;
 
 /* Misc */
 #define CELP_COMP(a, b) \
@@ -177,7 +178,7 @@ typedef enum celp_err_s {
     CELP_ERR_FREAD,
 } celp_err_t;
 
-CELP_DEF_SI const celp_charp 
+CELP_DEF_SI celp_ccharp 
 celp_err_to_str(celp_err_t err)
 {
     switch(err) {
@@ -198,8 +199,8 @@ celp_err_to_str(celp_err_t err)
 
 typedef struct celp_err_info_s {
     celp_err_t err_code;
-    const celp_charp file;
-    const celp_charp func;
+    celp_ccharp file;
+    celp_ccharp func;
     celp_usize line;
 } celp_err_info_t;
 
@@ -400,13 +401,13 @@ celp_last_err_print(void)
  *celp_log(celp_u8 level,         - log level, the lower the level, the higher
                                     the priority
            celp_log_t log,        - log type
-           const celp_charp file,      - __FILE__
-           const celp_charp function,  - __FUNCTION__
+           celp_ccharp file,      - __FILE__
+           celp_ccharp function,  - __FUNCTION__
            celp_u32 line,         - __LINE__
            FILE *out,             - which output to write to (e.g stdout,..)
            celp_charp buff,            - which buffer to write to
            celp_u32 bufflen,      - size of said buffer
-           const celp_charp tag,       - log tag (e.g "[ERROR] ") - gets prepended
+           celp_ccharp tag,       - log tag (e.g "[ERROR] ") - gets prepended
            const char* fmt_string,- format string ("x: %f, y: %f")
            ...);                  - variadic arguments to fill the fmt_string
  *
@@ -462,13 +463,13 @@ typedef enum celp_log_e {
 
 CELP_DEF void celp_log(celp_u8 level,
                        celp_log_t log,
-                       const celp_charp file,
-                       const celp_charp function,
+                       celp_ccharp file,
+                       celp_ccharp function,
                        celp_u32 line,
                        FILE *out,
                        celp_charp buff,
                        celp_u32 bufflen,
-                       const celp_charp tag,
+                       celp_ccharp tag,
                        const char* fmt_string,
                        ...);
 
@@ -570,6 +571,17 @@ CELP_DEF void celp_log(celp_u8 level,
             (da)->capacity = _new_capacity; \
         }\
         _celp_stmt_end(da_reserve); \
+    } while(0)
+
+#define _celp_da_resize(da, size, err) \
+    do { \
+        _celp_stmt_init((err), da_resize); \
+        \
+        _celp_da_reserve((da), (size), _celp_err); \
+        _celp_propogate(da_resize); \
+        (da)->count = (size); \
+        \
+        _celp_stmt_end(da_resize); \
     } while(0)
 
 #define _celp_da_append(da, item, err) \
@@ -1107,48 +1119,52 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
     } celp_kv_t(kT, vT); \
     \
     celp_ll(celp_kv_t(kT, vT)); \
+    celp_da(celp_ll_t(celp_kv_t(kT, vT))); \
     \
     typedef struct celp_map_s(kT, vT) { \
-        celp_ll_t(celp_kv_t(kT, vT))* buckets; \
+        /* disgusting.. */ \
+        celp_da_t(celp_ll_t(celp_kv_t(kT, vT))) buckets; \
         celp_usize count; \
-        celp_usize capacity; \
     }  celp_map_t(kT, vT);
 
 #define CELP_MAP_INITIAL_CAPACITY 64
 
-#define _map_bucket_t(map)      typeof(*(map)->buckets) //ll
-#define _map_bucket_node_t(map) typeof((map)->buckets[0].head) //lln
-#define _map_kv_t(map)          typeof((map)->buckets[_h].head->data)
-#define _map_k_t(map)           typeof((map)->buckets[0].head->data.key)
-#define _map_v_t(map)           typeof((map)->buckets[0].head->data.value)
+#define _map_bucket_t(map)      typeof(*(map)->buckets.items) //ll
+#define _map_bucket_node_t(map) typeof((map)->buckets.items[0].head) //lln
+#define _map_kv_t(map)          typeof((map)->buckets.items[_h].head->data)
+#define _map_k_t(map)           typeof((map)->buckets.items[0].head->data.key)
+#define _map_v_t(map)           typeof((map)->buckets.items[0].head->data.value)
 
 #define _celp_map_clear(map) \
     do {\
-        (map)->buckets = NULL; \
+        _celp_da_clear(&(map)->buckets); \
         (map)->count = 0; \
-        (map)->capacity = 0; \
     } while(0)
 
 #define _celp_map_init(map, err) \
     do { \
         _celp_stmt_init_clean((err), map_init); \
         \
-        _celp_map_clear((map)); \
-        (map)->capacity = CELP_MAP_INITIAL_CAPACITY; \
-        (map)->buckets = CELP_CALLOC((map)->capacity, sizeof((map)->buckets[0])); \
-        _celp_require_clean((map)->buckets != NULL, CELP_ERR_ALLOC, map_init); \
+        (map)->buckets.capacity = CELP_MAP_INITIAL_CAPACITY; \
+        _celp_da_clear(&(map)->buckets); \
+        \
+        _celp_da_resize(&(map)->buckets, \
+                        CELP_MAP_INITIAL_CAPACITY, \
+                        _celp_err); \
+        _celp_propogate_clean(map_init); \
         \
         celp_usize _i = 0; \
-        for (_i = 0; _i < (map)->capacity; _i++) { \
-            _celp_ll_init(&((map)->buckets[_i]), _celp_err); \
+        celp_da_foreach(&(map)->buckets, _b) { \
+            _celp_ll_init(_b, _celp_err); \
             _celp_propogate_clean(map_init); \
+            _i++; \
         } \
         \
         _celp_clean(map_init) { \
             for (celp_usize _j = 0; _j < _i; _j++) { \
-                _celp_ll_free(&((map)->buckets[_j]), NULL); \
+                _celp_ll_free(&((map)->buckets.items[_j]), NULL); \
             } \
-            CELP_FREE((map)->buckets); \
+            _celp_da_free(&(map)->buckets, _celp_err); \
             _celp_map_clear((map)); \
         } \
         _celp_stmt_end(map_init); \
@@ -1157,29 +1173,27 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
 #define _celp_map_get_hash(map, k) \
     ({ \
         const unsigned char* _k_bytes = (const unsigned char*)&(k); \
-        celp_u32 _h = CELP_HASH(_k_bytes, sizeof((k))) % (map)->capacity; \
+        celp_u32 _h = CELP_HASH(_k_bytes, \
+                      sizeof((k))) % (map)->buckets.count; \
         _h; \
      })
 
 /*returns the hashed bucket, and whether or not the key was found */
-#define _celp_map_find_k(map, k, hash, found, out, err) \
+#define _celp_map_find_k(map, k, hash, out, err) \
     do { \
         _celp_err_clear((err)); \
+        \
         *(out) = NULL; \
-        if ((map)->buckets == NULL) { \
+        if ((map)->buckets.count == 0) { \
             _celp_err_raise((err), CELP_ERR_ARG, map_find_k); \
             break; \
         } \
-        _map_bucket_node_t((map)) _return = (map)->buckets[(hash)].head; \
-        *(found) = false; \
-        _celp_ll_foreach(&(map)->buckets[(hash)], _bucket) {\
+        _celp_ll_foreach(&(map)->buckets.items[(hash)], _bucket) {\
             if (CELP_COMP(_bucket->data.key, (k)) == 0) { \
-                _return = _bucket; \
-                *(found) = true; \
+                *(out) = _bucket; \
                 break; \
             } \
         } \
-        *(out) = _return; \
     } while(0)
 
 #define _celp_map_insert(map, k, v, err) \
@@ -1188,18 +1202,17 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        bool _found = false; \
-        _map_bucket_node_t((map)) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _map_bucket_node_t((map)) _node; \
+        _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_insert); \
         \
-        if (_found) { \
-            _bucket->data.value = (v); \
+        if (_node != NULL) { \
+            _node->data.value = (v); \
         } else { \
             _map_kv_t((map)) _kv = \
                 { .key = (_k), .value = (v) }; \
             \
-            _celp_ll_add_last(&((map)->buckets[_h]), _kv, _celp_err); \
+            _celp_ll_add_last(&((map)->buckets.items[_h]), _kv, _celp_err); \
             _celp_propogate(map_insert); \
             \
             (map)->count++; \
@@ -1216,17 +1229,17 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         bool _found = false; \
-        _map_bucket_node_t((map)) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _map_bucket_node_t((map)) _node; \
+        _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_increment); \
         \
-        if (_found) { \
-            _bucket->data.value++; \
+        if (_node != NULL) { \
+            _node->data.value++; \
         } else { \
-            typeof((map)->buckets[_h].head->data) _kv = \
+            typeof((map)->buckets.items[_h].head->data) _kv = \
                 { .key = (_k), .value = 1 }; \
             \
-            _celp_ll_add_last(&((map)->buckets[_h]), _kv, _celp_err); \
+            _celp_ll_add_last(&((map)->buckets.items[_h]), _kv, _celp_err); \
             _celp_propogate(map_increment); \
             \
             (map)->count++; \
@@ -1237,13 +1250,16 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
 #define _celp_map_contains(map, k, err) \
     ({ \
         _celp_expr_init(bool, (err), map_contains); \
-        _celp_require((map)->capacity > 0, CELP_ERR_EMPTY, map_contains); \
+        _celp_require((map)->buckets.capacity > 0, \
+                      CELP_ERR_EMPTY, map_contains); \
         \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        _map_bucket_node_t((map)) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_celp_return, &_bucket, _celp_err); \
+        _map_bucket_node_t((map)) _node; \
+        _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_contains); \
+        \
+        _celp_return = (_node != NULL); \
         \
         _celp_expr_return(map_contains); \
     })
@@ -1255,13 +1271,13 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         bool _found = false; \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        _map_bucket_node_t((map)) _bucket; \
+        _map_bucket_node_t((map)) _node; \
         \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_get); \
         \
-        if (_found) { \
-            _celp_return = _bucket->data.value; \
+        if (_node != NULL) { \
+            _celp_return = _node->data.value; \
         } else { \
             _celp_return = (dval); \
         } \
@@ -1276,13 +1292,14 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         bool _found = false; \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        _map_bucket_node_t((map)) _bucket; \
-        _celp_map_find_k((map), _k, _h, &_found, &_bucket, _celp_err); \
+        _map_bucket_node_t((map)) _node; \
+        _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_remove); \
         \
-        if (_found) { \
-            _celp_return = _bucket->data.value; \
-            _celp_ll_remove_node(&((map)->buckets[_h]), _bucket, _celp_err); \
+        if (_node != NULL) { \
+            _celp_return = _node->data.value; \
+            _celp_ll_remove_node(&((map)->buckets.items[_h]), \
+                                 _node, _celp_err); \
             _celp_propogate(map_remove); \
             (map)->count--; \
         } \
@@ -1292,23 +1309,16 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
 #define _celp_map_free(map, err) \
     do { \
         _celp_stmt_init((err), map_free); \
-        _celp_require((map) != NULL && (map)->buckets != NULL, \
-                      CELP_ERR_ARG, map_free); \
+        _celp_require((map) != NULL, CELP_ERR_ARG, map_free); \
         \
-        for (size_t _i = 0; _i < (map)->capacity; _i++) { \
-            _celp_ll_free(&((map)->buckets[_i]), _celp_err); \
+        celp_da_foreach(&(map)->buckets, _b) { \
+            _celp_ll_free(_b, _celp_err); \
             _celp_propogate(map_free); \
         } \
-        CELP_FREE((map)->buckets); \
+        _celp_da_free(&(map)->buckets, _celp_err); \
         _celp_map_clear((map)); \
         \
         _celp_stmt_end(map_free); \
-    } while(0)
-
-#define celp_map_info(map) \
-    do { \
-        CELP_INFO("Map at: %p, Capacity: %zu, Count: %zu", \
-             (map), (map)->capacity, (map)->count); \
     } while(0)
 
 /* <<<<<<<< celp hash map public api >>>>>>>> */
@@ -1335,10 +1345,14 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
 #define celp_map_free(map, ...) \
     _celp_map_free((map), _celp_err_arg(__VA_ARGS__))
 
+#define celp_map_foreach(map, iter) \
+    celp_da_foreach(&(map)->buckets, _b) \
+        celp_ll_foreach(_b, iter)
+
 #define celp_map_info(map) \
     do { \
         CELP_INFO("Map at: %p, Capacity: %zu, Count: %zu", \
-             (map), (map)->capacity, (map)->count); \
+             (map), (map)->buckets.capacity, (map)->count); \
     } while(0)
 
 
@@ -1347,8 +1361,8 @@ celp_da(char);
 typedef da_char_t celp_str_t;
 
 CELP_DEF_SI bool 
-_celp_str_eq_raw(const celp_charp a, celp_usize a_count,
-                 const celp_charp b, celp_usize b_count)
+_celp_str_eq_raw(celp_ccharp a, celp_usize a_count,
+                 celp_ccharp b, celp_usize b_count)
 {
     return a_count == b_count && memcmp(a, b, a_count) == 0;
 }
@@ -1360,7 +1374,7 @@ _celp_str_eq_str(const celp_str_t *a, const celp_str_t *b)
 }
 
 CELP_DEF_SI bool 
-_celp_str_eq_cstr(const celp_str_t *a, const celp_charp b)
+_celp_str_eq_cstr(const celp_str_t *a, celp_ccharp b)
 {
     return _celp_str_eq_raw(a->items, a->count, b, strlen(b));
 }
@@ -1368,30 +1382,30 @@ _celp_str_eq_cstr(const celp_str_t *a, const celp_charp b)
 #define celp_str_eq(a, b) \
     _Generic((b), \
         celp_str_t:       _celp_str_eq_str, \
-        const celp_charp: _celp_str_eq_cstr, \
+        celp_ccharp: _celp_str_eq_cstr, \
         celp_charp :      _celp_str_eq_cstr \
     )((a), (b))
 
-CELP_DEF celp_str_t _celp_str(const celp_charp chars, celp_err_t *err);
+CELP_DEF celp_str_t _celp_str(celp_ccharp chars, celp_err_t *err);
 #define celp_str(chars, ...) \
     _celp_str((chars), _celp_err_arg(__VA_ARGS__))
 
-#define celp_str_init(str) celp_da_init((str))
+#define celp_str_init(str) _celp_da_clear((str))
 
 CELP_DEF void _celp_str_append_n(celp_str_t *str,
-                                 const celp_charp c,
+                                 celp_ccharp c,
                                  celp_usize n,
                                  celp_err_t *err);
 #define celp_str_append_n(str, c, n, ...) \
     _celp_str_append_n((str), (c), (n), _celp_err_arg(__VA_ARGS__))
 
 CELP_DEF void _celp_str_append(celp_str_t *str,
-                               const celp_charp c,
+                               celp_ccharp c,
                                celp_err_t *err);
 #define celp_str_append(str, c, ...) \
     _celp_str_append((str), (c), _celp_err_arg(__VA_ARGS__))
 
-CELP_DEF celp_str_t _celp_str_file(const celp_charp path, celp_err_t *err);
+CELP_DEF celp_str_t _celp_str_file(celp_ccharp path, celp_err_t *err);
 #define celp_str_file(path, ...) \
     _celp_str_file((path), _celp_err_arg(__VA_ARGS__))
 
@@ -1399,7 +1413,7 @@ CELP_DEF celp_str_t _celp_str_file(const celp_charp path, celp_err_t *err);
 
 /* celp string view */
 typedef struct celp_strv_s {
-    const celp_charp items;
+    celp_ccharp items;
     celp_usize count;
 } celp_strv_t;
 
@@ -1410,7 +1424,7 @@ _celp_strv_eq_strv(const celp_strv_t a, const celp_strv_t b)
 }
 
 CELP_DEF_SI bool 
-_celp_strv_eq_cstr(const celp_strv_t a, const celp_charp b)
+_celp_strv_eq_cstr(const celp_strv_t a, celp_ccharp b)
 {
     return _celp_str_eq_raw(a.items, a.count, b, strlen(b));
 }
@@ -1418,12 +1432,12 @@ _celp_strv_eq_cstr(const celp_strv_t a, const celp_charp b)
 #define celp_strv_eq(a, b) \
     _Generic((b), \
         celp_strv_t:      _celp_strv_eq_strv, \
-        const celp_charp: _celp_strv_eq_cstr, \
+        celp_ccharp: _celp_strv_eq_cstr, \
         celp_charp :      _celp_strv_eq_cstr \
     )((a), (b))
 
-CELP_DEF celp_strv_t celp_strv_cstr_n(const celp_charp c, celp_usize n);
-CELP_DEF celp_strv_t celp_strv_cstr(const celp_charp c);
+CELP_DEF celp_strv_t celp_strv_cstr_n(celp_ccharp c, celp_usize n);
+CELP_DEF celp_strv_t celp_strv_cstr(celp_ccharp c);
 CELP_DEF celp_strv_t celp_strv(const celp_str_t *str);
 CELP_DEF celp_strv_t celp_strv_n(const celp_str_t *str, celp_usize n);
 CELP_DEF celp_strv_t celp_strv_slice(const celp_str_t *str,
@@ -1587,12 +1601,17 @@ typedef struct celp_test_suite_s {
     CELP_FREE(_celp_test_suite_##s); \
 
 #endif //CELP_TEST
-       //
+       
+
 /* profiling */
 #ifdef CELP_PROFILE
 
+celp_map(celp_charp, celp_u32);
+
+#define celp_profile_counter_t celp_map_t(celp_charp, celp_u32)
+
 typedef struct celp_profile_s {
-    const celp_charp name;
+    celp_ccharp name;
     struct celp_profile_s *parent;
 
     struct {
@@ -1600,6 +1619,7 @@ typedef struct celp_profile_s {
         celp_time_t elapsed;
         celp_usize  count;
         celp_time_t avg;
+        celp_profile_counter_t count_map;
     } stats;
 } celp_profile_t;
 
@@ -1607,6 +1627,9 @@ typedef celp_profile_t* celp_profile_p_t;
 celp_da(celp_profile_p_t);
 #define celp_profiler_t celp_da_t(celp_profile_p_t)
 static celp_profiler_t celp_profiler;
+
+#define _celp_count_map(p) \
+    _celp_profile_##p.stats.count_map
 
 #define CELP_PROFILE_PARENT(par) \
     (&_celp_profile_##par)
@@ -1616,11 +1639,15 @@ static celp_profiler_t celp_profiler;
         .name = #p, \
         .parent = (par), \
     }; \
+    _celp_map_init(&_celp_count_map(p), NULL); \
     _celp_profile_##p.stats.last = celp_time_now(); \
     _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL);
 
 #define CELP_PROFILE_COUNT(p) \
     _celp_profile_##p.stats.count++
+
+#define CELP_PROFILE_COUNT_INCREMENT(p, c) \
+    _celp_map_increment(&_celp_count_map(p), #c, NULL)
 
 #define CELP_PROFILE_END(p) \
     do { \
@@ -1642,11 +1669,18 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
             "%s[PROFILE] %s "
             "\n\t%sElapsed: %fs"
             "\n\t%sCount: %zu"
-            "\n\t%sAvg: %fms\n",
+            "\n\t%sAvg: %fms",
              tab, profile->name,
              tab, CELP_TIME_S(profile->stats.elapsed),
              tab, profile->stats.count,
              tab, CELP_TIME_MS(profile->stats.avg));
+
+    celp_map_foreach(&profile->stats.count_map, count) {
+        celp_log(0, CELP_LOG_INFO, "", 
+                 "\t%s%s: %d",
+                 tab, count->data.key, count->data.value);
+        }
+    celp_log(0, CELP_LOG_INFO, "", ""); /*\n*/ 
 
     celp_da_foreach(&celp_profiler, p) {
         celp_profile_t *child = *p;
@@ -2142,13 +2176,13 @@ celp_links_unlink(celp_links_t *links, celp_link_t *link)
 CELP_DEF void 
 celp_log(celp_u8 level,
          celp_log_t log,
-         const celp_charp file,
-         const celp_charp function,
+         celp_ccharp file,
+         celp_ccharp function,
          celp_u32 line,
          FILE *out, 
          celp_charp buff, /* optional if you want to log to a buffer */
          celp_u32 bufflen,
-         const celp_charp tag,
+         celp_ccharp tag,
          const char* fmt_string,
          ...)
 {
@@ -2205,12 +2239,12 @@ end:
 /* strings */
 
 CELP_DEF celp_str_t
-_celp_str(const celp_charp chars, celp_err_t *err)
+_celp_str(celp_ccharp chars, celp_err_t *err)
 {
     _celp_expr_init(celp_str_t, err, str);
 
     celp_str_t str;
-    celp_da_init(&str);
+    _celp_da_clear(&str);
     celp_usize str_len = strlen(chars);
 
     _celp_da_reserve(&str, str_len + 1, _celp_err);
@@ -2227,7 +2261,7 @@ _celp_str(const celp_charp chars, celp_err_t *err)
 
 CELP_DEF void 
 _celp_str_append_n(celp_str_t *str,
-                   const celp_charp c,
+                   celp_ccharp c,
                    celp_usize n,
                    celp_err_t *err)
 {
@@ -2246,7 +2280,7 @@ _celp_str_append_n(celp_str_t *str,
 
 CELP_DEF void 
 _celp_str_append(celp_str_t *str,
-                 const celp_charp c,
+                 celp_ccharp c,
                  celp_err_t *err)
 {
     _celp_stmt_init(err, str_append);
@@ -2258,7 +2292,7 @@ _celp_str_append(celp_str_t *str,
 }
 
 CELP_DEF celp_str_t 
-_celp_str_file(const celp_charp path, celp_err_t *err)
+_celp_str_file(celp_ccharp path, celp_err_t *err)
 {
     _celp_expr_init_clean(celp_str_t, err, str_file);
 
@@ -2304,7 +2338,7 @@ _celp_str_file(const celp_charp path, celp_err_t *err)
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_cstr_n(const celp_charp c, celp_usize n)
+celp_strv_cstr_n(celp_ccharp c, celp_usize n)
 {
     return (celp_strv_t) {
         .items = c,
@@ -2313,7 +2347,7 @@ celp_strv_cstr_n(const celp_charp c, celp_usize n)
 }
 
 CELP_DEF celp_strv_t 
-celp_strv_cstr(const celp_charp c)
+celp_strv_cstr(celp_ccharp c)
 {
     return celp_strv_cstr_n(c, strlen(c));
 }
@@ -2479,6 +2513,7 @@ celp_strv_print(const celp_strv_t view)
     #define v3_t                    celp_v3_t
     #define v3_add                  celp_v3_add
     #define v3_sub                  celp_v3_sub
+    #define v3_mul                  celp_v3_mul
     #define v3_dot                  celp_v3_dot
     #define v3_scale                celp_v3_scale
     #define v3_cross                celp_v3_cross
@@ -2517,6 +2552,16 @@ celp_strv_print(const celp_strv_t view)
 
 #endif //CELP_MATH
        
+#ifdef CELP_DONT_CLASH_WITH_RAYLIB
+
+#undef log
+#undef LOG_DEBUG
+#undef LOG_TRACE
+#undef LOG_ERROR
+#undef LOG_INFO
+
+#endif // CELP_DONT_CLASH_WITH_RAYLIB
+
 #endif //CELP_STRIP_PREFIX
        
 #endif //_CELP_H
