@@ -1706,6 +1706,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 
 //math macros
 #ifdef CELP_MATH
+#include <math.h>
 
 //to silence vector {{x, y, z}} warning
 #if defined(__GNUC__) || defined(__clang__)
@@ -1863,6 +1864,15 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
     typeof((v)) _v_len = {len, len, len}; \
     _v_out = celp_v3_div((v), _v_len); \
     _v_out; \
+})
+
+#define celp_v3_dist_sq(v1, v2) \
+({ \
+     typeof((v1).x) _ret = (((v2).x - (v1).x) * ((v2).x - (v1).x) + \
+                            ((v2).y - (v1).y) * ((v2).y - (v1).y) + \
+                            ((v2).z - (v1).z) * ((v2).z - (v1).z))  \
+     \
+     _ret; \
 })
 
 /* Vector4 */
@@ -2424,6 +2434,8 @@ celp_strv_print(const celp_strv_t view)
     #define da_init                 celp_da_init
     #define da_clear                celp_da_clear
     #define da_is_empty             celp_da_is_empty
+    #define da_reserve              celp_da_reserve
+    #define da_resize               celp_da_resize
     #define da_append               celp_da_append
     #define da_append_n             celp_da_append_n
     #define da_last                 celp_da_last
@@ -2527,6 +2539,7 @@ celp_strv_print(const celp_strv_t view)
     #define v3_cross                celp_v3_cross
     #define v3_len                  celp_v3_len
     #define v3_norm                 celp_v3_norm
+    #define v3_dist_sq              celp_v3_dist_sq
     #define v3_neg                  celp_v3_neg
     #define v3_contains_neg         celp_v3_contains_neg
     #define v3_contains_zero        celp_v3_contains_zero
