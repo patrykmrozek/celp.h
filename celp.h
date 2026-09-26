@@ -1870,7 +1870,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 ({ \
      typeof((v1).x) _ret = (((v2).x - (v1).x) * ((v2).x - (v1).x) + \
                             ((v2).y - (v1).y) * ((v2).y - (v1).y) + \
-                            ((v2).z - (v1).z) * ((v2).z - (v1).z))  \
+                            ((v2).z - (v1).z) * ((v2).z - (v1).z));  \
      \
      _ret; \
 })
