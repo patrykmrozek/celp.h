@@ -663,6 +663,12 @@ CELP_DEF void celp_log(celp_u8 level,
 #define celp_da_clear(da)    ((da)->count = 0)
 #define celp_da_is_empty(da) ((da)->count == 0)
 
+#define celp_da_reserve(da, expected_capacity, ...) \
+    _celp_da_reserve((da), (expected_capacity), _celp_err_arg(__VA_ARGS__))
+
+#define celp_da_resize(da, size, ...) \
+    _celp_da_resize((da), (size), _celp_err_arg(__VA_ARGS__))
+
 #define celp_da_append(da, item, ...) \
     _celp_da_append((da), (item), _celp_err_arg(__VA_ARGS__))
 
@@ -2400,6 +2406,8 @@ celp_strv_print(const celp_strv_t view)
     #define SWAP                    CELP_SWAP
     #define CAT                     CELP_CAT
     #define HASH                    CELP_HASH  
+    #define MIN                     CELP_MIN
+    #define MAX                     CELP_MAX
     //celp_log
     #define log                     celp_log
     #define LOG_INFO                CELP_LOG_INFO
