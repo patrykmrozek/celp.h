@@ -132,9 +132,9 @@ typedef const char* celp_ccharp;
 // celp time
 #define celp_time_t celp_u64
 
-#define CELP_TIME_S(t)   ((celp_f64)(t) / 1000000000.0) 
-#define CELP_TIME_MS(t)  ((celp_f64)(t) / 1000000.0) 
-#define CELP_TIME_US(t)  ((celp_f64)(t) / 1000.0) 
+#define CELP_TIME_TO_S(t)   ((celp_f64)(t) / 1000000000.0) 
+#define CELP_TIME_TO_MS(t)  ((celp_f64)(t) / 1000000.0) 
+#define CELP_TIME_TO_US(t)  ((celp_f64)(t) / 1000.0) 
 
 CELP_DEF_SI celp_time_t
 celp_time_now(void)
@@ -1153,13 +1153,13 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         \
         (map)->buckets.capacity = CELP_MAP_INITIAL_CAPACITY; \
         _celp_da_clear(&(map)->buckets); \
+        celp_usize _i = 0; \
         \
         _celp_da_resize(&(map)->buckets, \
                         CELP_MAP_INITIAL_CAPACITY, \
                         _celp_err); \
         _celp_propogate_clean(map_init); \
         \
-        celp_usize _i = 0; \
         celp_da_foreach(&(map)->buckets, _b) { \
             _celp_ll_init(_b, _celp_err); \
             _celp_propogate_clean(map_init); \
@@ -1194,12 +1194,16 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
             _celp_err_raise((err), CELP_ERR_ARG, map_find_k); \
             break; \
         } \
+        /* bool _found = false; */ \
         _celp_ll_foreach(&(map)->buckets.items[(hash)], _bucket) {\
             if (CELP_COMP(_bucket->data.key, (k)) == 0) { \
                 *(out) = _bucket; \
+                /* _found = true; */ \
                 break; \
             } \
         } \
+        /* maybe should make a CELP_WARN for this sort of stuff */ \
+        /* if (!_found) CELP_TRACE(0, "didnt find the node within the bucket..."); */ \
     } while(0)
 
 #define _celp_map_insert(map, k, v, err) \
@@ -1234,7 +1238,6 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
-        bool _found = false; \
         _map_bucket_node_t((map)) _node; \
         _celp_map_find_k((map), _k, _h, &_node, _celp_err); \
         _celp_propogate(map_increment); \
@@ -1274,7 +1277,6 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
     ({ \
         _celp_expr_init(typeof((dval)), (err), map_get); \
         \
-        bool _found = false; \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         _map_bucket_node_t((map)) _node; \
@@ -1295,7 +1297,6 @@ CELP_DEF void celp_links_unlink(celp_links_t *links, celp_link_t *link);
         _celp_expr_init(_map_v_t((map)), (err), map_remove); \
         _celp_require((map)->count > 0, CELP_ERR_EMPTY, map_remove); \
         \
-        bool _found = false; \
         _map_k_t((map)) _k = (k); \
         celp_u32 _h = _celp_map_get_hash((map), _k); \
         _map_bucket_node_t((map)) _node; \
@@ -1612,20 +1613,30 @@ typedef struct celp_test_suite_s {
 /* profiling */
 #ifdef CELP_PROFILE
 
-celp_map(celp_charp, celp_u32);
+typedef struct celp_profile_time_s {
+    celp_f64 time;
+    celp_ccharp suffix;
+} celp_profile_time_t;
 
-#define celp_profile_counter_t celp_map_t(celp_charp, celp_u32)
+#define CELP_PROFILE_TIME_S  "s"
+#define CELP_PROFILE_TIME_MS "ms"
+#define CELP_PROFILE_TIME_NS "ns"
+
+celp_map(celp_charp, celp_f32);
+celp_map(celp_charp, celp_profile_time_t);
+
+#define celp_profile_counter_t celp_map_t(celp_charp, celp_f32)
+#define celp_profile_timer_t   celp_map_t(celp_charp, celp_profile_time_t)
 
 typedef struct celp_profile_s {
     celp_ccharp name;
     struct celp_profile_s *parent;
 
     struct {
-        celp_time_t last;
-        celp_time_t elapsed;
-        celp_usize  count;
-        celp_time_t avg;
+        celp_time_t            last;
+        celp_time_t            elapsed;
         celp_profile_counter_t count_map;
+        celp_profile_timer_t   time_map;
     } stats;
 } celp_profile_t;
 
@@ -1637,29 +1648,64 @@ static celp_profiler_t celp_profiler;
 #define _celp_count_map(p) \
     _celp_profile_##p.stats.count_map
 
-#define CELP_PROFILE_PARENT(par) \
-    (&_celp_profile_##par)
+#define _celp_time_map(p) \
+    _celp_profile_##p.stats.time_map
 
-#define CELP_PROFILE_START(p, par) \
-    static celp_profile_t _celp_profile_##p = { \
+#define CELP_PROFILE_CREATE(p, par) \
+   static celp_profile_t _celp_profile_##p = { \
         .name = #p, \
         .parent = (par), \
     }; \
     _celp_map_init(&_celp_count_map(p), NULL); \
-    _celp_profile_##p.stats.last = celp_time_now(); \
-    _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL);
+    _celp_map_init(&_celp_time_map(p), NULL); \
+    _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL); \
 
-#define CELP_PROFILE_COUNT(p) \
-    _celp_profile_##p.stats.count++
+#define CELP_PROFILE_PARENT(par) \
+    (&_celp_profile_##par)
 
-#define CELP_PROFILE_COUNT_INCREMENT(p, c) \
-    _celp_map_increment(&_celp_count_map(p), #c, NULL)
+#define CELP_PROFILE_START(p) \
+    do { \
+        _celp_profile_##p.stats.last = celp_time_now(); \
+    } while(0)
+
+#define CELP_PROFILE_ELAPSED(p) \
+    _celp_profile_##p.stats.elapsed
+
+#define CELP_PROFILE_COUNT_ADD(p, k) \
+    do { \
+        _celp_map_increment(&_celp_count_map(p), #k, NULL); \
+    } while(0)
+
+#define CELP_PROFILE_COUNT_SET(p, k, v) \
+    do { \
+        _celp_map_insert(&_celp_count_map(p), #k, (v), NULL); \
+    } while(0)
+
+#define CELP_PROFILE_COUNT_GET(p, k) \
+    ({ \
+        _celp_map_get(&_celp_count_map(p), #k, 0, NULL); \
+     })
+
+#define CELP_PROFILE_TIME_SET(p, k, t, s) \
+    do { \
+        celp_profile_time_t _t = { \
+            .time = (t), \
+            .suffix = (s), \
+        }; \
+        _celp_map_insert(&_celp_time_map(p), #k, _t, NULL); \
+    } while(0)
+
+#define CELP_PROFILE_TIME_GET(p, k) \
+    ({ \
+        _celp_profile_time_t _t = _celp_map_get(&_celp_time_map(p), #k, 0, NULL); \
+        \
+        _t.time; \
+    })
 
 #define CELP_PROFILE_END(p) \
     do { \
-        _celp_profile_##p.stats.elapsed = celp_time_now() - _celp_profile_##p.stats.last; \
-        _celp_profile_##p.stats.avg = (_celp_profile_##p.stats.count > 0) ? \
-            _celp_profile_##p.stats.elapsed / _celp_profile_##p.stats.count : 0; \
+        _celp_profile_##p.stats.elapsed += celp_time_now() - \
+                                           _celp_profile_##p.stats.last; \
     } while(0)
 
 #define _CELP_PROFILE_MAX_TABS 16
@@ -1673,18 +1719,20 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 
     celp_log(0, CELP_LOG_INFO, "", 
             "%s[PROFILE] %s "
-            "\n\t%sElapsed: %fs"
-            "\n\t%sCount: %zu"
-            "\n\t%sAvg: %fms",
+            "\n\t%sElapsed: %fs",
              tab, profile->name,
-             tab, CELP_TIME_S(profile->stats.elapsed),
-             tab, profile->stats.count,
-             tab, CELP_TIME_MS(profile->stats.avg));
+             tab, CELP_TIME_TO_S(profile->stats.elapsed));
 
     celp_map_foreach(&profile->stats.count_map, count) {
         celp_log(0, CELP_LOG_INFO, "", 
-                 "\t%s%s: %d",
+                 "\t%s%s: %.3f",
                  tab, count->data.key, count->data.value);
+        }
+
+    celp_map_foreach(&profile->stats.time_map, time) {
+        celp_log(0, CELP_LOG_INFO, "", 
+                 "\t%s%s: %f%s",
+                 tab, time->data.key, time->data.value.time, time->data.value.suffix);
         }
     celp_log(0, CELP_LOG_INFO, "", ""); /*\n*/ 
 
@@ -2518,6 +2566,26 @@ celp_strv_print(const celp_strv_t view)
     #define TEST_SUITE_REPORT       CELP_TEST_SUITE_REPORT
     #define TEST_SUITE_DESTROY      CELP_TEST_SUITE_DESTROY
 #endif //CELP_TEST
+       
+
+#ifdef CELP_PROFILE
+    #define PROFILE_TIME_S          CELP_PROFILE_TIME_S
+    #define PROFILE_TIME_MS         CELP_PROFILE_TIME_MS
+    #define PROFILE_TIME_NS         CELP_PROFILE_TIME_NS
+    #define PROFILE_CREATE          CELP_PROFILE_CREATE
+    #define PROFILE_PARENT          CELP_PROFILE_PARENT
+    #define PROFILE_START           CELP_PROFILE_START
+    #define PROFILE_ELAPSED         CELP_PROFILE_ELAPSED
+    #define PROFILE_COUNT_ADD       CELP_PROFILE_COUNT_ADD
+    #define PROFILE_COUNT_SET       CELP_PROFILE_COUNT_SET
+    #define PROFILE_COUNT_GET       CELP_PROFILE_COUNT_GET
+    #define PROFILE_TIME_SET        CELP_PROFILE_TIME_SET
+    #define PROFILE_TIME_GET        CELP_PROFILE_TIME_GET
+    #define PROFILE_SET             CELP_PROFILE_SET
+    #define PROFILE_END             CELP_PROFILE_END
+    #define PROFILE_REPORT          CELP_PROFILE_REPORT
+    #define PROFILE_FREE            CELP_PROFILE_FREE
+#endif //CELP_PROFILE
 
 #ifdef CELP_MATH 
     //v2
