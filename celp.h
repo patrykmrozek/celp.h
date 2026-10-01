@@ -1718,10 +1718,8 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
     tab[depth] = '\0';
 
     celp_log(0, CELP_LOG_INFO, "", 
-            "%s[PROFILE] %s "
-            "\n\t%sElapsed: %fs",
-             tab, profile->name,
-             tab, CELP_TIME_TO_S(profile->stats.elapsed));
+            "%s%s:",
+             tab, profile->name);
 
     celp_map_foreach(&profile->stats.count_map, count) {
         celp_log(0, CELP_LOG_INFO, "", 
