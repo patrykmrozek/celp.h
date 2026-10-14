@@ -1704,12 +1704,20 @@ static celp_profiler_t celp_profiler;
     _celp_map_init(&_celp_time_map(p), NULL); \
     _celp_da_append(&celp_profiler, &_celp_profile_##p, NULL); \
 
-#define CELP_PROFILE_PARENT(par) \
-    (&_celp_profile_##par)
+#define CELP_PROFILE_PARENT_SET(p, par) \
+    do { \
+        _celp_profile_##p.parent = (par); \
+    } while(0)
+
+#define CELP_PROFILE_GET(name) \
+    (&_celp_profile_##name)
+
+#define CELP_PROFILE_PARENT(par) CELP_PROFILE_GET(par)
 
 #define CELP_PROFILE_START(p) \
     do { \
         _celp_profile_##p.stats.last = celp_time_now(); \
+        _celp_profile_##p.stats.elapsed = 0; \
     } while(0)
 
 #define CELP_PROFILE_ELAPSED(p) \
@@ -1762,7 +1770,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
     tab[depth] = '\0';
 
     celp_log(0, CELP_LOG_INFO, "", 
-            "%s%s:",
+            "%s[%s]",
              tab, profile->name);
 
     celp_map_foreach(&profile->stats.count_map, count) {
@@ -2621,6 +2629,8 @@ celp_strv_print(const celp_strv_t view)
     #define PROFILE_TIME_MS         CELP_PROFILE_TIME_MS
     #define PROFILE_TIME_NS         CELP_PROFILE_TIME_NS
     #define PROFILE_CREATE          CELP_PROFILE_CREATE
+    #define PROFILE_PARENT_SET      CELP_PROFILE_PARENT_SET
+    #define PROFILE_GET             CELP_PROFILE_GET
     #define PROFILE_PARENT          CELP_PROFILE_PARENT
     #define PROFILE_START           CELP_PROFILE_START
     #define PROFILE_ELAPSED         CELP_PROFILE_ELAPSED
