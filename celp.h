@@ -109,6 +109,9 @@ typedef const char* celp_ccharp;
 #define CELP_MAX(a, b) ((a > b) ? a : b)
 #define CELP_MIN(a, b) ((a < b) ? a : b)
 
+#define CELP_CLAMP(x, min, max) \
+    (((x) > (max)) ? (max) : ((x) < (min)) ? (min) : (x))
+
 #define _CELP_CAT(a, b) a##b
 #define CELP_CAT(a, b) _CELP_CAT(a, b)
 
@@ -2464,6 +2467,9 @@ celp_strv_print(const celp_strv_t view)
     #define HASH                    CELP_HASH  
     #define MIN                     CELP_MIN
     #define MAX                     CELP_MAX
+    #define CLAMP                   CELP_CLAMP
+    //ERRORS
+    #define err_to_str              celp_err_to_str
     //celp_log
     #define log                     celp_log
     #define LOG_INFO                CELP_LOG_INFO
