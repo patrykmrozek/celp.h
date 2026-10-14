@@ -1871,6 +1871,27 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 
 #define celp_v3f_str(v) "{ %f, %f, %f }", (v).x, (v).y, (v).z
 
+#define celp_v3_min(v1, v2) \
+({ \
+    typeof((v1)) _v_out = { \
+        .x = MIN((v1).x, (v2).x), \
+        .y = MIN((v1).y, (v2).y), \
+        .z = MIN((v1).z, (v2).z), \
+    }; \
+    _v_out; \
+ })
+
+#define celp_v3_max(v1, v2) \
+({ \
+    typeof((v1)) _v_out = { \
+        .x = MAX((v1).x, (v2).x), \
+        .y = MAX((v1).y, (v2).y), \
+        .z = MAX((v1).z, (v2).z), \
+    }; \
+    _v_out; \
+ })
+
+
 #define celp_v3_contains_neg(v) (v.x < 0 || v.y < 0 || v.z < 0)
 
 #define celp_v3_is_empty(v) \
@@ -2529,6 +2550,7 @@ celp_strv_print(const celp_strv_t view)
     #define DEBUG                   CELP_DEBUG 
     #define ERROR                   CELP_ERROR 
     #define TRACE                   CELP_TRACE
+    #define BREAK                   CELP_BREAK
     //CELP_DA
     #define da                      celp_da
     #define da_t                    celp_da_t
@@ -2670,6 +2692,8 @@ celp_strv_print(const celp_strv_t view)
     #define v3_contains_neg         celp_v3_contains_neg
     #define v3_contains_zero        celp_v3_contains_zero
     #define v3_is_empty             celp_v3_is_empty
+    #define v3_min                  celp_v3_min
+    #define v3_max                  celp_v3_max
     #define v3f_str                 celp_v3f_str
     //v4
     #define v4                      celp_v4
