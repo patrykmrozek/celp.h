@@ -476,14 +476,40 @@ CELP_DEF void celp_log(celp_u8 level,
                        const char* fmt_string,
                        ...);
 
-#define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  "[INFO] ", \
-                                           fmt, ##__VA_ARGS__)
-#define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, "[DEBUG] ", \
-                                           fmt, ##__VA_ARGS__)
-#define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, "[ERROR] ", \
-                                           fmt, ##__VA_ARGS__)
-#define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", \
-                                           fmt, ##__VA_ARGS__)
+#if defined(LOG_MODE_ALL) ||   \
+    defined(LOG_MODE_INFO) ||  \
+    defined(LOG_MODE_DEBUG) || \
+    defined(LOG_MODE_ERROR) || \
+    defined(LOG_MODE_TRACE) 
+    
+    #define CELP_LOG_MODE_ENABLED
+
+#endif // LOG_MODE_ENABLED
+
+
+#ifdef CELP_LOG_MODE_ENABLED
+
+    #define CELP_INFO(fmt, ...)       celp_log(0,   CELP_LOG_INFO,  "[INFO] ", \
+                                               fmt, ##__VA_ARGS__)
+    #define CELP_DEBUG(lvl, fmt, ...) celp_log(lvl, CELP_LOG_DEBUG, "[DEBUG] ", \
+                                               fmt, ##__VA_ARGS__)
+    #define CELP_ERROR(fmt, ...)      celp_log(0,   CELP_LOG_ERROR, "[ERROR] ", \
+                                               fmt, ##__VA_ARGS__)
+    #define CELP_TRACE(lvl, fmt, ...) celp_log(lvl, CELP_LOG_TRACE, "[TRACE] ", \
+                                               fmt, ##__VA_ARGS__)
+    #define CELP_BREAK(lvl)           celp_log(lvl,   _CELP_LOG_DEBUG, NULL, \
+                                               NULL, 0, stdout, NULL, 0, \
+                                               "", "");
+#else
+                       
+#define CELP_INFO(...)  ((void)0)
+#define CELP_DEBUG(...) ((void)0)
+#define CELP_ERROR(...) ((void)0)
+#define CELP_TRACE(...) ((void)0)
+#define CELP_BREAK(...) ((void)0)
+                               
+
+#endif //CELP_MODE_ENABLED
 
 /* generic data types and macros */
 /*
