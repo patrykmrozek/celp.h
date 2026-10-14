@@ -1521,6 +1521,21 @@ celp_arena_reset(celp_arena_t *arena)
 #define CELP_TEST_FAIL_MSG_LEN 4096
 static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
 
+/* forceful expect */
+#define CELP_EXPECTF(cond) do { \
+    celp_test_assertions++; \
+    if (!(cond)) { \
+        celp_test_result = CELP_TEST_RESULT_FAIL; \
+        celp_log(0, _CELP_LOG_ERROR, \
+                 __FILE__, __FUNCTION__, __LINE__, \
+                 stderr, NULL, 0, \
+                "[FAILURE] ", "(%s)\n", #cond); \
+        exit(1); \
+    } \
+} while(0)
+#define CELP_EXPECTF_EQ(x, y) CELP_EXPECTF(x==y)
+#define CELP_EXPECTF_NEQ(x, y) CELP_EXPECTF(x!=y)
+
 #define CELP_EXPECT(cond) do { \
     celp_test_assertions++; \
     if (!(cond)) { \
@@ -2584,6 +2599,9 @@ celp_strv_print(const celp_strv_t view)
     #define EXPECT                  CELP_EXPECT
     #define EXPECT_EQ               CELP_EXPECT_EQ
     #define EXPECT_NEQ              CELP_EXPECT_NEQ
+    #define EXPECTF                 CELP_EXPECTF
+    #define EXPECTF_EQ              CELP_EXPECTF_EQ
+    #define EXPECTF_NEQ             CELP_EXPECTF_NEQ
     #define TESTCASE                CELP_TESTCASE 
     #define TEST_SETUP              CELP_TEST_SETUP 
     #define TEST_TEARDOWN           CELP_TEST_TEARDOWN
