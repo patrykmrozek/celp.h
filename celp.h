@@ -1576,9 +1576,9 @@ typedef struct celp_test_suite_s {
     celp_links_t tests;
 } celp_test_suite_t;
 
-#define CELP_TESTCASE(t)      void _celp_testcase_##t()
-#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s()
-#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t()
+#define CELP_TESTCASE(t)      void _celp_testcase_##t(void)
+#define CELP_TEST_SETUP(s)    void _celp_test_setup_##s(void)
+#define CELP_TEST_TEARDOWN(t) void _celp_test_teardown_##t(void)
 
 #define CELP_TEST_SUITE_START(s) \
     CELP_DEF_SI celp_test_suite_t \
