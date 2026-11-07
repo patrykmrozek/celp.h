@@ -1,4 +1,4 @@
-/*
+    /*
  * celp.h - single header generic C util library.
  *
  * Provides many useful features like:
@@ -106,8 +106,8 @@ typedef const char* celp_ccharp;
         (b) = _tmp; \
     } while (0)
 
-#define CELP_MAX(a, b) ((a > b) ? a : b)
-#define CELP_MIN(a, b) ((a < b) ? a : b)
+#define CELP_MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define CELP_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 #define CELP_CLAMP(x, min, max) \
     (((x) > (max)) ? (max) : ((x) < (min)) ? (min) : (x))
@@ -166,13 +166,14 @@ celp_time_now(void)
  * or print etc..
  */
 typedef enum celp_err_s {
-    CELP_ERR_OK,
+    CELP_ERR_OK = 0,
     CELP_ERR_TYPE,
     CELP_ERR_OOB,
     CELP_ERR_ALLOC,
     CELP_ERR_EMPTY,
     CELP_ERR_ARG,
     CELP_ERR_MISSING,
+    CELP_ERR_INVALID,
     CELP_ERR_UNKNOWN,
 
     CELP_ERR_FOPEN,
@@ -192,6 +193,7 @@ celp_err_to_str(celp_err_t err)
         case CELP_ERR_EMPTY:   return "CELP_ERR_EMPTY"; 
         case CELP_ERR_ARG:     return "CELP_ERR_ARG"; 
         case CELP_ERR_MISSING: return "CELP_ERR_MISSING"; 
+        case CELP_ERR_INVALID: return "CELP_ERR_INVALID"; 
         case CELP_ERR_FOPEN:   return "CELP_ERR_FOPEN"; 
         case CELP_ERR_FSEEK:   return "CELP_ERR_FSEEK"; 
         case CELP_ERR_FTELL:   return "CELP_ERR_FTELL"; 
@@ -1518,44 +1520,44 @@ celp_arena_reset(celp_arena_t *arena)
 /* Testing */
 #ifdef CELP_TEST
 
-#define CELP_TEST_FAIL_MSG_LEN 4096
-static char celp_test_fail_msg[CELP_TEST_FAIL_MSG_LEN];
+#define CELP_EXPECT(cond) \
+    do { \
+        celp_test_assertions++; \
+        if (!(cond)) { \
+            celp_test_result = CELP_TEST_RESULT_FAIL; \
+            celp_test_result_worst = CELP_TEST_RESULT_FAIL; \
+            celp_log(0, _CELP_LOG_ERROR, \
+                     __FILE__, __FUNCTION__, __LINE__, \
+                     stderr, NULL, 0, \
+                    "[FAILURE] ", "(%s)\n", #cond); \
+        } \
+    } while(0)
+
+#define CELP_EXPECT_EQ(x, y)  CELP_EXPECT((x) == (y))
+#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT((x) != (y))
+
 
 /* forceful expect */
-#define CELP_EXPECTF(cond) do { \
-    celp_test_assertions++; \
-    if (!(cond)) { \
-        celp_test_result = CELP_TEST_RESULT_FAIL; \
-        celp_log(0, _CELP_LOG_ERROR, \
-                 __FILE__, __FUNCTION__, __LINE__, \
-                 stderr, NULL, 0, \
-                "[FAILURE] ", "(%s)\n", #cond); \
-        exit(1); \
-    } \
-} while(0)
-#define CELP_EXPECTF_EQ(x, y) CELP_EXPECTF(x==y)
-#define CELP_EXPECTF_NEQ(x, y) CELP_EXPECTF(x!=y)
+#define CELP_EXPECTF(cond) \
+    do { \
+        CELP_EXPECT(cond); \
+        if (celp_test_result == CELP_TEST_RESULT_FAIL) { \
+            exit(1); \
+        } \
+    } while(0)
 
-#define CELP_EXPECT(cond) do { \
-    celp_test_assertions++; \
-    if (!(cond)) { \
-        celp_test_result = CELP_TEST_RESULT_FAIL; \
-        celp_log(0, _CELP_LOG_ERROR, \
-                 __FILE__, __FUNCTION__, __LINE__, \
-                 NULL, celp_test_fail_msg, CELP_TEST_FAIL_MSG_LEN, \
-                "[FAILURE] ", "(%s)\n", #cond); \
-    } \
-} while(0)
-#define CELP_EXPECT_EQ(x, y) CELP_EXPECT(x==y)
-#define CELP_EXPECT_NEQ(x, y) CELP_EXPECT(x!=y)
+#define CELP_EXPECTF_EQ(x, y)  CELP_EXPECTF((x) == (y))
+#define CELP_EXPECTF_NEQ(x, y) CELP_EXPECTF((x) != (y))
 
+
+// can use this as a return type from a test func
 typedef enum celp_test_result_e {
     CELP_TEST_RESULT_PASS,
     CELP_TEST_RESULT_FAIL,
-    CELP_TEST_RESULT_NONE,
 } celp_test_result_t;
 
-static celp_test_result_t celp_test_result = CELP_TEST_RESULT_NONE;
+static celp_test_result_t celp_test_result = CELP_TEST_RESULT_PASS;
+static celp_test_result_t celp_test_result_worst = CELP_TEST_RESULT_PASS;
 static celp_u32 celp_test_runs = 0;
 static celp_u32 celp_test_passes = 0;
 static celp_u32 celp_test_fails = 0;
@@ -1600,7 +1602,7 @@ typedef struct celp_test_suite_s {
         static celp_testcase_t _##t = {\
             .name = #t, \
             .testcase = &_celp_testcase_##t, \
-            .result = CELP_TEST_RESULT_NONE, \
+            .result = CELP_TEST_RESULT_PASS, \
         }; \
         celp_links_add(&_celp_test_suite_##s->tests, &_##t.link);
 
@@ -1617,7 +1619,7 @@ typedef struct celp_test_suite_s {
         celp_testcase_t *_celp_test = celp_link_part_of(_celp_test_link, \
                                                         celp_testcase_t, \
                                                         link); \
-        celp_test_result = CELP_TEST_RESULT_NONE; \
+        celp_test_result = CELP_TEST_RESULT_PASS; \
         _celp_test->testcase(); \
         celp_test_runs++; \
         _celp_test->result = celp_test_result; \
@@ -1641,12 +1643,9 @@ typedef struct celp_test_suite_s {
     } \
     celp_log(0, CELP_LOG_INFO, \
             "[REPORT] ", "RUNS: %d - ASSERTIONS: %d" \
-            " - PASSED: %d - FAILED: %d", \
+            " - PASSED: %d - FAILED: %d\n", \
             celp_test_runs, celp_test_assertions, \
             celp_test_passes, celp_test_fails); \
-    celp_log(0, CELP_LOG_INFO, \
-             (celp_test_fails > 0) ? "[FAILURE] " : "", \
-             "%s", celp_test_fail_msg); \
 
 #define CELP_TEST_SUITE_DESTROY(s) \
     CELP_FREE(_celp_test_suite_##s); \
@@ -1658,7 +1657,7 @@ typedef struct celp_test_suite_s {
 #ifdef CELP_PROFILE
 
 typedef struct celp_profile_time_s {
-    celp_f64 time;
+    celp_f64    time;
     celp_ccharp suffix;
 } celp_profile_time_t;
 
@@ -1666,10 +1665,10 @@ typedef struct celp_profile_time_s {
 #define CELP_PROFILE_TIME_MS "ms"
 #define CELP_PROFILE_TIME_NS "ns"
 
-celp_map(celp_charp, celp_f32);
+celp_map(celp_charp, celp_f64);
 celp_map(celp_charp, celp_profile_time_t);
 
-#define celp_profile_counter_t celp_map_t(celp_charp, celp_f32)
+#define celp_profile_counter_t celp_map_t(celp_charp, celp_f64)
 #define celp_profile_timer_t   celp_map_t(celp_charp, celp_profile_time_t)
 
 typedef struct celp_profile_s {
@@ -1749,7 +1748,7 @@ static celp_profiler_t celp_profiler;
 
 #define CELP_PROFILE_TIME_GET(p, k) \
     ({ \
-        _celp_profile_time_t _t = _celp_map_get(&_celp_time_map(p), #k, 0, NULL); \
+        celp_profile_time_t _t = _celp_map_get(&_celp_time_map(p), #k, 0, NULL); \
         \
         _t.time; \
     })
@@ -1797,8 +1796,10 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #define CELP_PROFILE_REPORT(p) \
     _celp_profile_report(&_celp_profile_##p, 0)
 
-#define CELP_PROFILE_FREE() \
-    celp_da_free(&celp_profiler, NULL);
+#define CELP_PROFILE_FREE(p) \
+    _celp_da_free(&celp_profiler, NULL); \
+    _celp_map_free(&_celp_count_map(p), NULL); \
+    _celp_map_free(&_celp_time_map(p), NULL); \
 
 #endif //CELP_PROFILE
 
@@ -1843,15 +1844,15 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
     _v_out; \
 })
 
-#define celp_v2_dot(v1, v2) ((v1).x * (v2).x) + ((v1).y * (v2).y)
+#define celp_v2_dot(v1, v2)   (((v1).x * (v2).x) + ((v1).y * (v2).y))
 
-#define celp_v2_cross(v1, v2) ((v1).x * (v2).y) - ((v1).y * (v2).x)
+#define celp_v2_cross(v1, v2) (((v1).x * (v2).y) - ((v1).y * (v2).x))
 
 #define celp_v2_scale(v, s) \
 ({ \
     typeof((v)) _v_out = { \
-        .x = (v).x * s, \
-        .y = (v).y * s \
+        .x = (v).x * (s), \
+        .y = (v).y * (s) \
     }; \
     _v_out; \
 })
@@ -1874,9 +1875,9 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #define celp_v3_min(v1, v2) \
 ({ \
     typeof((v1)) _v_out = { \
-        .x = MIN((v1).x, (v2).x), \
-        .y = MIN((v1).y, (v2).y), \
-        .z = MIN((v1).z, (v2).z), \
+        .x = CELP_MIN((v1).x, (v2).x), \
+        .y = CELP_MIN((v1).y, (v2).y), \
+        .z = CELP_MIN((v1).z, (v2).z), \
     }; \
     _v_out; \
  })
@@ -1884,9 +1885,9 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #define celp_v3_max(v1, v2) \
 ({ \
     typeof((v1)) _v_out = { \
-        .x = MAX((v1).x, (v2).x), \
-        .y = MAX((v1).y, (v2).y), \
-        .z = MAX((v1).z, (v2).z), \
+        .x = CELP_MAX((v1).x, (v2).x), \
+        .y = CELP_MAX((v1).y, (v2).y), \
+        .z = CELP_MAX((v1).z, (v2).z), \
     }; \
     _v_out; \
  })
@@ -1956,9 +1957,9 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #define celp_v3_scale(v, s) \
 ({ \
     typeof((v)) _v_out = { \
-        .x = (v).x * s, \
-        .y = (v).y * s, \
-        .z = (v).z * s \
+        .x = (v).x * (s), \
+        .y = (v).y * (s), \
+        .z = (v).z * (s) \
     }; \
     _v_out; \
 })
@@ -1979,7 +1980,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
 #define celp_v3_norm(v) \
 ({ \
     typeof((v)) _v_out = {0}; \
-    float len = celp_v3_len((v));  \
+    celp_f32 len = celp_v3_len((v));  \
     typeof((v)) _v_len = {len, len, len}; \
     _v_out = celp_v3_div((v), _v_len); \
     _v_out; \
@@ -1993,6 +1994,12 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
      \
      _ret; \
 })
+
+#define celp_v3_dist(v1, v2) \
+({ \
+    typeof((v1).x) _ret = sqrtf(celp_v3_dist_sq((v1), (v2))); \
+    _ret; \
+ })
 
 /* Vector4 */
 #define _v4(T) v4_##T
@@ -2067,21 +2074,21 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
     {0, 0, 0, 1}}}
 
 #define celp_m4_trans(t) {{       \
-    {1, 0, 0, t.x}, \
-    {0, 1, 0, t.y}, \
-    {0, 0, 1, t.z}, \
+    {1, 0, 0, (t).x}, \
+    {0, 1, 0, (t).y}, \
+    {0, 0, 1, (t).z}, \
     {0, 0, 0,  1}}}
 
 #define celp_m4_scale(s) {{  \
-    {s, 0, 0, 0},  \
-    {0, s, 0, 0},  \
-    {0, 0, s, 0},  \
+    {(s), 0, 0, 0},  \
+    {0, (s), 0, 0},  \
+    {0, 0, (s), 0},  \
     {0, 0, 0, 1}}}
 
 #define celp_m4_scalev(s) {{ \
-    {s.x,   0,   0,  0},    \
-    {  0, s.y,   0,  0},    \
-    {  0,   0, s.z,  0},    \
+    {(s).x,   0,   0,  0},    \
+    {  0, (s).y,   0,  0},    \
+    {  0,   0, (s).z,  0},    \
     {  0,   0,   0,  1}}} 
 
 #define celp_m4_rotx(a) {{   \
@@ -2124,7 +2131,7 @@ _celp_profile_report(celp_profile_t *profile, celp_u8 depth)
         for (celp_u8 _j = 0; _j < 4; _j++) { \
         typeof((m1).v[0][0]) _sum = 0; \
         for (celp_u8 _k = 0; _k < 4; _k++) { \
-            _sum += (m1).v[_i][_k] * (m1).v[_k][_j]; \
+            _sum += (m1).v[_i][_k] * (m2).v[_k][_j]; \
         } \
         _out.v[_i][_j] = _sum; \
         } \
@@ -2431,7 +2438,7 @@ _celp_str_file(celp_ccharp path, celp_err_t *err)
 {
     _celp_expr_init_clean(celp_str_t, err, str_file);
 
-    celp_str_t str;
+    celp_str_t str = {0};
     FILE *f = fopen(path, "rb");
     _celp_require(f != NULL, CELP_ERR_FOPEN, str_file);
 
@@ -2688,6 +2695,7 @@ celp_strv_print(const celp_strv_t view)
     #define v3_len                  celp_v3_len
     #define v3_norm                 celp_v3_norm
     #define v3_dist_sq              celp_v3_dist_sq
+    #define v3_dist                 celp_v3_dist
     #define v3_neg                  celp_v3_neg
     #define v3_contains_neg         celp_v3_contains_neg
     #define v3_contains_zero        celp_v3_contains_zero
